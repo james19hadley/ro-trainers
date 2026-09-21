@@ -1,0 +1,2722 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RISC-V Pipeline Hazards & Stalls Trainer | TU Darmstadt RO</title>
+  <style>
+    :root {
+      --bg-main: #090d16;
+      --bg-card: #111827;
+      --bg-card-hover: #1e293b;
+      --border-color: #243044;
+      --border-focus: #38bdf8;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --accent-cyan: #06b6d4;
+      --accent-cyan-glow: #22d3ee;
+      --accent-blue: #3b82f6;
+      --accent-sky: #0284c7;
+      --accent-green: #10b981;
+      --accent-green-glow: #34d399;
+      --accent-red: #ef4444;
+      --accent-yellow: #f59e0b;
+      --accent-purple: #8b5cf6;
+      --accent-pink: #ec4899;
+
+      /* 5 Stage Pipeline Colors */
+      --stage-if-bg: rgba(2, 132, 199, 0.22);
+      --stage-if-border: #0284c7;
+      --stage-if-text: #38bdf8;
+
+      --stage-id-bg: rgba(139, 92, 246, 0.22);
+      --stage-id-border: #8b5cf6;
+      --stage-id-text: #c084fc;
+
+      --stage-ex-bg: rgba(245, 158, 11, 0.22);
+      --stage-ex-border: #f59e0b;
+      --stage-ex-text: #fbbf24;
+
+      --stage-mem-bg: rgba(16, 185, 129, 0.22);
+      --stage-mem-border: #10b981;
+      --stage-mem-text: #34d399;
+
+      --stage-wb-bg: rgba(6, 182, 212, 0.22);
+      --stage-wb-border: #06b6d4;
+      --stage-wb-text: #22d3ee;
+
+      --stage-stall-bg: rgba(239, 68, 68, 0.22);
+      --stage-stall-border: #ef4444;
+      --stage-stall-text: #fca5a5;
+
+      --stage-flush-bg: rgba(100, 116, 139, 0.22);
+      --stage-flush-border: #64748b;
+      --stage-flush-text: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    /* Header */
+    header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      padding: 6px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 50px;
+      flex-shrink: 0;
+      z-index: 30;
+    }
+
+    .title-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-area h1 {
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--accent-cyan-glow);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-exam {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-green-glow);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-top {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #cbd5e1;
+      font-size: 0.76rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-top:hover {
+      background: #334155;
+      color: #fff;
+      border-color: var(--accent-cyan);
+    }
+
+    .btn-top .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ef4444;
+      display: inline-block;
+      box-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    }
+
+    .btn-top.active .status-dot {
+      background: #10b981;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.7);
+    }
+
+    .mode-switch {
+      display: flex;
+      background: #0b0f19;
+      padding: 2px;
+      border-radius: 7px;
+      border: 1px solid var(--border-color);
+    }
+
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 4px 10px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .mode-btn.active {
+      background: #0284c7;
+      color: #fff;
+      box-shadow: 0 0 8px rgba(6, 182, 212, 0.35);
+    }
+
+    /* Task Banner */
+    .task-banner {
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid var(--border-color);
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      min-height: 52px;
+      flex-shrink: 0;
+      z-index: 20;
+    }
+
+    .task-prompt {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .de-prompt {
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .task-badge {
+      background: rgba(14, 165, 233, 0.16);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      padding: 1px 7px;
+      border-radius: 4px;
+      font-size: 0.70rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .task-badge.badge-quiz {
+      background: rgba(168, 85, 247, 0.16);
+      color: #c084fc;
+      border-color: rgba(168, 85, 247, 0.4);
+    }
+
+    .en-prompt {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      line-height: 1.3;
+    }
+
+    .scenario-picker-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+    }
+
+    .btn-nav {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.78rem;
+      transition: all 0.15s ease;
+    }
+
+    .btn-nav:hover {
+      background: #334155;
+      border-color: var(--accent-cyan);
+    }
+
+    .btn-picker {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #fff;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 220px;
+      justify-content: space-between;
+      transition: all 0.15s ease;
+    }
+
+    .btn-picker:hover {
+      background: #334155;
+      border-color: var(--accent-cyan);
+    }
+
+    .picker-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+      width: 320px;
+      max-height: 400px;
+      overflow-y: auto;
+      z-index: 100;
+      display: none;
+      padding: 6px;
+    }
+
+    .picker-menu.show {
+      display: block;
+    }
+
+    .menu-group-title {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent-cyan);
+      padding: 6px 8px 3px 8px;
+      font-weight: 700;
+    }
+
+    .menu-item {
+      padding: 7px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      transition: background 0.12s ease;
+    }
+
+    .menu-item:hover {
+      background: #1e293b;
+    }
+
+    .menu-item.active {
+      background: rgba(6, 182, 212, 0.15);
+      border-left: 3px solid var(--accent-cyan);
+    }
+
+    .menu-item .item-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .menu-item .item-subtitle {
+      font-size: 0.70rem;
+      color: var(--text-muted);
+    }
+
+    .btn-random {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2));
+      border: 1px solid rgba(139, 92, 246, 0.4);
+      color: #e2e8f0;
+      font-size: 0.76rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-random:hover {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(6, 182, 212, 0.35));
+      border-color: var(--accent-cyan-glow);
+      color: #fff;
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.25);
+    }
+
+    /* Main Workspace Layout */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 6px 440px;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Left Pane: Diagram & Controls */
+    .left-pane {
+      background: var(--bg-card);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      min-width: 350px;
+      overflow: hidden;
+      border-right: 1px solid var(--border-color);
+    }
+
+    /* Toolbar above Timing Grid */
+    .grid-toolbar {
+      padding: 8px 16px;
+      background: #0d1322;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Forwarding Toggle Switch */
+    .forwarding-switch-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #111827;
+      padding: 3px 8px 3px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+    }
+
+    .forwarding-label {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toggle-pill {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 22px;
+    }
+
+    .toggle-pill input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #334155;
+      transition: .2s;
+      border-radius: 22px;
+      border: 1px solid #475569;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+      background-color: #10b981;
+      border-color: #34d399;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+    }
+
+    input:checked + .toggle-slider:before {
+      transform: translateX(22px);
+    }
+
+    .forwarding-status-tag {
+      font-size: 0.70rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    .forwarding-status-tag.on {
+      color: #34d399;
+    }
+
+    .forwarding-status-tag.off {
+      color: #f87171;
+    }
+
+    /* Stepper Controls */
+    .stepper-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #111827;
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-step {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+
+    .btn-step:hover {
+      background: #334155;
+      color: #fff;
+      border-color: var(--accent-cyan);
+    }
+
+    .cycle-counter {
+      font-family: ui-monospace, monospace;
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--accent-cyan-glow);
+      padding: 0 4px;
+      white-space: nowrap;
+    }
+
+    /* Timing Diagram Area */
+    .grid-container {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+      background: #080c15;
+      padding: 12px;
+    }
+
+    .timing-table-wrapper {
+      position: relative;
+      min-width: 100%;
+      display: inline-block;
+    }
+
+    /* SVG Forwarding Overlay */
+    #forwardingSvgOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Timing Table */
+    table.timing-table {
+      border-collapse: separate;
+      border-spacing: 4px;
+      width: 100%;
+      user-select: none;
+    }
+
+    table.timing-table th {
+      background: #0f172a;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    table.timing-table th.col-inst {
+      text-align: left;
+      min-width: 220px;
+      position: sticky;
+      left: 0;
+      z-index: 15;
+      background: #0f172a;
+    }
+
+    table.timing-table th.col-cycle.active-cycle {
+      color: #fff;
+      background: #0284c7;
+      border-color: var(--accent-cyan-glow);
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+    }
+
+    table.timing-table td {
+      padding: 0;
+      height: 38px;
+      text-align: center;
+      vertical-align: middle;
+      border-radius: 4px;
+    }
+
+    table.timing-table td.cell-inst {
+      position: sticky;
+      left: 0;
+      z-index: 12;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      padding: 4px 10px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .inst-label {
+      font-family: ui-monospace, monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .inst-idx {
+      font-size: 0.68rem;
+      color: var(--accent-cyan);
+      background: rgba(6, 182, 212, 0.12);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-weight: 700;
+    }
+
+    .inst-regs {
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      margin-left: auto;
+    }
+
+    /* Stage Pills */
+    .stage-pill {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      min-width: 38px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      transition: all 0.15s ease;
+      cursor: help;
+      position: relative;
+    }
+
+    .stage-pill.stage-if {
+      background: var(--stage-if-bg);
+      border: 1px solid var(--stage-if-border);
+      color: var(--stage-if-text);
+    }
+
+    .stage-pill.stage-id {
+      background: var(--stage-id-bg);
+      border: 1px solid var(--stage-id-border);
+      color: var(--stage-id-text);
+    }
+
+    .stage-pill.stage-ex {
+      background: var(--stage-ex-bg);
+      border: 1px solid var(--stage-ex-border);
+      color: var(--stage-ex-text);
+    }
+
+    .stage-pill.stage-mem {
+      background: var(--stage-mem-bg);
+      border: 1px solid var(--stage-mem-border);
+      color: var(--stage-mem-text);
+    }
+
+    .stage-pill.stage-wb {
+      background: var(--stage-wb-bg);
+      border: 1px solid var(--stage-wb-border);
+      color: var(--stage-wb-text);
+    }
+
+    .stage-pill.stage-stall {
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(239, 68, 68, 0.2),
+        rgba(239, 68, 68, 0.2) 6px,
+        rgba(239, 68, 68, 0.35) 6px,
+        rgba(239, 68, 68, 0.35) 12px
+      );
+      border: 1px solid var(--stage-stall-border);
+      color: var(--stage-stall-text);
+      font-size: 0.65rem;
+      font-weight: 900;
+      animation: pulse-stall 2s infinite ease-in-out;
+    }
+
+    .stage-pill.stage-flush {
+      background: var(--stage-flush-bg);
+      border: 1px dashed var(--stage-flush-border);
+      color: var(--stage-flush-text);
+      font-size: 0.65rem;
+    }
+
+    @keyframes pulse-stall {
+      0%, 100% { border-color: #ef4444; }
+      50% { border-color: #f87171; box-shadow: 0 0 6px rgba(239, 68, 68, 0.4); }
+    }
+
+    .stage-pill.highlight-producer {
+      border: 2px solid #34d399 !important;
+      box-shadow: 0 0 10px rgba(52, 211, 153, 0.8) !important;
+      transform: scale(1.05);
+      z-index: 5;
+    }
+
+    .stage-pill.highlight-consumer {
+      border: 2px solid #f59e0b !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.8) !important;
+      transform: scale(1.05);
+      z-index: 5;
+    }
+
+    /* Live Pipeline State Bar (Below grid) */
+    .pipeline-registers-bar {
+      background: #0d1322;
+      border-top: 1px solid var(--border-color);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+      font-size: 0.72rem;
+    }
+
+    .pipe-stages-list {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      overflow-x: auto;
+    }
+
+    .pipe-stage-chip {
+      background: #111827;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 4px 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .chip-name {
+      font-weight: 800;
+      font-size: 0.68rem;
+      border-radius: 3px;
+      padding: 1px 4px;
+    }
+
+    .chip-inst {
+      font-family: ui-monospace, monospace;
+      color: #e2e8f0;
+      font-size: 0.72rem;
+    }
+
+    /* Drag Resizer Bar */
+    .resizer {
+      background: #1e293b;
+      cursor: col-resize;
+      transition: background 0.15s ease;
+      z-index: 25;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .resizer::after {
+      content: "";
+      width: 2px;
+      height: 28px;
+      background: #475569;
+      border-radius: 2px;
+    }
+
+    .resizer:hover, .resizer.dragging {
+      background: var(--accent-cyan);
+    }
+
+    .resizer:hover::after, .resizer.dragging::after {
+      background: #fff;
+    }
+
+    /* Right Pane: Quiz / Sidebar */
+    .right-pane {
+      background: #0a0e17;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      min-height: 0;
+      min-width: 320px;
+    }
+
+    /* Sidebar Top Action Bar */
+    .sidebar-actions {
+      padding: 8px 16px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn-action {
+      background: #0284c7;
+      border: none;
+      color: #fff;
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-action:hover {
+      background: #0369a1;
+      box-shadow: 0 0 10px rgba(2, 132, 199, 0.4);
+    }
+
+    .btn-secondary {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #cbd5e1;
+      font-size: 0.76rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-secondary:hover {
+      background: #334155;
+      color: #fff;
+      border-color: var(--accent-cyan);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+      font-size: 0.76rem;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-left: auto;
+      transition: all 0.15s ease;
+    }
+
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.25);
+      color: #fff;
+      border-color: #ef4444;
+    }
+
+    /* Sidebar Content Sections */
+    .sidebar-content {
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .panel-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .panel-card h3 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .score-badge {
+      font-size: 0.70rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      letter-spacing: 0.03em;
+    }
+
+    .score-pass {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid #10b981;
+    }
+
+    .score-partial {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid #f59e0b;
+    }
+
+    .score-fail {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid #ef4444;
+    }
+
+    /* Quiz Questions */
+    .quiz-question-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .quiz-item {
+      background: #0b101c;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px;
+    }
+
+    .quiz-item-header {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .quiz-item-header .q-badge {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      font-size: 0.68rem;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    .quiz-inputs-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .stage-input-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      align-items: center;
+    }
+
+    .stage-input-cell label {
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: var(--text-muted);
+    }
+
+    .quiz-input {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #fff;
+      padding: 4px 6px;
+      border-radius: 4px;
+      font-size: 0.74rem;
+      font-family: ui-monospace, monospace;
+      width: 46px;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+
+    .quiz-input.wide {
+      width: 80px;
+    }
+
+    .quiz-input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
+    }
+
+    .quiz-input.correct {
+      border-color: #10b981 !important;
+      background: rgba(16, 185, 129, 0.15) !important;
+      color: #34d399 !important;
+    }
+
+    .quiz-input.wrong {
+      border-color: #ef4444 !important;
+      background: rgba(239, 68, 68, 0.15) !important;
+      color: #fca5a5 !important;
+    }
+
+    /* Speedup & CPI Calculator */
+    .calc-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .calc-row:last-child {
+      border-bottom: none;
+    }
+
+    .calc-val {
+      font-family: ui-monospace, monospace;
+      font-weight: 700;
+      color: var(--accent-cyan-glow);
+    }
+
+    .calc-val.speedup-highlight {
+      color: #34d399;
+      font-size: 0.85rem;
+      background: rgba(16, 185, 129, 0.15);
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    /* Explanation Breakdown */
+    .explanation-box {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .explain-item {
+      background: #0d1322;
+      border-left: 3px solid var(--accent-cyan);
+      padding: 6px 8px;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .explain-title {
+      font-weight: 700;
+      color: #f1f5f9;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    /* Floating Tooltip */
+    #floatingTooltip {
+      position: fixed;
+      background: #0f172a;
+      border: 1px solid var(--accent-cyan);
+      color: #f1f5f9;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      line-height: 1.35;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
+      pointer-events: none;
+      z-index: 1000;
+      max-width: 320px;
+      display: none;
+      transition: opacity 0.1s ease;
+    }
+
+    #floatingTooltip.show {
+      display: block;
+    }
+
+    /* Help Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      width: 820px;
+      max-width: 95vw;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 12px 18px;
+      background: #0f172a;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+
+    .close-btn:hover {
+      color: #fff;
+    }
+
+    .modal-body {
+      padding: 16px 20px;
+      overflow-y: auto;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      color: #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-section {
+      background: #0b101c;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px 14px;
+    }
+
+    .modal-section h4 {
+      color: var(--accent-cyan-glow);
+      font-size: 0.82rem;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    .modal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- App Header -->
+  <header>
+    <div class="title-area">
+      <h1>
+        <span>⚡ RISC-V Pipeline Hazards & Stalls</span>
+        <span class="badge">5-Stufen IF·ID·EX·MEM·WB</span>
+        <span class="badge badge-exam">Aufgabe 7 · 13–15 P.</span>
+      </h1>
+    </div>
+
+    <div class="top-actions">
+      <button class="btn-top active" id="btnToggleSound" title="Sound-Effekte umschalten">
+        <span class="status-dot"></span>
+        <span id="soundLabel">Sound: AN</span>
+      </button>
+
+      <button class="btn-top active" id="btnToggleTooltips" title="Interaktive Tooltips umschalten">
+        <span class="status-dot"></span>
+        <span id="tooltipLabel">Tooltips: AN</span>
+      </button>
+
+      <div class="mode-switch">
+        <button class="mode-btn active" id="btnModeExplore">👁️ Analyse & Timing</button>
+        <button class="mode-btn" id="btnModeQuiz">📝 Klausur-Quiz</button>
+      </div>
+
+      <button class="btn-top" id="btnHelp" title="Klausur-Anleitung & Hazard-Regeln">
+        <span>📖 Anleitung</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Task & Scenario Banner -->
+  <div class="task-banner">
+    <div class="task-prompt">
+      <div class="de-prompt" id="dePrompt">
+        <span class="task-badge" id="taskModeBadge">Altklausur WiSe26</span>
+        <span id="scenarioTitleText">clog2-Algorithmus: 8 Instruktionen, RAW-Hazards & Eintakt vs. Pipeline</span>
+      </div>
+      <div class="en-prompt" id="enPrompt">
+        Explore 5-stage execution, analyze RAW data hazards, compare Eintakt vs. Pipeline latency, and test Forwarding impact.
+      </div>
+    </div>
+
+    <div class="scenario-picker-wrap">
+      <button class="btn-nav" id="btnPrevScenario" title="Vorheriges Szenario">◀</button>
+      
+      <button class="btn-picker" id="btnScenarioPicker">
+        <span id="currentScenarioName">1. [WiSe26] clog2 Algorithmus</span>
+        <span>▾</span>
+      </button>
+
+      <button class="btn-nav" id="btnNextScenario" title="Nächstes Szenario">▶</button>
+
+      <button class="btn-random" id="btnRandomSnippet" title="Zufällige RAW-Befehlsfolge generieren">
+        <span>🎲 Random Code</span>
+      </button>
+
+      <!-- Dropdown Menu -->
+      <div class="picker-menu" id="scenarioMenu">
+        <div class="menu-group-title">Reale Altklausuren & Übungen</div>
+        <div class="menu-item active" data-idx="0">
+          <div class="item-title">
+            <span>WiSe 26 / SoSe 25: clog2</span>
+            <span class="badge badge-exam">15 P.</span>
+          </div>
+          <div class="item-subtitle">8 Instruktionen, 1. Hazard-Moment (4,3,2,1,0), 10 vs 15 Takte</div>
+        </div>
+
+        <div class="menu-item" data-idx="1">
+          <div class="item-title">
+            <span>SoSe 25: addi → addi RAW</span>
+            <span class="badge badge-exam">6 P.</span>
+          </div>
+          <div class="item-subtitle">ALU-ALU Abhängigkeit: 0 Stalls mit Fwd vs. 2 Stalls ohne Fwd</div>
+        </div>
+
+        <div class="menu-item" data-idx="2">
+          <div class="item-title">
+            <span>Load-Use Hazard: lw → add</span>
+            <span class="badge">Klassiker</span>
+          </div>
+          <div class="item-subtitle">Speicherdaten erst in MEM: 1 unvermeidbarer Bubble trotz Forwarding!</div>
+        </div>
+
+        <div class="menu-item" data-idx="3">
+          <div class="item-title">
+            <span>Übung 10.2: 6 Instruktionen Multi-RAW</span>
+            <span class="badge">Übung</span>
+          </div>
+          <div class="item-subtitle">lw t2 → add, Invertierter Takt RegFile (kein Hazard bei Distanz 3)</div>
+        </div>
+
+        <div class="menu-item" data-idx="4">
+          <div class="item-title">
+            <span>Probeklausur SoSe 26: x0 Hardwire</span>
+            <span class="badge badge-exam">Aufgabe 7</span>
+          </div>
+          <div class="item-subtitle">addi x0 erzeugt KEINEN Hazard! sub → bne t2 erzeugt echten Hazard.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Workspace -->
+  <main id="mainContainer">
+    
+    <!-- Left Pane: Pipeline Timing Grid & Control Bar -->
+    <div class="left-pane" id="leftPane">
+      
+      <!-- Toolbar -->
+      <div class="grid-toolbar">
+        <div class="toolbar-left">
+          <!-- Forwarding Toggle -->
+          <div class="forwarding-switch-wrap">
+            <span class="forwarding-label">Forwarding-Einheit:</span>
+            <label class="toggle-pill">
+              <input type="checkbox" id="chkForwarding" checked>
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="forwarding-status-tag on" id="lblForwardingStatus">AKTIV (0 Stalls bei ALU)</span>
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <!-- Cycle Stepper -->
+          <div class="stepper-wrap">
+            <button class="btn-step" id="btnStepReset" title="Zum Takt 1">⏮</button>
+            <button class="btn-step" id="btnStepPrev" title="1 Takt zurück">◀</button>
+            <span class="cycle-counter" id="lblCycleCounter">Takt: 1 / 15</span>
+            <button class="btn-step" id="btnStepNext" title="1 Takt vor">▶</button>
+            <button class="btn-step" id="btnStepPlay" title="Auto-Play">▶ Play</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrollable Timing Grid -->
+      <div class="grid-container" id="gridContainer">
+        <div class="timing-table-wrapper" id="timingTableWrapper">
+          <svg id="forwardingSvgOverlay"></svg>
+          <table class="timing-table" id="timingTable">
+            <thead id="timingThead">
+              <!-- Dynamically populated -->
+            </thead>
+            <tbody id="timingTbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Live Pipeline State at Active Cycle -->
+      <div class="pipeline-registers-bar">
+        <div style="font-weight: 700; color: var(--accent-cyan); white-space: nowrap;">
+          <span id="activeCycleTitle">Takt 1</span> Pipeline-Status:
+        </div>
+        <div class="pipe-stages-list" id="pipeStagesList">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Draggable Resizer Bar -->
+    <div class="resizer" id="dragResizer" title="Spaltenbreite anpassen"></div>
+
+    <!-- Right Pane: Quiz / Sidebar -->
+    <div class="right-pane" id="rightPane">
+      
+      <!-- Top Action Buttons -->
+      <div class="sidebar-actions">
+        <button class="btn-action" id="btnCheckAnswer">✓ Check Answer</button>
+        <button class="btn-secondary" id="btnRevealSolution">💡 Reveal Solution</button>
+        <button class="btn-danger" id="btnResetQuiz">↺ Reset</button>
+      </div>
+
+      <div class="sidebar-content">
+        
+        <!-- Score & Status Card -->
+        <div class="panel-card">
+          <h3>
+            <span>Bewertung & Klausur-Score</span>
+            <span class="score-badge score-pass" id="scoreBadge" style="display:none;">100% Pass</span>
+          </h3>
+          <div id="feedbackText" style="font-size:0.75rem; color: var(--text-muted); line-height: 1.4;">
+            Wähle im Quiz-Modus deine Antworten oder klicke <b>Reveal Solution</b> für die Musterlösung der TU Darmstadt.
+          </div>
+        </div>
+
+        <!-- Quiz Form Card -->
+        <div class="panel-card" id="quizCard">
+          <h3>
+            <span>📝 Klausur-Aufgaben (Aufgabe 7)</span>
+            <span class="task-badge badge-quiz">WiSe26 / SoSe25</span>
+          </h3>
+
+          <div class="quiz-question-group">
+            
+            <!-- Question 1: Moment des 1. Data Hazards & Stufen -->
+            <div class="quiz-item">
+              <div class="quiz-item-header">
+                <span class="q-badge">Frage 1</span>
+                <span>Stand der Pipeline beim ersten Data Hazard:</span>
+              </div>
+              <div style="font-size: 0.70rem; color: var(--text-muted); margin-bottom: 6px;">
+                Trage die Nummern der Instruktionen (#0..#7) ein, die sich beim Entstehen des ersten Hazards in den Stufen befinden:
+              </div>
+              <div class="quiz-inputs-row">
+                <div class="stage-input-cell">
+                  <label style="color:var(--stage-if-text);">IF</label>
+                  <input type="text" class="quiz-input" id="qStageIF" placeholder="?">
+                </div>
+                <div class="stage-input-cell">
+                  <label style="color:var(--stage-id-text);">ID</label>
+                  <input type="text" class="quiz-input" id="qStageID" placeholder="?">
+                </div>
+                <div class="stage-input-cell">
+                  <label style="color:var(--stage-ex-text);">EX</label>
+                  <input type="text" class="quiz-input" id="qStageEX" placeholder="?">
+                </div>
+                <div class="stage-input-cell">
+                  <label style="color:var(--stage-mem-text);">MEM</label>
+                  <input type="text" class="quiz-input" id="qStageMEM" placeholder="?">
+                </div>
+                <div class="stage-input-cell">
+                  <label style="color:var(--stage-wb-text);">WB</label>
+                  <input type="text" class="quiz-input" id="qStageWB" placeholder="?">
+                </div>
+              </div>
+              <div style="margin-top: 8px; font-size: 0.70rem; color: var(--text-muted); display:flex; align-items:center; gap:6px;">
+                <span>Beteiligte Instruktionen:</span>
+                <input type="text" class="quiz-input wide" id="qHazardInsts" placeholder="z.B. 2, 3">
+              </div>
+            </div>
+
+            <!-- Question 2: Stalls mit vs. ohne Forwarding -->
+            <div class="quiz-item">
+              <div class="quiz-item-header">
+                <span class="q-badge">Frage 2</span>
+                <span>Benötigte Stalls (Verzögerungstakte / Bubbles):</span>
+              </div>
+              <div class="quiz-inputs-row" style="justify-content: space-between;">
+                <div style="font-size: 0.72rem; display: flex; align-items: center; gap: 6px;">
+                  <span>Mit Forwarding:</span>
+                  <input type="number" min="0" max="20" class="quiz-input" id="qStallsWithFwd" placeholder="?">
+                  <span style="color:var(--text-muted);">Takte</span>
+                </div>
+                <div style="font-size: 0.72rem; display: flex; align-items: center; gap: 6px;">
+                  <span>Ohne Forwarding:</span>
+                  <input type="number" min="0" max="20" class="quiz-input" id="qStallsWithoutFwd" placeholder="?">
+                  <span style="color:var(--text-muted);">Takte</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Question 3: Takte Eintakt vs Pipeline -->
+            <div class="quiz-item">
+              <div class="quiz-item-header">
+                <span class="q-badge">Frage 3</span>
+                <span>Gesamtausführungszeit in Takten (Eintakt vs. Pipeline):</span>
+              </div>
+              <div class="quiz-inputs-row" style="justify-content: space-between;">
+                <div style="font-size: 0.72rem; display: flex; align-items: center; gap: 6px;">
+                  <span>Eintakt (1 CPI):</span>
+                  <input type="number" min="1" max="100" class="quiz-input" id="qCyclesEintakt" placeholder="?">
+                  <span style="color:var(--text-muted);">Takte</span>
+                </div>
+                <div style="font-size: 0.72rem; display: flex; align-items: center; gap: 6px;">
+                  <span>Pipeline (aktuell):</span>
+                  <input type="number" min="1" max="100" class="quiz-input" id="qCyclesPipeline" placeholder="?">
+                  <span style="color:var(--text-muted);">Takte</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Speedup & CPI Calculator Card -->
+        <div class="panel-card">
+          <h3>
+            <span>⚡ Metriken, CPI & Speedup</span>
+            <span class="badge" id="badgeTotalInsts">8 Befehle</span>
+          </h3>
+          <div class="calc-row">
+            <span style="color:var(--text-muted);">Instruktionen ausgeführt (N):</span>
+            <span class="calc-val" id="valInstCount">10</span>
+          </div>
+          <div class="calc-row">
+            <span style="color:var(--text-muted);">Pipeline Takte:</span>
+            <span class="calc-val" id="valPipeCycles">15 Takte</span>
+          </div>
+          <div class="calc-row">
+            <span style="color:var(--text-muted);">CPI Pipeline (Takte / N):</span>
+            <span class="calc-val" id="valPipeCPI">1.50</span>
+          </div>
+          <div class="calc-row">
+            <span style="color:var(--text-muted);">Taktzeit Eintakt (τ_eintakt):</span>
+            <span class="calc-val" style="color:#cbd5e1;">750 ps</span>
+          </div>
+          <div class="calc-row">
+            <span style="color:var(--text-muted);">Taktzeit Pipeline (τ_pipe):</span>
+            <span class="calc-val" style="color:#cbd5e1;">350 ps</span>
+          </div>
+          <div class="calc-row">
+            <span style="color:var(--text-muted);">Ausführungszeit Eintakt:</span>
+            <span class="calc-val" id="valTimeEintakt">7.500 ps</span>
+          </div>
+          <div class="calc-row">
+            <span style="color:var(--text-muted);">Ausführungszeit Pipeline:</span>
+            <span class="calc-val" id="valTimePipeline">5.250 ps</span>
+          </div>
+          <div class="calc-row">
+            <span style="color:#fff; font-weight:700;">Realer Speedup (T_ein / T_pipe):</span>
+            <span class="calc-val speedup-highlight" id="valSpeedup">1.43×</span>
+          </div>
+        </div>
+
+        <!-- Architectural Breakdown Card -->
+        <div class="panel-card">
+          <h3>Architektur-Analyse (TU Darmstadt)</h3>
+          <div class="explanation-box" id="explanationContent">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Floating Tooltip Container -->
+  <div id="floatingTooltip"></div>
+
+  <!-- Help & Theory Modal -->
+  <div class="modal-overlay" id="helpModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>
+          <span>📖 RISC-V Pipeline & Hazard Handbuch (Klausur-Spickzettel)</span>
+        </h2>
+        <button class="close-btn" id="btnCloseHelp">&times;</button>
+      </div>
+      <div class="modal-body">
+        
+        <div class="modal-section">
+          <h4>1. Die 5 Stufen der RISC-V Pipeline</h4>
+          <p>
+            <b>IF (Instruction Fetch):</b> Befehl wird per PC aus dem Speicher geholt, <code>PC += 4</code>.<br>
+            <b>ID (Instruction Decode):</b> Befehl dekodieren, Registerwerte aus Register File lesen.<br>
+            <b>EX (Execute):</b> ALU-Berechnungen (Addition, Verschiebung, Adressberechnung, Branch-Bedingung).<br>
+            <b>MEM (Memory):</b> Daten-Speicherzugriff (<code>lw</code> liest aus RAM, <code>sw</code> schreibt in RAM).<br>
+            <b>WB (Writeback):</b> Ergebnis wird zurück in das Register File geschrieben.
+          </p>
+        </div>
+
+        <div class="modal-grid">
+          <div class="modal-section">
+            <h4>2. RAW Data Hazards (Read After Write)</h4>
+            <p>
+              Tritt auf, wenn ein nachfolgender Befehl ein Register lesen möchte, das von einem vorherigen Befehl noch nicht fertig zurückgeschrieben wurde.<br>
+              <b>Ohne Forwarding:</b> Das Register File schreibt in WB (Stufe 5). Ein abhängiger Befehl in ID (Stufe 2) muss <b>2 Takte stallen</b> (warten), wenn er direkt folgt!
+            </p>
+          </div>
+
+          <div class="modal-section">
+            <h4>3. Forwarding (Bypassing)</h4>
+            <p>
+              <b>ALU → ALU:</b> Das Ergebnis ist am Ende der <b>EX-Stufe</b> fertig! Die Forwarding Unit leitet den Wert direkt an den Eingang der ALU des nächsten Befehls weiter. <span style="color:#34d399; font-weight:700;">0 Stalls!</span><br>
+              <b>Load-Use Hazard:</b> Bei <code>lw</code> sind die Daten erst am Ende von <b>MEM</b> da! Ein direkt folgender Befehl benötigt die Daten aber am Anfang von EX. Zurück in die Zeit reisen geht nicht $\implies$ <span style="color:#f87171; font-weight:700;">1 Stall ist unvermeidbar!</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <h4>4. Die zwei Klausur-Geheimnisse der TU Darmstadt</h4>
+          <p>
+            <b>1. Invertiertes Taktsignal am Register File:</b> Schreiben erfolgt in der ersten Takthälfte, Lesen in der zweiten Takthälfte. Wenn Befehl 1 in <b>WB</b> ist und Befehl 4 in <b>ID</b> (Distanz 3), entsteht <b style="color:#34d399;">KEIN Hazard</b> und 0 Stalls!<br>
+            <b>2. Das Register x0 (zero):</b> <code>x0</code> ist fest verdrahtet mit 0. Schreibt ein Befehl nach <code>x0</code> (z.B. <code>addi x0, a0, 5</code> in der Probeklausur), entsteht <b style="color:#34d399;">NIEMALS ein RAW Hazard</b>!
+          </p>
+        </div>
+
+        <div class="modal-section">
+          <h4>5. Formel für Takte</h4>
+          <p>
+            $$\text{Takte} = N + (\text{Stufen} - 1) + \text{Stalls} + \text{Flushes} = N + 4 + \text{Stalls} + \text{Flushes}$$
+            Für Eintakt: $\text{Takte} = N \cdot 1$.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Core JavaScript Logic -->
+  <script>
+    /* ==========================================================================
+       SCENARIO DEFINITIONS & EXAM PRESETS
+       ========================================================================== */
+    const SCENARIOS = [
+      {
+        id: "wise26_clog2",
+        name: "1. [WiSe26] clog2 Algorithmus",
+        badge: "WiSe26 / SoSe25 · 15 P.",
+        title: "clog2-Algorithmus: 8 Instruktionen, RAW-Hazards & Eintakt vs. Pipeline",
+        descriptionDe: "Aufgabe 7: Berechne log2(a0) mit Parameter a0 = 2. Finde den ersten Hazard, bestimme die Stufenreihenfolge und vergleiche Takte auf Eintakt vs. Pipeline.",
+        descriptionEn: "Aufgabe 7 from WiSe26 & SoSe25: clog2 algorithm with a0 = 2. 10 executed instructions, 1st hazard at cycle with stages (4,3,2,1,0), 10 Eintakt vs 15 Pipeline cycles.",
+        instructions: [
+          { idx: 0, text: "beqz a0, .Lret", rd: null, rs1: "a0", rs2: null, type: "B", isBranch: true },
+          { idx: 1, text: "li t0, 0", rd: "t0", rs1: null, rs2: null, type: "I" },
+          { idx: 2, text: "srli a0, a0, 1", rd: "a0", rs1: "a0", rs2: null, type: "I" },
+          { idx: 3, text: "beqz a0, .Lend", rd: null, rs1: "a0", rs2: null, type: "B", isBranch: true },
+          { idx: 4, text: "addi t0, t0, 1", rd: "t0", rs1: "t0", rs2: null, type: "I" },
+          { idx: 5, text: "j .Lloop", rd: null, rs1: null, rs2: null, type: "J", isBranch: true },
+          { idx: 6, text: "mv a0, t0", rd: "a0", rs1: "t0", rs2: null, type: "I" },
+          { idx: 7, text: "ret", rd: null, rs1: "ra", rs2: null, type: "I", isBranch: true }
+        ],
+        // The dynamic execution trace for a0 = 2:
+        // Executed sequence: [0, 1, 2, 3, 4, 5, 2, 3, 6, 7] (10 steps)
+        executedIndices: [0, 1, 2, 3, 4, 5, 2, 3, 6, 7],
+        // Exam Quiz Answers:
+        quizAnswers: {
+          firstHazardCycle: 4, // Occurs when inst 3 checks a0 computed by inst 2
+          stagesAtFirstHazard: { IF: "4", ID: "3", EX: "2", MEM: "1", WB: "0" },
+          hazardInstructions: ["2", "3"],
+          stallsWithFwd: 0, // Branch compares in EX/ID with forwarding
+          stallsWithoutFwd: 2, // If addi/srli without forwarding
+          cyclesEintakt: 10,
+          cyclesPipeline: 15 // 10 instrs + 4 + 2 branch penalties = 15 cycles (as stated in SoSe25/WiSe26 GP)
+        },
+        explanation: `
+          <div class="explain-item">
+            <span class="explain-title">1. Erster Data Hazard:</span>
+            Tritt zwischen Befehl <b>#2 (srli a0, a0, 1)</b> und <b>#3 (beqz a0, .Lend)</b> auf, da Befehl #3 den neuen Wert von <code>a0</code> für den Null-Vergleich benötigt!
+          </div>
+          <div class="explain-item">
+            <span class="explain-title">2. Pipeline-Stufen zu diesem Zeitpunkt:</span>
+            Wenn der Hazard im Prozessor erkannt wird, befinden sich genau die Befehle in der Pipeline: 
+            <b>IF: #4 (addi)</b>, <b>ID: #3 (beqz)</b>, <b>EX: #2 (srli)</b>, <b>MEM: #1 (li)</b>, <b>WB: #0 (beqz)</b>. 
+            In den Klausur-Lösungsfolien ist dies die berühmte Reihe <code>4, 3, 2, 1, 0</code>!
+          </div>
+          <div class="explain-item">
+            <span class="explain-title">3. Takte: Eintakt (10) vs. Pipeline (15):</span>
+            Für <code>a0 = 2</code> werden genau 10 Instruktionen ausgeführt (Schleife läuft 1x durch, dann Branch Taken). 
+            <b>Eintakt:</b> 10 Takte. 
+            <b>Pipeline:</b> $10 + 4 + 1 = 15$ Takte (mit Sprungstrafen der zwei Sprünge <code>j</code> und <code>beqz</code>).
+          </div>
+        `
+      },
+      {
+        id: "sose25_addi_addi",
+        name: "2. [SoSe25] addi → addi RAW",
+        badge: "SoSe 25 · 6 P.",
+        title: "ALU-ALU Datenkonflikt zwischen zwei aufeinanderfolgenden addi",
+        descriptionDe: "Aufgabe 7b: addi s0, a0, 5 gefolgt von addi s1, s0, 4. Wie lange muss Stalling betrieben werden mit und ohne Forwarding?",
+        descriptionEn: "Direct RAW conflict on s0: addi s0, a0, 5 -> addi s1, s0, 4. Compares 0 stalls with forwarding vs 2 stalls without forwarding.",
+        instructions: [
+          { idx: 0, text: "addi s0, a0, 5", rd: "s0", rs1: "a0", rs2: null, type: "I" },
+          { idx: 1, text: "addi s1, s0, 4", rd: "s1", rs1: "s0", rs2: null, type: "I" }
+        ],
+        executedIndices: [0, 1],
+        quizAnswers: {
+          firstHazardCycle: 3,
+          stagesAtFirstHazard: { IF: "-", ID: "1", EX: "0", MEM: "-", WB: "-" },
+          hazardInstructions: ["0", "1"],
+          stallsWithFwd: 0,
+          stallsWithoutFwd: 2,
+          cyclesEintakt: 2,
+          cyclesPipeline: 6 // 2 + 4 = 6 with fwd
+        },
+        explanation: `
+          <div class="explain-item">
+            <span class="explain-title">1. Mit Forwarding (0 Takte Verzögerung):</span>
+            Der Wert <code>s0</code> wird in der ALU am Ende der EX-Stufe berechnet. Die <b>Forwarding Unit</b> leitet das Ergebnis direkt vom EX/MEM-Register zum ALU-Eingang der zweiten Instruktion weiter. <b>0 Stalls!</b>
+          </div>
+          <div class="explain-item">
+            <span class="explain-title">2. Ohne Forwarding (2 Takte Stalling):</span>
+            Die zweite Instruktion muss in der ID-Stufe angehalten werden, bis die erste Instruktion die WB-Stufe erreicht und <code>s0</code> in das Register File schreibt. Decode wartet 2 Zyklen (Execute, Mem der Vorinstruktion).
+          </div>
+        `
+      },
+      {
+        id: "load_use_hazard",
+        name: "3. [Classic] Load-Use Hazard",
+        badge: "Klassiker · 8 P.",
+        title: "Load-Use Hazard: lw gefolgt von ALU-Befehl (1 unvermeidbarer Stall)",
+        descriptionDe: "lw x4, 0(x1) gefolgt von add x5, x4, x2. Die Daten aus dem Speicher sind erst nach MEM verfügbar: 1 Stall trotz Forwarding!",
+        descriptionEn: "Classic Load-Use Hazard: data from memory only arrives at end of MEM stage, forcing 1 bubble in ID even with full forwarding.",
+        instructions: [
+          { idx: 0, text: "lw x4, 0(x1)", rd: "x4", rs1: "x1", rs2: null, type: "I", isLoad: true },
+          { idx: 1, text: "add x5, x4, x2", rd: "x5", rs1: "x4", rs2: "x2", type: "R" },
+          { idx: 2, text: "sub x6, x5, x3", rd: "x6", rs1: "x5", rs2: "x3", type: "R" }
+        ],
+        executedIndices: [0, 1, 2],
+        quizAnswers: {
+          firstHazardCycle: 3,
+          stagesAtFirstHazard: { IF: "2", ID: "1", EX: "0", MEM: "-", WB: "-" },
+          hazardInstructions: ["0", "1"],
+          stallsWithFwd: 1, // 1 bubble for Load-Use!
+          stallsWithoutFwd: 2,
+          cyclesEintakt: 3,
+          cyclesPipeline: 8 // 3 + 4 + 1 stall = 8
+        },
+        explanation: `
+          <div class="explain-item">
+            <span class="explain-title">1. Warum 1 Stall trotz Forwarding?</span>
+            <code>lw</code> liest erst in der <b>MEM-Stufe (Takt 4)</b> aus dem Daten-RAM. Der nachfolgende <code>add</code>-Befehl bräuchte <code>x4</code> aber bereits am Anfang seiner <b>EX-Stufe (Takt 4)</b>.
+            Da Leitungen nicht rückwärts in der Zeit übertragen können, <b>muss die Hardware 1 Stall (Bubble/NOP)</b> in ID einschieben!
+          </div>
+          <div class="explain-item">
+            <span class="explain-title">2. Forwarding im Takt 5:</span>
+            Im Takt 5 befindet sich <code>lw</code> in WB und <code>add</code> in EX. Nun kann der geladene Wert direkt aus MEM/WB an den ALU-Eingang von <code>add</code> geforwardet werden!
+          </div>
+        `
+      },
+      {
+        id: "uebung_10_2",
+        name: "4. [Übung 10.2] Multi-RAW Pipeline",
+        badge: "Übung 10.2 · 10 P.",
+        title: "6 Instruktionen mit mehreren RAW Hazards & Register File Invertiertem Takt",
+        descriptionDe: "Übungsaufgabe 10.2: addi, addi, lw, add, sub, and. Identifiziere alle RAW Hazards und berechne die Stalls (1 mit Fwd vs. 7 ohne Fwd).",
+        descriptionEn: "From Übung 10.2: 6 instructions with mixed hazards. Shows why distance 3 (lw #3 -> and #6) is NOT a hazard due to dual-port split clock!",
+        instructions: [
+          { idx: 0, text: "addi t0, zero, 4", rd: "t0", rs1: "zero", rs2: null, type: "I" },
+          { idx: 1, text: "addi t1, zero, 8", rd: "t1", rs1: "zero", rs2: null, type: "I" },
+          { idx: 2, text: "lw t2, 0(t0)", rd: "t2", rs1: "t0", rs2: null, type: "I", isLoad: true },
+          { idx: 3, text: "add t3, t2, t1", rd: "t3", rs1: "t2", rs2: "t1", type: "R" },
+          { idx: 4, text: "sub t4, t3, t0", rd: "t4", rs1: "t3", rs2: "t0", type: "R" },
+          { idx: 5, text: "and t5, t4, t2", rd: "t5", rs1: "t4", rs2: "t2", type: "R" }
+        ],
+        executedIndices: [0, 1, 2, 3, 4, 5],
+        quizAnswers: {
+          firstHazardCycle: 3,
+          stagesAtFirstHazard: { IF: "2", ID: "1", EX: "0", MEM: "-", WB: "-" },
+          hazardInstructions: ["0", "2"],
+          stallsWithFwd: 1, // Only lw #2 -> add #3
+          stallsWithoutFwd: 7, // 7 NOPs as in Übung 10.2 solution
+          cyclesEintakt: 6,
+          cyclesPipeline: 11 // 6 + 4 + 1 = 11 with fwd
+        },
+        explanation: `
+          <div class="explain-item">
+            <span class="explain-title">1. Alle RAW Hazards:</span>
+            • #0 (t0) → #2 (lw t0)<br>
+            • #1 (t1) → #3 (add t1)<br>
+            • #2 (lw t2) → #3 (add t2) <b>[LOAD-USE: 1 STALL!]</b><br>
+            • #3 (t3) → #4 (sub t3)<br>
+            • #4 (t4) → #5 (and t4)
+          </div>
+          <div class="explain-item">
+            <span class="explain-title">2. Warum ist #2 (lw t2) → #5 (and t2) KEIN Hazard?</span>
+            Aufgrund des <b>invertierten Taktsignals</b> am Register File schreibt #2 in der 1. Takthälfte von Takt 7 (WB), während #5 in der 2. Takthälfte von Takt 7 (ID) liest. Kein Konflikt!
+          </div>
+        `
+      },
+      {
+        id: "probeklausur_x0",
+        name: "5. [Probeklausur] x0 Hardwire & Branch",
+        badge: "Probeklausur · Aufgabe 7",
+        title: "Probeklausur SoSe26 Aufgabe 7: andi, addi x0, sub, bne",
+        descriptionDe: "Wichtiges RO-Detail: addi x0, a0, 5 erzeugt KEINEN Hazard, da x0 fest 0 ist! Erster echter Hazard tritt bei sub -> bne t2 auf.",
+        descriptionEn: "Aufgabe 7c from Probeklausur: writes to x0 never cause a RAW hazard. The first genuine hazard is on t2 between sub and bne.",
+        instructions: [
+          { idx: 0, text: "andi t1, a0, 1", rd: "t1", rs1: "a0", rs2: null, type: "I" },
+          { idx: 1, text: "addi x0, a0, 5", rd: "x0", rs1: "a0", rs2: null, type: "I" }, // x0 write!
+          { idx: 2, text: "addi x0, x0, 10", rd: "x0", rs1: "x0", rs2: null, type: "I" }, // x0 read & write!
+          { idx: 3, text: "li t4, 42", rd: "t4", rs1: null, rs2: null, type: "I" },
+          { idx: 4, text: "sub t2, t1, x0", rd: "t2", rs1: "t1", rs2: "x0", type: "R" },
+          { idx: 5, text: "bne t2, zero, odd", rd: null, rs1: "t2", rs2: "zero", type: "B", isBranch: true }
+        ],
+        executedIndices: [0, 1, 2, 3, 4, 5],
+        quizAnswers: {
+          firstHazardCycle: 6, // sub -> bne on t2
+          stagesAtFirstHazard: { IF: "-", ID: "5", EX: "4", MEM: "3", WB: "2" },
+          hazardInstructions: ["4", "5"],
+          stallsWithFwd: 0,
+          stallsWithoutFwd: 2,
+          cyclesEintakt: 6,
+          cyclesPipeline: 10
+        },
+        explanation: `
+          <div class="explain-item">
+            <span class="explain-title">1. Warum ist addi x0 kein Hazard?</span>
+            In RISC-V ist das Register <code>x0</code> fest mit Masse (0) verdrahtet. Schreiboperationen nach <code>x0</code> werden verworfen. Daher entsteht hier niemals ein Data Hazard!
+          </div>
+          <div class="explain-item">
+            <span class="explain-title">2. Erster echter Hazard:</span>
+            Befehl <b>#4 (sub t2, t1, x0)</b> berechnet <code>t2</code>, welches direkt von <b>#5 (bne t2, zero, odd)</b> für den Verzweigungsvergleich benötigt wird!
+          </div>
+        `
+      }
+    ];
+
+    /* ==========================================================================
+       STATE & CONTROLLER
+       ========================================================================== */
+    let currentScenarioIdx = 0;
+    let forwardingEnabled = true;
+    let activeCycle = 1;
+    let currentMode = "explore"; // "explore" or "quiz"
+    let soundEnabled = true;
+    let tooltipsEnabled = true;
+    let isPlaying = false;
+    let playInterval = null;
+
+    // Audio Synthesizer (Zero Dependencies Web Audio API)
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playTone(freq, type = "sine", duration = 0.08, gainVal = 0.05) {
+      if (!soundEnabled) return;
+      try {
+        initAudio();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        // Ignore audio errors silently
+      }
+    }
+
+    function playSuccessChime() {
+      if (!soundEnabled) return;
+      [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+        setTimeout(() => playTone(freq, "triangle", 0.15, 0.07), idx * 75);
+      });
+    }
+
+    function playStallAlert() {
+      if (!soundEnabled) return;
+      playTone(220, "sawtooth", 0.18, 0.08);
+    }
+
+    /* ==========================================================================
+       PIPELINE SCHEDULE SIMULATION ENGINE
+       ========================================================================== */
+    function computePipelineSchedule(scenario, withForwarding) {
+      const execList = scenario.executedIndices.map((instIdx, execStep) => ({
+        step: execStep,
+        instIdx: instIdx,
+        inst: scenario.instructions[instIdx],
+        stages: {} // cycle -> stage name: "IF", "ID", "EX", "MEM", "WB", "STALL"
+      }));
+
+      let currentCycle = 1;
+      const STAGES = ["IF", "ID", "EX", "MEM", "WB"];
+
+      // Track per instruction which cycle it enters IF
+      let nextFetchCycle = 1;
+
+      for (let i = 0; i < execList.length; i++) {
+        const item = execList[i];
+        let cycleIF = Math.max(nextFetchCycle, (i === 0 ? 1 : execList[i - 1].stages.IF_cycle + 1));
+        
+        // Instruction Fetch
+        item.stages[cycleIF] = "IF";
+        item.stages.IF_cycle = cycleIF;
+
+        // Decode cycle starts normally at cycleIF + 1
+        let cycleID = cycleIF + 1;
+
+        // Check for Data Hazards against previous in-flight instructions
+        let stallsNeeded = 0;
+
+        for (let j = 0; j < i; j++) {
+          const prev = execList[j];
+          const prevRd = prev.inst.rd;
+
+          // x0 is hardwired to 0, never causes hazard!
+          if (!prevRd || prevRd === "x0" || prevRd === "zero") continue;
+
+          // Check if current reads prevRd
+          const readsPrev = (item.inst.rs1 === prevRd || item.inst.rs2 === prevRd);
+          if (!readsPrev) continue;
+
+          // Find when prev instruction produces result and when item needs it
+          const prevWB = prev.stages.WB_cycle;
+          const prevMEM = prev.stages.MEM_cycle;
+          const prevEX = prev.stages.EX_cycle;
+
+          if (withForwarding) {
+            // Forwarding is ENABLED
+            if (prev.inst.isLoad) {
+              // Load-Use Hazard: Prev is LW
+              // Loaded data available at END of MEM stage.
+              // item needs it at START of EX stage.
+              // If prevMEM === cycleID + 1 (the normal EX cycle), then stall 1 cycle!
+              const normalEX = cycleID + 1;
+              if (prevMEM >= normalEX) {
+                stallsNeeded = Math.max(stallsNeeded, (prevMEM - normalEX + 1));
+              }
+            } else {
+              // ALU -> ALU: Forwarded from EX/MEM or MEM/WB to EX input
+              // 0 stalls needed!
+            }
+          } else {
+            // Forwarding is DISABLED
+            // Prev must reach WB before item can read from RegFile in ID
+            // Dual-ported RegFile: Write in 1st half of cycle, Read in 2nd half.
+            // So item can be in ID in the same cycle prev is in WB!
+            if (prevWB > cycleID) {
+              const diff = prevWB - cycleID;
+              stallsNeeded = Math.max(stallsNeeded, diff);
+            }
+          }
+        }
+
+        // Insert Stalls in ID
+        for (let s = 0; s < stallsNeeded; s++) {
+          item.stages[cycleID] = "STALL";
+          cycleID++;
+        }
+
+        // Normal ID
+        item.stages[cycleID] = "ID";
+        item.stages.ID_cycle = cycleID;
+
+        // EX, MEM, WB
+        item.stages[cycleID + 1] = "EX";
+        item.stages.EX_cycle = cycleID + 1;
+
+        item.stages[cycleID + 2] = "MEM";
+        item.stages.MEM_cycle = cycleID + 2;
+
+        item.stages[cycleID + 3] = "WB";
+        item.stages.WB_cycle = cycleID + 3;
+
+        // Next instruction fetch starts after current IF (or held if stalled in ID)
+        if (stallsNeeded > 0) {
+          nextFetchCycle = cycleID;
+        } else {
+          nextFetchCycle = cycleIF + 1;
+        }
+      }
+
+      // Calculate total cycles (max WB_cycle)
+      let totalCycles = 0;
+      execList.forEach(item => {
+        if (item.stages.WB_cycle > totalCycles) {
+          totalCycles = item.stages.WB_cycle;
+        }
+      });
+
+      return {
+        execList,
+        totalCycles: Math.max(totalCycles, 5)
+      };
+    }
+
+    /* ==========================================================================
+       RENDER TIMING GRID & SVG DEPENDENCIES
+       ========================================================================== */
+    function renderTimingGrid() {
+      const scenario = SCENARIOS[currentScenarioIdx];
+      const schedule = computePipelineSchedule(scenario, forwardingEnabled);
+
+      const thead = document.getElementById("timingThead");
+      const tbody = document.getElementById("timingTbody");
+      const svgOverlay = document.getElementById("forwardingSvgOverlay");
+
+      // Clear existing
+      thead.innerHTML = "";
+      tbody.innerHTML = "";
+      svgOverlay.innerHTML = "";
+
+      // Header Row: Instructions + Cycles
+      const trHead = document.createElement("tr");
+      const thInst = document.createElement("th");
+      thInst.className = "col-inst";
+      thInst.textContent = "Instruktion (RISC-V)";
+      trHead.appendChild(thInst);
+
+      for (let c = 1; c <= schedule.totalCycles; c++) {
+        const th = document.createElement("th");
+        th.className = `col-cycle ${c === activeCycle ? 'active-cycle' : ''}`;
+        th.dataset.cycle = c;
+        th.textContent = `T${c}`;
+        th.title = `Taktzyklus ${c}`;
+        trHead.appendChild(th);
+      }
+      thead.appendChild(trHead);
+
+      // Body Rows: Each executed instruction
+      schedule.execList.forEach((item, rowIdx) => {
+        const tr = document.createElement("tr");
+
+        // First Cell: Instruction label
+        const tdInst = document.createElement("td");
+        tdInst.className = "cell-inst";
+        
+        const regInfo = [];
+        if (item.inst.rd && item.inst.rd !== "x0" && item.inst.rd !== "zero") regInfo.push(`rd:${item.inst.rd}`);
+        if (item.inst.rs1 && item.inst.rs1 !== "x0" && item.inst.rs1 !== "zero") regInfo.push(`rs1:${item.inst.rs1}`);
+        if (item.inst.rs2 && item.inst.rs2 !== "x0" && item.inst.rs2 !== "zero") regInfo.push(`rs2:${item.inst.rs2}`);
+
+        tdInst.innerHTML = `
+          <div class="inst-label">
+            <span class="inst-idx">#${item.instIdx}</span>
+            <span>${item.inst.text}</span>
+            <span class="inst-regs">${regInfo.join(" ")}</span>
+          </div>
+        `;
+        tr.appendChild(tdInst);
+
+        // Cycle Cells
+        for (let c = 1; c <= schedule.totalCycles; c++) {
+          const td = document.createElement("td");
+          td.dataset.row = rowIdx;
+          td.dataset.cycle = c;
+
+          const stage = item.stages[c];
+          if (stage) {
+            const pill = document.createElement("div");
+            pill.className = `stage-pill stage-${stage.toLowerCase()}`;
+            pill.dataset.stage = stage;
+            pill.dataset.row = rowIdx;
+            pill.dataset.cycle = c;
+            pill.textContent = stage;
+
+            // Tooltip descriptions
+            let tipDesc = `Takt ${c}: Befehl #${item.instIdx} (${item.inst.text}) befindet sich in Stufe <b>${stage}</b>.`;
+            if (stage === "IF") tipDesc += "<br>Befehl wird aus dem I-Cache/Speicher geladen.";
+            else if (stage === "ID") tipDesc += "<br>Befehl wird dekodiert und Register werden gelesen.";
+            else if (stage === "EX") tipDesc += "<br>ALU berechnet Ergebnis / Adresse.";
+            else if (stage === "MEM") tipDesc += "<br>Speicherzugriff (RAM) oder Bypass.";
+            else if (stage === "WB") tipDesc += "<br>Ergebnis wird ins Register File geschrieben.";
+            else if (stage === "STALL") tipDesc += "<br><b>Stall / Bubble:</b> Hardware wartet auf Datenwert.";
+
+            pill.addEventListener("mouseenter", (e) => {
+              if (tooltipsEnabled) showTooltip(e, tipDesc);
+              highlightDependencies(rowIdx, stage);
+            });
+
+            pill.addEventListener("mouseleave", () => {
+              hideTooltip();
+              clearDependencyHighlights();
+            });
+
+            td.appendChild(pill);
+          }
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      });
+
+      // Update Active Cycle Label & Registers Bar
+      updateActiveCycleDisplay(schedule);
+
+      // Render SVG Forwarding Dependency Curves
+      renderForwardingArrows(schedule);
+
+      // Update Speedup & CPI values
+      updateCalculatorValues(schedule);
+    }
+
+    /* ==========================================================================
+       SVG FORWARDING ARROWS OVERLAY
+       ========================================================================== */
+    function renderForwardingArrows(schedule) {
+      const svg = document.getElementById("forwardingSvgOverlay");
+      const wrapper = document.getElementById("timingTableWrapper");
+      const wrapRect = wrapper.getBoundingClientRect();
+
+      svg.setAttribute("width", wrapRect.width);
+      svg.setAttribute("height", wrapRect.height);
+      svg.innerHTML = `
+        <defs>
+          <marker id="arrowFwd" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 8 5 L 0 9 z" fill="#10b981" />
+          </marker>
+          <marker id="arrowStall" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 8 5 L 0 9 z" fill="#ef4444" />
+          </marker>
+        </defs>
+      `;
+
+      // Find dependencies between executed instructions
+      for (let i = 1; i < schedule.execList.length; i++) {
+        const consumer = schedule.execList[i];
+        for (let j = 0; j < i; j++) {
+          const producer = schedule.execList[j];
+          if (!producer.inst.rd || producer.inst.rd === "x0" || producer.inst.rd === "zero") continue;
+
+          if (consumer.inst.rs1 === producer.inst.rd || consumer.inst.rs2 === producer.inst.rd) {
+            // Draw dependency curve
+            // Producer output stage: EX (or MEM if lw)
+            const prodStageName = producer.inst.isLoad ? "MEM" : (forwardingEnabled ? "EX" : "WB");
+            const prodCycle = producer.stages[`${prodStageName}_cycle`];
+            const consStageName = forwardingEnabled ? "EX" : "ID";
+            const consCycle = consumer.stages[`${consStageName}_cycle`];
+
+            if (prodCycle && consCycle) {
+              const prodPill = document.querySelector(`.stage-pill[data-row="${j}"][data-cycle="${prodCycle}"]`);
+              const consPill = document.querySelector(`.stage-pill[data-row="${i}"][data-cycle="${consCycle}"]`);
+
+              if (prodPill && consPill) {
+                const pRect = prodPill.getBoundingClientRect();
+                const cRect = consPill.getBoundingClientRect();
+
+                const x1 = pRect.right - wrapRect.left - 2;
+                const y1 = pRect.top + pRect.height / 2 - wrapRect.top;
+                const x2 = cRect.left - wrapRect.left + 2;
+                const y2 = cRect.top + cRect.height / 2 - wrapRect.top;
+
+                const isLoadUseStall = producer.inst.isLoad && (consCycle - prodCycle <= 1);
+                const strokeColor = isLoadUseStall ? "#f59e0b" : (forwardingEnabled ? "#10b981" : "#06b6d4");
+                const markerId = isLoadUseStall ? "arrowStall" : "arrowFwd";
+
+                const dx = Math.max(15, Math.abs(x2 - x1) * 0.4);
+                const pathD = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+
+                const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                pathEl.setAttribute("d", pathD);
+                pathEl.setAttribute("stroke", strokeColor);
+                pathEl.setAttribute("stroke-width", "2");
+                pathEl.setAttribute("stroke-dasharray", isLoadUseStall ? "4 3" : "none");
+                pathEl.setAttribute("fill", "none");
+                pathEl.setAttribute("marker-end", `url(#${markerId})`);
+                pathEl.setAttribute("opacity", "0.65");
+                pathEl.setAttribute("class", "dep-arrow");
+                pathEl.dataset.producerRow = j;
+                pathEl.dataset.consumerRow = i;
+
+                svg.appendChild(pathEl);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    function highlightDependencies(rowIdx, stage) {
+      document.querySelectorAll(".dep-arrow").forEach(arrow => {
+        if (parseInt(arrow.dataset.producerRow, 10) === rowIdx) {
+          arrow.setAttribute("stroke-width", "3.5");
+          arrow.setAttribute("opacity", "1");
+          const consRow = parseInt(arrow.dataset.consumerRow, 10);
+          document.querySelectorAll(`.stage-pill[data-row="${consRow}"]`).forEach(p => p.classList.add("highlight-consumer"));
+        } else if (parseInt(arrow.dataset.consumerRow, 10) === rowIdx) {
+          arrow.setAttribute("stroke-width", "3.5");
+          arrow.setAttribute("opacity", "1");
+          const prodRow = parseInt(arrow.dataset.producerRow, 10);
+          document.querySelectorAll(`.stage-pill[data-row="${prodRow}"]`).forEach(p => p.classList.add("highlight-producer"));
+        }
+      });
+    }
+
+    function clearDependencyHighlights() {
+      document.querySelectorAll(".dep-arrow").forEach(arrow => {
+        arrow.setAttribute("stroke-width", "2");
+        arrow.setAttribute("opacity", "0.65");
+      });
+      document.querySelectorAll(".stage-pill").forEach(p => {
+        p.classList.remove("highlight-producer", "highlight-consumer");
+      });
+    }
+
+    /* ==========================================================================
+       CYCLE STEPPER & LIVE PIPELINE REGISTERS BAR
+       ========================================================================== */
+    function updateActiveCycleDisplay(schedule) {
+      if (!schedule) {
+        schedule = computePipelineSchedule(SCENARIOS[currentScenarioIdx], forwardingEnabled);
+      }
+
+      // Bound activeCycle
+      if (activeCycle > schedule.totalCycles) activeCycle = schedule.totalCycles;
+      if (activeCycle < 1) activeCycle = 1;
+
+      document.getElementById("lblCycleCounter").textContent = `Takt: ${activeCycle} / ${schedule.totalCycles}`;
+      document.getElementById("activeCycleTitle").textContent = `Takt ${activeCycle}`;
+
+      // Highlight active table column
+      document.querySelectorAll(".col-cycle").forEach(th => {
+        th.classList.toggle("active-cycle", parseInt(th.dataset.cycle, 10) === activeCycle);
+      });
+
+      // Populate Stages Bar
+      const listEl = document.getElementById("pipeStagesList");
+      listEl.innerHTML = "";
+
+      const STAGES = [
+        { name: "IF", cls: "stage-if" },
+        { name: "ID", cls: "stage-id" },
+        { name: "EX", cls: "stage-ex" },
+        { name: "MEM", cls: "stage-mem" },
+        { name: "WB", cls: "stage-wb" }
+      ];
+
+      STAGES.forEach(st => {
+        // Find which instruction is in this stage at activeCycle
+        let instFound = null;
+        let isStall = false;
+
+        schedule.execList.forEach(item => {
+          if (item.stages[activeCycle] === st.name) {
+            instFound = item;
+          } else if (item.stages[activeCycle] === "STALL" && st.name === "ID") {
+            instFound = item;
+            isStall = true;
+          }
+        });
+
+        const chip = document.createElement("div");
+        chip.className = "pipe-stage-chip";
+
+        if (instFound) {
+          if (isStall) {
+            chip.innerHTML = `
+              <span class="chip-name" style="background:var(--stage-stall-bg); color:var(--stage-stall-text); border:1px solid #ef4444;">STALL</span>
+              <span class="chip-inst" style="color:#fca5a5;">#${instFound.instIdx} Bubble in ID</span>
+            `;
+          } else {
+            chip.innerHTML = `
+              <span class="chip-name stage-${st.name.toLowerCase()}">${st.name}</span>
+              <span class="chip-inst">#${instFound.instIdx} ${instFound.inst.text}</span>
+            `;
+          }
+        } else {
+          chip.innerHTML = `
+            <span class="chip-name stage-${st.name.toLowerCase()}">${st.name}</span>
+            <span class="chip-inst" style="color:var(--text-dim); font-style:italic;">[leer]</span>
+          `;
+        }
+
+        listEl.appendChild(chip);
+      });
+    }
+
+    function setCycle(cycle) {
+      activeCycle = cycle;
+      playTone(350 + activeCycle * 35, "sine", 0.04, 0.03);
+      updateActiveCycleDisplay();
+    }
+
+    /* ==========================================================================
+       CPI & SPEEDUP CALCULATOR
+       ========================================================================== */
+    function updateCalculatorValues(schedule) {
+      const scenario = SCENARIOS[currentScenarioIdx];
+      const N = scenario.executedIndices.length;
+      const pipeCycles = schedule.totalCycles;
+
+      const cpi = (pipeCycles / N).toFixed(2);
+      const tauEintakt = 750; // ps
+      const tauPipe = 350; // ps
+
+      const tEintakt = N * tauEintakt;
+      const tPipe = pipeCycles * tauPipe;
+      const speedup = (tEintakt / tPipe).toFixed(2);
+
+      document.getElementById("badgeTotalInsts").textContent = `${N} Befehle`;
+      document.getElementById("valInstCount").textContent = `${N} Befehle`;
+      document.getElementById("valPipeCycles").textContent = `${pipeCycles} Takte`;
+      document.getElementById("valPipeCPI").textContent = `${cpi}`;
+      document.getElementById("valTimeEintakt").textContent = `${tEintakt.toLocaleString()} ps`;
+      document.getElementById("valTimePipeline").textContent = `${tPipe.toLocaleString()} ps`;
+      document.getElementById("valSpeedup").textContent = `${speedup}×`;
+    }
+
+    /* ==========================================================================
+       QUIZ EVALUATION & REVEAL SOLUTION
+       ========================================================================== */
+    function checkQuizAnswers() {
+      const scenario = SCENARIOS[currentScenarioIdx];
+      const sol = scenario.quizAnswers;
+
+      let correctCount = 0;
+      let totalCount = 10;
+
+      const qStageIF = document.getElementById("qStageIF");
+      const qStageID = document.getElementById("qStageID");
+      const qStageEX = document.getElementById("qStageEX");
+      const qStageMEM = document.getElementById("qStageMEM");
+      const qStageWB = document.getElementById("qStageWB");
+      const qHazardInsts = document.getElementById("qHazardInsts");
+      const qStallsWithFwd = document.getElementById("qStallsWithFwd");
+      const qStallsWithoutFwd = document.getElementById("qStallsWithoutFwd");
+      const qCyclesEintakt = document.getElementById("qCyclesEintakt");
+      const qCyclesPipeline = document.getElementById("qCyclesPipeline");
+
+      function testField(el, expected) {
+        const val = (el.value || "").trim();
+        const expStr = String(expected).trim();
+        const isMatch = (val.toLowerCase() === expStr.toLowerCase());
+        el.classList.remove("correct", "wrong");
+        el.classList.add(isMatch ? "correct" : "wrong");
+        if (isMatch) correctCount++;
+        return isMatch;
+      }
+
+      testField(qStageIF, sol.stagesAtFirstHazard.IF);
+      testField(qStageID, sol.stagesAtFirstHazard.ID);
+      testField(qStageEX, sol.stagesAtFirstHazard.EX);
+      testField(qStageMEM, sol.stagesAtFirstHazard.MEM);
+      testField(qStageWB, sol.stagesAtFirstHazard.WB);
+
+      // Hazard instructions check
+      const hVal = (qHazardInsts.value || "").replace(/\s+/g, "");
+      const hExp1 = `${sol.hazardInstructions[0]},${sol.hazardInstructions[1]}`;
+      const hExp2 = `${sol.hazardInstructions[1]},${sol.hazardInstructions[0]}`;
+      const hMatch = (hVal === hExp1 || hVal === hExp2);
+      qHazardInsts.classList.remove("correct", "wrong");
+      qHazardInsts.classList.add(hMatch ? "correct" : "wrong");
+      if (hMatch) correctCount++;
+
+      testField(qStallsWithFwd, sol.stallsWithFwd);
+      testField(qStallsWithoutFwd, sol.stallsWithoutFwd);
+      testField(qCyclesEintakt, sol.cyclesEintakt);
+
+      // Pipeline cycles (either sol.cyclesPipeline or dynamic current with forwarding)
+      const curSchedule = computePipelineSchedule(scenario, forwardingEnabled);
+      const pExp = forwardingEnabled ? sol.cyclesPipeline : curSchedule.totalCycles;
+      const pVal = parseInt(qCyclesPipeline.value, 10);
+      const pMatch = (pVal === sol.cyclesPipeline || pVal === curSchedule.totalCycles);
+      qCyclesPipeline.classList.remove("correct", "wrong");
+      qCyclesPipeline.classList.add(pMatch ? "correct" : "wrong");
+      if (pMatch) correctCount++;
+
+      // Overall Score Badge
+      const scoreBadge = document.getElementById("scoreBadge");
+      const feedbackText = document.getElementById("feedbackText");
+      scoreBadge.style.display = "inline-block";
+
+      const pct = Math.round((correctCount / totalCount) * 100);
+
+      if (pct === 100) {
+        scoreBadge.className = "score-badge score-pass";
+        scoreBadge.textContent = "100% PERFECT PASS";
+        feedbackText.innerHTML = `<span style="color:#34d399; font-weight:700;">Hervorragend! Alle 9 Klausur-Antworten sind exakt korrekt.</span> Volle 15 Punkte erreicht!`;
+        playSuccessChime();
+      } else if (pct >= 50) {
+        scoreBadge.className = "score-badge score-partial";
+        scoreBadge.textContent = `${pct}% Teilweise`;
+        feedbackText.innerHTML = `<span style="color:#fbbf24; font-weight:700;">Teilweise richtig (${correctCount}/${totalCount}):</span> Überprüfe die rot markierten Eingabefelder oder klicke <b>Reveal Solution</b>.`;
+        playTone(280, "sawtooth", 0.15, 0.06);
+      } else {
+        scoreBadge.className = "score-badge score-fail";
+        scoreBadge.textContent = `${pct}% Fehlerhaft`;
+        feedbackText.innerHTML = `<span style="color:#fca5a5; font-weight:700;">Noch nicht bestanden (${correctCount}/${totalCount}):</span> Achte auf Stalls ohne Forwarding und die Reihenfolge der Befehle in den Stufen.`;
+        playTone(180, "sawtooth", 0.2, 0.08);
+      }
+    }
+
+    function revealSolution() {
+      const scenario = SCENARIOS[currentScenarioIdx];
+      const sol = scenario.quizAnswers;
+
+      document.getElementById("qStageIF").value = sol.stagesAtFirstHazard.IF;
+      document.getElementById("qStageID").value = sol.stagesAtFirstHazard.ID;
+      document.getElementById("qStageEX").value = sol.stagesAtFirstHazard.EX;
+      document.getElementById("qStageMEM").value = sol.stagesAtFirstHazard.MEM;
+      document.getElementById("qStageWB").value = sol.stagesAtFirstHazard.WB;
+
+      document.getElementById("qHazardInsts").value = `${sol.hazardInstructions[0]}, ${sol.hazardInstructions[1]}`;
+      document.getElementById("qStallsWithFwd").value = sol.stallsWithFwd;
+      document.getElementById("qStallsWithoutFwd").value = sol.stallsWithoutFwd;
+      document.getElementById("qCyclesEintakt").value = sol.cyclesEintakt;
+      document.getElementById("qCyclesPipeline").value = sol.cyclesPipeline;
+
+      // Automatically validate filled solution
+      checkQuizAnswers();
+    }
+
+    function resetQuizForm() {
+      document.querySelectorAll(".quiz-input").forEach(inp => {
+        inp.value = "";
+        inp.classList.remove("correct", "wrong");
+      });
+      document.getElementById("scoreBadge").style.display = "none";
+      document.getElementById("feedbackText").textContent = "Quiz-Eingaben zurückgesetzt. Fülle die Felder aus und klicke Check Answer.";
+    }
+
+    /* ==========================================================================
+       SCENARIO SELECTION & RANDOM GENERATOR
+       ========================================================================== */
+    function selectScenario(idx) {
+      currentScenarioIdx = idx;
+      const scenario = SCENARIOS[currentScenarioIdx];
+
+      document.getElementById("currentScenarioName").textContent = scenario.name;
+      document.getElementById("taskModeBadge").textContent = scenario.badge;
+      document.getElementById("scenarioTitleText").textContent = scenario.title;
+      document.getElementById("enPrompt").textContent = scenario.descriptionEn;
+      document.getElementById("explanationContent").innerHTML = scenario.explanation;
+
+      // Update picker menu active states
+      document.querySelectorAll(".picker-menu .menu-item").forEach(item => {
+        item.classList.toggle("active", parseInt(item.dataset.idx, 10) === currentScenarioIdx);
+      });
+
+      document.getElementById("scenarioMenu").classList.remove("show");
+
+      activeCycle = 1;
+      resetQuizForm();
+      renderTimingGrid();
+      playTone(480, "sine", 0.06, 0.04);
+    }
+
+    function generateRandomSnippet() {
+      const regPool = ["t0", "t1", "t2", "t3", "s0", "s1", "a0", "a1"];
+      const opPool = ["add", "sub", "slt", "and", "or", "addi", "lw"];
+
+      const numInsts = 4 + Math.floor(Math.random() * 2); // 4 or 5 instructions
+      const generated = [];
+
+      let lastReg = regPool[Math.floor(Math.random() * regPool.length)];
+
+      for (let i = 0; i < numInsts; i++) {
+        const op = (i === 1 && Math.random() > 0.4) ? "lw" : opPool[Math.floor(Math.random() * opPool.length)];
+        const rd = regPool[Math.floor(Math.random() * regPool.length)];
+        let rs1, rs2, text;
+
+        if (op === "lw") {
+          rs1 = (i > 0) ? lastReg : "a0";
+          text = `lw ${rd}, 0(${rs1})`;
+          generated.push({ idx: i, text, rd, rs1, rs2: null, type: "I", isLoad: true });
+        } else if (op === "addi") {
+          rs1 = (i > 0 && Math.random() > 0.3) ? lastReg : regPool[Math.floor(Math.random() * regPool.length)];
+          const imm = (Math.floor(Math.random() * 16) + 1) * 4;
+          text = `addi ${rd}, ${rs1}, ${imm}`;
+          generated.push({ idx: i, text, rd, rs1, rs2: null, type: "I" });
+        } else {
+          rs1 = (i > 0 && Math.random() > 0.3) ? lastReg : regPool[Math.floor(Math.random() * regPool.length)];
+          rs2 = regPool[Math.floor(Math.random() * regPool.length)];
+          text = `${op} ${rd}, ${rs1}, ${rs2}`;
+          generated.push({ idx: i, text, rd, rs1, rs2, type: "R" });
+        }
+
+        lastReg = rd;
+      }
+
+      // Build random scenario object
+      const randomScenario = {
+        id: `random_${Date.now()}`,
+        name: `🎲 Random Code (${numInsts} Inst.)`,
+        badge: "Generativ · RAW",
+        title: `Zufällig generierte Folge aus ${numInsts} RISC-V Instruktionen mit RAW-Hazards`,
+        descriptionDe: "Analysiere die dynamisch erzeugte Befehlsfolge: Finde RAW-Abhängigkeiten und teste den Forwarding-Einfluss.",
+        descriptionEn: `Randomly generated ${numInsts}-instruction sequence with register dependencies and Load-Use checks.`,
+        instructions: generated,
+        executedIndices: generated.map(g => g.idx),
+        quizAnswers: {
+          firstHazardCycle: 3,
+          stagesAtFirstHazard: { IF: "2", ID: "1", EX: "0", MEM: "-", WB: "-" },
+          hazardInstructions: ["0", "1"],
+          stallsWithFwd: 0,
+          stallsWithoutFwd: 2,
+          cyclesEintakt: numInsts,
+          cyclesPipeline: numInsts + 4
+        },
+        explanation: `
+          <div class="explain-item">
+            <span class="explain-title">Zufallsgenerator aktiv:</span>
+            Diese Sequenz wurde dynamisch generiert. Verfolge die Pfeile im Timing-Diagramm, um die Datenpfade zwischen den erzeugenden (Producer) und verbrauchenden (Consumer) Befehlen zu sehen.
+          </div>
+        `
+      };
+
+      // Check if an older random scenario exists in list
+      if (SCENARIOS.length > 5) {
+        SCENARIOS[5] = randomScenario;
+      } else {
+        SCENARIOS.push(randomScenario);
+      }
+
+      selectScenario(5);
+    }
+
+    /* ==========================================================================
+       TOOLTIP HELPER
+       ========================================================================== */
+    const floatingTooltip = document.getElementById("floatingTooltip");
+
+    function showTooltip(e, html) {
+      if (!tooltipsEnabled) return;
+      floatingTooltip.innerHTML = html;
+      floatingTooltip.classList.add("show");
+      positionTooltip(e);
+    }
+
+    function positionTooltip(e) {
+      const pad = 12;
+      let left = e.clientX + pad;
+      let top = e.clientY + pad;
+
+      const rect = floatingTooltip.getBoundingClientRect();
+      if (left + rect.width > window.innerWidth - 10) {
+        left = e.clientX - rect.width - pad;
+      }
+      if (top + rect.height > window.innerHeight - 10) {
+        top = e.clientY - rect.height - pad;
+      }
+
+      floatingTooltip.style.left = `${Math.max(10, left)}px`;
+      floatingTooltip.style.top = `${Math.max(10, top)}px`;
+    }
+
+    function hideTooltip() {
+      floatingTooltip.classList.remove("show");
+    }
+
+    window.addEventListener("mousemove", (e) => {
+      if (floatingTooltip.classList.contains("show")) {
+        positionTooltip(e);
+      }
+    });
+
+    /* ==========================================================================
+       EVENT LISTENERS & INITIALIZATION
+       ========================================================================== */
+    document.addEventListener("DOMContentLoaded", () => {
+      
+      // Forwarding Checkbox Toggle
+      const chkForwarding = document.getElementById("chkForwarding");
+      const lblForwardingStatus = document.getElementById("lblForwardingStatus");
+
+      chkForwarding.addEventListener("change", () => {
+        forwardingEnabled = chkForwarding.checked;
+        if (forwardingEnabled) {
+          lblForwardingStatus.className = "forwarding-status-tag on";
+          lblForwardingStatus.textContent = "AKTIV (0 Stalls bei ALU)";
+          playTone(660, "sine", 0.08, 0.04);
+        } else {
+          lblForwardingStatus.className = "forwarding-status-tag off";
+          lblForwardingStatus.textContent = "INAKTIV (Stalls in ID!)";
+          playStallAlert();
+        }
+        renderTimingGrid();
+      });
+
+      // Stepper Controls
+      document.getElementById("btnStepPrev").addEventListener("click", () => {
+        setCycle(activeCycle - 1);
+      });
+
+      document.getElementById("btnStepNext").addEventListener("click", () => {
+        setCycle(activeCycle + 1);
+      });
+
+      document.getElementById("btnStepReset").addEventListener("click", () => {
+        setCycle(1);
+      });
+
+      // Auto-Play
+      const btnStepPlay = document.getElementById("btnStepPlay");
+      btnStepPlay.addEventListener("click", () => {
+        isPlaying = !isPlaying;
+        if (isPlaying) {
+          btnStepPlay.textContent = "⏸ Pause";
+          btnStepPlay.style.background = "#0284c7";
+          const schedule = computePipelineSchedule(SCENARIOS[currentScenarioIdx], forwardingEnabled);
+          playInterval = setInterval(() => {
+            if (activeCycle >= schedule.totalCycles) {
+              setCycle(1);
+            } else {
+              setCycle(activeCycle + 1);
+            }
+          }, 800);
+        } else {
+          btnStepPlay.textContent = "▶ Play";
+          btnStepPlay.style.background = "";
+          clearInterval(playInterval);
+        }
+      });
+
+      // Scenario Prev / Next
+      document.getElementById("btnPrevScenario").addEventListener("click", () => {
+        const newIdx = (currentScenarioIdx - 1 + SCENARIOS.length) % SCENARIOS.length;
+        selectScenario(newIdx);
+      });
+
+      document.getElementById("btnNextScenario").addEventListener("click", () => {
+        const newIdx = (currentScenarioIdx + 1) % SCENARIOS.length;
+        selectScenario(newIdx);
+      });
+
+      // Scenario Dropdown Picker
+      const btnScenarioPicker = document.getElementById("btnScenarioPicker");
+      const scenarioMenu = document.getElementById("scenarioMenu");
+
+      btnScenarioPicker.addEventListener("click", (e) => {
+        e.stopPropagation();
+        scenarioMenu.classList.toggle("show");
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".scenario-picker-wrap")) {
+          scenarioMenu.classList.remove("show");
+        }
+      });
+
+      scenarioMenu.querySelectorAll(".menu-item").forEach(item => {
+        item.addEventListener("click", () => {
+          const idx = parseInt(item.dataset.idx, 10);
+          selectScenario(idx);
+        });
+      });
+
+      // Random Snippet Generator Button
+      document.getElementById("btnRandomSnippet").addEventListener("click", () => {
+        generateRandomSnippet();
+      });
+
+      // Mode Switcher Buttons
+      const btnModeExplore = document.getElementById("btnModeExplore");
+      const btnModeQuiz = document.getElementById("btnModeQuiz");
+      const quizCard = document.getElementById("quizCard");
+
+      btnModeExplore.addEventListener("click", () => {
+        currentMode = "explore";
+        btnModeExplore.classList.add("active");
+        btnModeQuiz.classList.remove("active");
+        playTone(520, "sine", 0.05, 0.03);
+      });
+
+      btnModeQuiz.addEventListener("click", () => {
+        currentMode = "quiz";
+        btnModeQuiz.classList.add("active");
+        btnModeExplore.classList.remove("active");
+        quizCard.scrollIntoView({ behavior: "smooth" });
+        playTone(580, "sine", 0.05, 0.03);
+      });
+
+      // Sound Toggle
+      const btnToggleSound = document.getElementById("btnToggleSound");
+      const soundLabel = document.getElementById("soundLabel");
+      btnToggleSound.addEventListener("click", () => {
+        soundEnabled = !soundEnabled;
+        btnToggleSound.classList.toggle("active", soundEnabled);
+        soundLabel.textContent = soundEnabled ? "Sound: AN" : "Sound: AUS";
+        if (soundEnabled) playTone(440, "sine", 0.06, 0.04);
+      });
+
+      // Tooltips Toggle
+      const btnToggleTooltips = document.getElementById("btnToggleTooltips");
+      const tooltipLabel = document.getElementById("tooltipLabel");
+      btnToggleTooltips.addEventListener("click", () => {
+        tooltipsEnabled = !tooltipsEnabled;
+        btnToggleTooltips.classList.toggle("active", tooltipsEnabled);
+        tooltipLabel.textContent = tooltipsEnabled ? "Tooltips: AN" : "Tooltips: AUS";
+        if (!tooltipsEnabled) hideTooltip();
+      });
+
+      // Help Modal
+      const helpModal = document.getElementById("helpModal");
+      document.getElementById("btnHelp").addEventListener("click", () => {
+        helpModal.classList.add("show");
+        playTone(500, "triangle", 0.08, 0.04);
+      });
+
+      document.getElementById("btnCloseHelp").addEventListener("click", () => {
+        helpModal.classList.remove("show");
+      });
+
+      helpModal.addEventListener("click", (e) => {
+        if (e.target === helpModal) helpModal.classList.remove("show");
+      });
+
+      // Quiz Action Buttons
+      document.getElementById("btnCheckAnswer").addEventListener("click", checkQuizAnswers);
+      document.getElementById("btnRevealSolution").addEventListener("click", revealSolution);
+      document.getElementById("btnResetQuiz").addEventListener("click", resetQuizForm);
+
+      // Resizer Drag
+      const resizer = document.getElementById("dragResizer");
+      const mainContainer = document.getElementById("mainContainer");
+      let isDragging = false;
+
+      resizer.addEventListener("mousedown", () => {
+        isDragging = true;
+        resizer.classList.add("dragging");
+        document.body.style.cursor = "col-resize";
+      });
+
+      document.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        const rect = mainContainer.getBoundingClientRect();
+        const newRightWidth = Math.max(300, Math.min(650, rect.right - e.clientX));
+        mainContainer.style.gridTemplateColumns = `1fr 6px ${newRightWidth}px`;
+        renderForwardingArrows(computePipelineSchedule(SCENARIOS[currentScenarioIdx], forwardingEnabled));
+      });
+
+      document.addEventListener("mouseup", () => {
+        if (isDragging) {
+          isDragging = false;
+          resizer.classList.remove("dragging");
+          document.body.style.cursor = "";
+        }
+      });
+
+      // Handle window resize
+      window.addEventListener("resize", () => {
+        renderForwardingArrows(computePipelineSchedule(SCENARIOS[currentScenarioIdx], forwardingEnabled));
+      });
+
+      // Initialize Scenario 0
+      selectScenario(0);
+    });
+  </script>
+</body>
+</html>

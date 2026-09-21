@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TU Darmstadt RO Trainer Hub | Rechnerorganisation Interactive Simulators</title>
+  <style>
+    :root {
+      --bg-main: #090d16;
+      --bg-card: #111827;
+      --bg-card-hover: #1e293b;
+      --border-color: #243044;
+      --border-glow: #38bdf8;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --accent-cyan: #06b6d4;
+      --accent-cyan-glow: #22d3ee;
+      --accent-green: #10b981;
+      --accent-green-glow: #34d399;
+      --accent-yellow: #f59e0b;
+      --accent-purple: #a855f7;
+      --accent-red: #ef4444;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* Top Navigation Bar */
+    header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(8px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+    }
+
+    .brand-text h1 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-text p {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+    }
+
+    .header-badges {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      background: rgba(6, 182, 212, 0.12);
+      color: var(--accent-cyan-glow);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      padding: 3px 9px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .badge-points {
+      background: rgba(16, 185, 129, 0.14);
+      color: var(--accent-green-glow);
+      border-color: rgba(16, 185, 129, 0.35);
+    }
+
+    /* Hero / Intro Section */
+    .hero {
+      max-width: 1200px;
+      margin: 32px auto 20px auto;
+      padding: 0 24px;
+      text-align: center;
+    }
+
+    .hero-tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent-cyan-glow);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .hero h2 {
+      font-size: 2.1rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      margin-bottom: 12px;
+    }
+
+    .hero h2 span {
+      background: linear-gradient(135deg, #38bdf8 0%, #34d399 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      max-width: 780px;
+      margin: 0 auto 20px auto;
+    }
+
+    /* Filter & Search Bar */
+    .filter-bar {
+      max-width: 1200px;
+      margin: 0 auto 28px auto;
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 260px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: #fff;
+      padding: 10px 14px 10px 38px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .search-box input:focus {
+      border-color: var(--border-glow);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      pointer-events: none;
+    }
+
+    .filter-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .filter-pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .filter-pill:hover, .filter-pill.active {
+      background: #1e293b;
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    .filter-pill.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(2, 132, 199, 0.35);
+    }
+
+    /* Grid of Trainers */
+    .trainers-grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px 60px 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 20px;
+    }
+
+    .trainer-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .trainer-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-glow);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(56, 189, 248, 0.15);
+      background: #131b2e;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .task-id-badge {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: var(--accent-cyan);
+      background: rgba(6, 182, 212, 0.12);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      padding: 2px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+
+    .tier-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.02em;
+    }
+
+    .tier-1 {
+      background: rgba(16, 185, 129, 0.18);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .tier-2 {
+      background: rgba(245, 158, 11, 0.18);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .tier-3 {
+      background: rgba(168, 85, 247, 0.18);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+
+    .card-meta {
+      font-size: 0.75rem;
+      color: var(--accent-cyan-glow);
+      font-weight: 600;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+      margin-bottom: 16px;
+    }
+
+    .topics-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 20px;
+    }
+
+    .topic-tag {
+      background: #1e293b;
+      color: #cbd5e1;
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid #334155;
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 14px;
+      margin-top: auto;
+    }
+
+    .points-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .points-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      font-weight: 700;
+    }
+
+    .points-value {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #34d399;
+      font-family: var(--font-mono);
+    }
+
+    .launch-btn {
+      background: #0284c7;
+      color: #fff;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 7px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      box-shadow: 0 0 10px rgba(2, 132, 199, 0.35);
+    }
+
+    .launch-btn:hover {
+      background: #0369a1;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.5);
+      transform: translateY(-1px);
+    }
+
+    /* Footer */
+    footer {
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-color);
+      padding: 20px 24px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: auto;
+    }
+
+    footer a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero h2 {
+        font-size: 1.6rem;
+      }
+      .trainers-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="16" height="16" rx="2" />
+          <rect x="9" y="9" width="6" height="6" />
+          <line x1="9" y1="1" x2="9" y2="4" /><line x1="15" y1="1" x2="15" y2="4" />
+          <line x1="9" y1="20" x2="9" y2="23" /><line x1="15" y1="20" x2="15" y2="23" />
+          <line x1="20" y1="9" x2="23" y2="9" /><line x1="20" y1="14" x2="23" y2="14" />
+          <line x1="1" y1="9" x2="4" y2="9" /><line x1="1" y1="14" x2="4" y2="14" />
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>TU Darmstadt RO Trainer Hub</h1>
+        <p>Rechnerorganisation • Interactive RISC-V Exam Simulators</p>
+      </div>
+    </div>
+
+    <div class="header-badges">
+      <span class="badge">🌐 Single-File Web Apps</span>
+      <span class="badge">⚡ Offline Ready</span>
+      <span class="badge badge-points">🏆 ~65+ Klausurpunkte</span>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-tag">Vollständige Prüfungsvorbereitung</div>
+    <h2>Интерактивные тренажёры к экзамену <span>Rechnerorganisation</span></h2>
+    <p>
+      Коллекция полнофункциональных векторных веб-симуляторов по всем практическим задачам экзамена RO (TU Darmstadt: WiSe 26, SoSe 25, SoSe 24 и Probeklausur).
+      Каждый тренажёр работает прямо в браузере в один клик без сервера и без установки.
+    </p>
+  </section>
+
+  <!-- Filter and Search Toolbar -->
+  <div class="filter-bar">
+    <div class="search-box">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+      <input type="text" id="searchInput" placeholder="Тренажёр, тема, команда или задача (z.B. FSM, Cache, Pipeline, lw)...">
+    </div>
+
+    <div class="filter-pills">
+      <button class="filter-pill active" data-filter="all">Alle (6)</button>
+      <button class="filter-pill" data-filter="tier-1">Tier 1: High-Yield</button>
+      <button class="filter-pill" data-filter="tier-2">Tier 2: Cache</button>
+      <button class="filter-pill" data-filter="tier-3">Tier 3: Prozessoren</button>
+    </div>
+  </div>
+
+  <!-- Grid of 6 Interactive Simulators -->
+  <main class="trainers-grid" id="trainersGrid">
+
+    <!-- Card 1: Machine Code (Aufgabe 2) -->
+    <article class="trainer-card" data-tier="tier-1" data-keywords="aufgabe 2 maschinencode machine code decoding r-type i-type s-type b-type u-type j-type imm funct3 funct7 hex binary">
+      <div>
+        <div class="card-top">
+          <span class="task-id-badge">Aufgabe 2</span>
+          <span class="tier-badge tier-1">Tier 1 • High Yield</span>
+        </div>
+        <h3 class="card-title">RISC-V Maschinencode &amp; Decoding</h3>
+        <div class="card-meta">
+          <span>⚡ Hex &harr; Binary &harr; Assembler</span>
+        </div>
+        <p class="card-desc">
+          Интерактивный декодер и кодировщик инструкций всех форматов (R, I, S, B, U, J). Тренировка сборки 12-битных и 20-битных Immediate со знаковым расширением и сдвигом для бранчей и прыжков.
+        </p>
+        <div class="topics-list">
+          <span class="topic-tag">R-Type</span>
+          <span class="topic-tag">I-Type</span>
+          <span class="topic-tag">B-Type</span>
+          <span class="topic-tag">J-Type</span>
+          <span class="topic-tag">Sign-Extension</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="points-info">
+          <span class="points-label">Gewicht in Klausur</span>
+          <span class="points-value">8 – 12 Punkte</span>
+        </div>
+        <a href="machine_code_trainer.html" class="launch-btn" target="_blank">
+          <span>Öffnen</span> &rarr;
+        </a>
+      </div>
+    </article>
+
+    <!-- Card 2: Calling Conventions (Aufgabe 3) -->
+    <article class="trainer-card" data-tier="tier-1" data-keywords="aufgabe 3 calling conventions stack frame ra sp s0 s11 a0 a7 t0 t6 prologue epilogue caller callee saved">
+      <div>
+        <div class="card-top">
+          <span class="task-id-badge">Aufgabe 3</span>
+          <span class="tier-badge tier-1">Tier 1 • High Yield</span>
+        </div>
+        <h3 class="card-title">Calling Conventions &amp; Stack Frames</h3>
+        <div class="card-meta">
+          <span>📚 Caller vs. Callee-saved • Stack-Zeichner</span>
+        </div>
+        <p class="card-desc">
+          Визуальный симулятор стека памяти: генератор прологов и эпилогов функций (`addi sp, sp, -16`, сохранение `ra` и `s0`), интерактивная проверка регистров и расчёт смещений при вызове подпрограмм.
+        </p>
+        <div class="topics-list">
+          <span class="topic-tag">ra &amp; sp</span>
+          <span class="topic-tag">s0 – s11</span>
+          <span class="topic-tag">Stack Allocation</span>
+          <span class="topic-tag">Prologue/Epilogue</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="points-info">
+          <span class="points-label">Gewicht in Klausur</span>
+          <span class="points-value">10 – 14 Punkte</span>
+        </div>
+        <a href="calling_conventions_trainer.html" class="launch-btn" target="_blank">
+          <span>Öffnen</span> &rarr;
+        </a>
+      </div>
+    </article>
+
+    <!-- Card 3: Cache Memory (Aufgabe 4 / 8) -->
+    <article class="trainer-card" data-tier="tier-2" data-keywords="aufgabe 4 aufgabe 8 cache direct mapped set associative fully associative amat 3c misses tag index offset lru fifo">
+      <div>
+        <div class="card-top">
+          <span class="task-id-badge">Aufgabe 4 / 8</span>
+          <span class="tier-badge tier-2">Tier 2 • Core Memory</span>
+        </div>
+        <h3 class="card-title">Cache-Speicher, 3C-Misses &amp; AMAT</h3>
+        <div class="card-meta">
+          <span>💾 Tag / Index / Offset • Hit/Miss Sim</span>
+        </div>
+        <p class="card-desc">
+          Полноценный интерактивный симулятор кэша: расчет разрядности Tag/Index/Offset, трассировка обращений к памяти, классификация 3C-промахов (Compulsory, Capacity, Conflict) и калькулятор средней задержки AMAT.
+        </p>
+        <div class="topics-list">
+          <span class="topic-tag">Direct Mapped</span>
+          <span class="topic-tag">N-Way Set Assoc</span>
+          <span class="topic-tag">AMAT Formel</span>
+          <span class="topic-tag">3C-Misses</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="points-info">
+          <span class="points-label">Gewicht in Klausur</span>
+          <span class="points-value">8 – 12 Punkte</span>
+        </div>
+        <a href="cache_trainer.html" class="launch-btn" target="_blank">
+          <span>Öffnen</span> &rarr;
+        </a>
+      </div>
+    </article>
+
+    <!-- Card 4: Single-Cycle Datapath (Aufgabe 5) -->
+    <article class="trainer-card" data-tier="tier-3" data-keywords="aufgabe 5 eintakt single-cycle datapath steuersignale control signals regwrite alusrc alucontrol memwrite resultsrc pcsrc">
+      <div>
+        <div class="card-top">
+          <span class="task-id-badge">Aufgabe 5</span>
+          <span class="tier-badge tier-3">Tier 3 • Prozessor</span>
+        </div>
+        <h3 class="card-title">Eintakt-Prozessor (Single-Cycle)</h3>
+        <div class="card-meta">
+          <span>🔬 25+ Instruktionen • Real-Time Datapath</span>
+        </div>
+        <p class="card-desc">
+          Полная векторная схема однотактного процессора из лекций TU Darmstadt. Подсветка активных проводов и шин, матрица управляющих сигналов, экзаменационные задания (WiSe 26 `beq`, SoSe 25 `lw`, Probeklausur `slli`).
+        </p>
+        <div class="topics-list">
+          <span class="topic-tag">Wire Tracing</span>
+          <span class="topic-tag">Control Unit</span>
+          <span class="topic-tag">ALU Decoder</span>
+          <span class="topic-tag">WiSe26 beq</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="points-info">
+          <span class="points-label">Gewicht in Klausur</span>
+          <span class="points-value">6 – 8 Punkte</span>
+        </div>
+        <a href="single_cycle_trainer.html" class="launch-btn" target="_blank">
+          <span>Öffnen</span> &rarr;
+        </a>
+      </div>
+    </article>
+
+    <!-- Card 5: Multicycle FSM (Aufgabe 6) -->
+    <article class="trainer-card" data-tier="tier-3" data-keywords="aufgabe 6 mehrtakt multicycle fsm moore automat critical path fmax tclk steuerwerk aluj jalm">
+      <div>
+        <div class="card-top">
+          <span class="task-id-badge">Aufgabe 6</span>
+          <span class="tier-badge tier-3">Tier 3 • Prozessor</span>
+        </div>
+        <h3 class="card-title">Mehrtakt-Prozessor (FSM &amp; f<sub>max</sub>)</h3>
+        <div class="card-meta">
+          <span>🔄 FSM Cycle Stepper • Kritischer Pfad</span>
+        </div>
+        <p class="card-desc">
+          Векторный граф автомата FSM (S0..S10) с пошаговой симуляцией тактов. Экзаменационный тренажёр добавления новых состояний (WiSe 26 `PC=ALU`, SoSe 25 `jalm`) и калькулятор критического пути $T_C$ и частоты $f_{max}$.
+        </p>
+        <div class="topics-list">
+          <span class="topic-tag">FSM Stepper</span>
+          <span class="topic-tag">WiSe26 ALUJ</span>
+          <span class="topic-tag">SoSe25 jalm</span>
+          <span class="topic-tag">T_C &amp; f_max</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="points-info">
+          <span class="points-label">Gewicht in Klausur</span>
+          <span class="points-value">8 – 10 Punkte</span>
+        </div>
+        <a href="multicycle_trainer.html" class="launch-btn" target="_blank">
+          <span>Öffnen</span> &rarr;
+        </a>
+      </div>
+    </article>
+
+    <!-- Card 6: Pipeline Hazards (Aufgabe 7) -->
+    <article class="trainer-card" data-tier="tier-3" data-keywords="aufgabe 7 pipeline hazards forwarding bypassing stalls data hazards control hazards raw load-use branch penalty">
+      <div>
+        <div class="card-top">
+          <span class="task-id-badge">Aufgabe 7</span>
+          <span class="tier-badge tier-3">Tier 3 • Schwergewicht</span>
+        </div>
+        <h3 class="card-title">Pipeline Hazards &amp; Forwarding</h3>
+        <div class="card-meta">
+          <span>🚀 5-Stufen Pipeline • Stalls &amp; Bypassing</span>
+        </div>
+        <p class="card-desc">
+          Интерактивный симулятор 5-ступенчатого конвейера (F, D, E, M, W). Анализ конфликтов по данным (RAW), разрешение с помощью Forwarding-модуля, обнаружение Load-Use Hazards (аппаратный Stall) и сброс конвейера при Branch.
+        </p>
+        <div class="topics-list">
+          <span class="topic-tag">Forwarding Unit</span>
+          <span class="topic-tag">Load-Use Stall</span>
+          <span class="topic-tag">Branch Flush</span>
+          <span class="topic-tag">Pipeline Timing</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="points-info">
+          <span class="points-label">Gewicht in Klausur</span>
+          <span class="points-value">12 – 15 Punkte</span>
+        </div>
+        <a href="pipeline_trainer.html" class="launch-btn" target="_blank">
+          <span>Öffnen</span> &rarr;
+        </a>
+      </div>
+    </article>
+
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <p>
+      Разработано для студентов курса <b>Rechnerorganisation (RO)</b> в <b>TU Darmstadt</b>.
+      Все симуляторы работают автономно в любом современном браузере.
+    </p>
+    <p style="margin-top: 6px; font-size: 0.75rem; color: var(--text-dim);">
+      RV32I Base Integer Instruction Set • Rechnerorganisation Klausur Training Suite
+    </p>
+  </footer>
+
+  <script>
+    // Search and Filter Logic
+    const searchInput = document.getElementById("searchInput");
+    const filterPills = document.querySelectorAll(".filter-pill");
+    const cards = document.querySelectorAll(".trainer-card");
+
+    let currentFilter = "all";
+
+    function updateCards() {
+      const q = searchInput.value.toLowerCase().trim();
+
+      cards.forEach(card => {
+        const tier = card.getAttribute("data-tier");
+        const keywords = (card.getAttribute("data-keywords") || "").toLowerCase();
+        const title = card.querySelector(".card-title").textContent.toLowerCase();
+        const desc = card.querySelector(".card-desc").textContent.toLowerCase();
+
+        const matchesFilter = currentFilter === "all" || tier === currentFilter;
+        const matchesQuery = !q || title.includes(q) || desc.includes(q) || keywords.includes(q);
+
+        if (matchesFilter && matchesQuery) {
+          card.style.display = "flex";
+        } else {
+          card.style.display = "none";
+        }
+      });
+    }
+
+    searchInput.addEventListener("input", updateCards);
+
+    filterPills.forEach(pill => {
+      pill.addEventListener("click", () => {
+        filterPills.forEach(p => p.classList.remove("active"));
+        pill.classList.add("active");
+        currentFilter = pill.getAttribute("data-filter");
+        updateCards();
+      });
+    });
+  </script>
+</body>
+</html>

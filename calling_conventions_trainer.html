@@ -1,0 +1,3142 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RISC-V Calling Conventions & Stack Trainer | TU Darmstadt RO</title>
+  <style>
+    :root {
+      --bg-main: #090d16;
+      --bg-card: #111827;
+      --bg-card-hover: #1e293b;
+      --bg-panel: #0d1321;
+      --border-color: #243044;
+      --border-focus: #38bdf8;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      /* Accents */
+      --accent-sky: #0ea5e9;
+      --accent-sky-glow: #38bdf8;
+      --accent-emerald: #10b981;
+      --accent-emerald-glow: #34d399;
+      --accent-rose: #f43f5e;
+      --accent-rose-glow: #fb7185;
+      --accent-amber: #f59e0b;
+      --accent-amber-glow: #fbbf24;
+      --accent-purple: #a855f7;
+      --accent-purple-glow: #c084fc;
+      
+      /* Semantic calling convention tags */
+      --callee-saved: #10b981;
+      --caller-saved: #f59e0b;
+      --special-reg: #818cf8;
+      --stack-color: #06b6d4;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    /* Header */
+    header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      padding: 6px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 52px;
+      flex-shrink: 0;
+      z-index: 30;
+    }
+
+    .title-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-area h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .title-area h1 svg {
+      color: var(--accent-sky-glow);
+    }
+
+    .badge-exam {
+      background: rgba(244, 63, 94, 0.18);
+      color: var(--accent-rose-glow);
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-sub {
+      background: rgba(14, 165, 233, 0.15);
+      color: var(--accent-sky-glow);
+      border: 1px solid rgba(14, 165, 233, 0.35);
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 9999px;
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #cbd5e1;
+      font-size: 0.76rem;
+      font-weight: 600;
+      padding: 5px 11px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn:hover {
+      background: #334155;
+      color: #fff;
+      border-color: var(--accent-sky-glow);
+    }
+
+    .btn-primary {
+      background: #0284c7;
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    .btn-primary:hover {
+      background: #0369a1;
+    }
+
+    .btn-success {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.5);
+    }
+
+    .btn-success:hover {
+      background: rgba(16, 185, 129, 0.35);
+      color: #fff;
+    }
+
+    .btn-danger {
+      background: rgba(244, 63, 94, 0.2);
+      color: #fb7185;
+      border-color: rgba(244, 63, 94, 0.5);
+    }
+
+    .btn-danger:hover {
+      background: rgba(244, 63, 94, 0.35);
+      color: #fff;
+    }
+
+    /* Tab Switcher */
+    .tab-bar {
+      display: flex;
+      background: #0a0f1d;
+      border: 1px solid var(--border-color);
+      border-radius: 7px;
+      padding: 2px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 5px 12px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+
+    .tab-btn.active {
+      background: #0284c7;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(14, 165, 233, 0.4);
+    }
+
+    /* Sub-header: Task selector & rubric */
+    .task-banner {
+      background: #0c1220;
+      border-bottom: 1px solid var(--border-color);
+      padding: 7px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      z-index: 20;
+    }
+
+    .preset-selector-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .preset-label {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .preset-select {
+      background: #131d2e;
+      border: 1px solid #2d3b55;
+      color: #f1f5f9;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .preset-select:focus {
+      border-color: var(--accent-sky-glow);
+    }
+
+    .task-meta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.74rem;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-weight: 600;
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid #334155;
+    }
+
+    .task-meta-badge code {
+      color: var(--accent-amber-glow);
+      font-family: ui-monospace, monospace;
+      font-size: 0.78rem;
+    }
+
+    .points-hud {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .score-chip {
+      background: #111827;
+      border: 1px solid #374151;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .score-chip.points-a {
+      border-color: rgba(14, 165, 233, 0.4);
+      color: #38bdf8;
+    }
+
+    .score-chip.points-b {
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+
+    .score-chip.points-total {
+      border-color: rgba(244, 63, 94, 0.5);
+      color: #fb7185;
+      background: rgba(244, 63, 94, 0.1);
+    }
+
+    /* Main 3-Column Resizable Container */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 6px 440px 6px 1.15fr;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Resizer bars */
+    .resizer {
+      background: #1e293b;
+      cursor: col-resize;
+      transition: background 0.15s ease;
+      z-index: 25;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .resizer::after {
+      content: "";
+      width: 2px;
+      height: 28px;
+      background: #475569;
+      border-radius: 2px;
+    }
+
+    .resizer:hover, .resizer.dragging {
+      background: var(--accent-sky);
+    }
+
+    .resizer:hover::after, .resizer.dragging::after {
+      background: #fff;
+    }
+
+    /* Column Panels */
+    .panel {
+      background: var(--bg-card);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      background: #0f172a;
+      border-bottom: 1px solid var(--border-color);
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .panel-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .panel-subtitle {
+      font-size: 0.70rem;
+      color: var(--text-muted);
+      font-weight: normal;
+    }
+
+    .panel-body {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* C-Code Card */
+    .code-card {
+      background: #0a0f1d;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .code-card-header {
+      background: #111a2e;
+      border-bottom: 1px solid var(--border-color);
+      padding: 6px 12px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .code-content {
+      padding: 10px 14px;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      color: #e2e8f0;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    .c-keyword { color: #f43f5e; font-weight: 600; }
+    .c-type { color: #38bdf8; }
+    .c-func { color: #34d399; font-weight: 600; }
+    .c-var { color: #e2e8f0; }
+    .c-comment { color: #64748b; font-style: italic; }
+
+    /* Interactive Assembly Auditor Table */
+    .auditor-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.80rem;
+    }
+
+    .auditor-table tr {
+      border-bottom: 1px solid #1a2538;
+      transition: background 0.12s ease;
+    }
+
+    .auditor-table tr:hover {
+      background: rgba(30, 41, 59, 0.45);
+    }
+
+    .auditor-table tr.has-error-marked {
+      background: rgba(244, 63, 94, 0.12);
+      border-left: 3px solid #f43f5e;
+    }
+
+    .auditor-table tr.correctly-marked {
+      background: rgba(16, 185, 129, 0.12);
+      border-left: 3px solid #10b981;
+    }
+
+    .auditor-table td {
+      padding: 6px 8px;
+      vertical-align: middle;
+    }
+
+    .line-num {
+      color: #475569;
+      width: 24px;
+      text-align: right;
+      user-select: none;
+      font-size: 0.72rem;
+    }
+
+    .asm-instruction {
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .asm-mnemonic {
+      color: #38bdf8;
+      font-weight: 700;
+      min-width: 44px;
+    }
+
+    .reg-chip {
+      display: inline-block;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 0.77rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      border: 1px solid transparent;
+      user-select: none;
+    }
+
+    .reg-chip:hover {
+      filter: brightness(1.25);
+      transform: scale(1.05);
+    }
+
+    .reg-callee {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.35);
+    }
+
+    .reg-caller {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    .reg-special {
+      background: rgba(168, 85, 247, 0.15);
+      color: #c084fc;
+      border-color: rgba(168, 85, 247, 0.35);
+    }
+
+    .reg-plain {
+      color: #cbd5e1;
+    }
+
+    .reg-chip.marked-error {
+      background: #f43f5e !important;
+      color: #fff !important;
+      border-color: #fda4af !important;
+      box-shadow: 0 0 6px rgba(244, 63, 94, 0.6);
+      animation: pulse 1.5s infinite;
+    }
+
+    .reg-chip.verified-correct {
+      background: #10b981 !important;
+      color: #fff !important;
+      border-color: #6ee7b7 !important;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+    }
+
+    .reg-chip.verified-wrong {
+      background: #f59e0b !important;
+      color: #111 !important;
+      border-color: #fcd34d !important;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+
+    /* Inline mark button */
+    .btn-mark-line {
+      background: transparent;
+      border: 1px dashed #334155;
+      color: #64748b;
+      font-size: 0.70rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-mark-line:hover {
+      background: rgba(244, 63, 94, 0.15);
+      border-color: #f43f5e;
+      color: #fb7185;
+    }
+
+    .btn-mark-line.active {
+      background: rgba(244, 63, 94, 0.25);
+      border-color: #f43f5e;
+      color: #fb7185;
+      font-weight: 700;
+    }
+
+    /* Error Selector Popover / Drawer */
+    .error-classifier-card {
+      background: #131d31;
+      border: 1px solid #283a5a;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .error-classifier-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .error-tags-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .error-tag-btn {
+      background: #0b1220;
+      border: 1px solid #22324e;
+      color: #cbd5e1;
+      font-size: 0.72rem;
+      padding: 5px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.12s ease;
+    }
+
+    .error-tag-btn:hover {
+      background: #1a2742;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+
+    .error-tag-btn.selected {
+      background: rgba(244, 63, 94, 0.25);
+      border-color: #f43f5e;
+      color: #fb7185;
+      font-weight: 700;
+    }
+
+    /* Explanation & Hint Box */
+    .audit-feedback-card {
+      background: #0e1626;
+      border: 1px solid #1f2d47;
+      border-radius: 7px;
+      padding: 10px;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .audit-feedback-title {
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .audit-feedback-title.ok { color: #34d399; }
+    .audit-feedback-title.err { color: #fb7185; }
+    .audit-feedback-title.info { color: #38bdf8; }
+
+    /* ========================================================= */
+    /* CENTER PANEL: STACK VISUALIZER & VM ANIMATION             */
+    /* ========================================================= */
+    .stack-visualizer-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      gap: 10px;
+    }
+
+    .stepper-bar {
+      background: #0b1220;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .stepper-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .curr-step-label {
+      font-size: 0.76rem;
+      font-family: ui-monospace, monospace;
+      color: var(--accent-sky-glow);
+      font-weight: 600;
+      background: #111a2e;
+      padding: 3px 8px;
+      border-radius: 5px;
+      border: 1px solid #1e293b;
+    }
+
+    .speed-slider-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.70rem;
+      color: var(--text-muted);
+    }
+
+    .speed-slider {
+      width: 60px;
+      cursor: pointer;
+    }
+
+    /* Register HUD */
+    .register-hud-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      background: #0b1220;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px;
+      flex-shrink: 0;
+    }
+
+    .hud-reg-box {
+      background: #111a2e;
+      border: 1px solid #1e293b;
+      border-radius: 5px;
+      padding: 4px 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .hud-reg-name {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .hud-reg-val {
+      font-family: ui-monospace, monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hud-reg-val.modified {
+      color: #38bdf8;
+      text-shadow: 0 0 6px rgba(56, 189, 248, 0.5);
+    }
+
+    .hud-reg-val.warning {
+      color: #fb7185;
+      text-shadow: 0 0 6px rgba(244, 63, 94, 0.5);
+    }
+
+    .sp-align-badge {
+      font-size: 0.62rem;
+      padding: 0 4px;
+      border-radius: 3px;
+      font-weight: 700;
+    }
+
+    .sp-align-badge.aligned {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+    }
+
+    .sp-align-badge.misaligned {
+      background: rgba(244, 63, 94, 0.2);
+      color: #fb7185;
+    }
+
+    /* Stack Column Visual Area */
+    .stack-scroll-area {
+      flex: 1;
+      background: #070b14;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+    }
+
+    .stack-growth-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      padding-bottom: 4px;
+      border-bottom: 1px dashed #1e293b;
+    }
+
+    .stack-growth-arrow {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--accent-sky-glow);
+      font-weight: 600;
+    }
+
+    .stack-memory-column {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .stack-slot-row {
+      display: grid;
+      grid-template-columns: 85px 55px 1fr 34px;
+      align-items: center;
+      gap: 6px;
+      background: #0d1527;
+      border: 1px solid #1d2b45;
+      border-radius: 6px;
+      padding: 6px 8px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .stack-slot-row.active-sp-target {
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+      background: #111f38;
+    }
+
+    .stack-slot-row.slot-ra {
+      border-left: 4px solid var(--accent-purple);
+    }
+
+    .stack-slot-row.slot-callee {
+      border-left: 4px solid var(--accent-emerald);
+    }
+
+    .stack-slot-row.slot-arg {
+      border-left: 4px solid var(--accent-amber);
+    }
+
+    .stack-slot-row.slot-pad {
+      border-left: 4px dashed #475569;
+      opacity: 0.65;
+    }
+
+    .slot-addr {
+      font-family: ui-monospace, monospace;
+      font-size: 0.70rem;
+      color: #64748b;
+    }
+
+    .slot-offset {
+      font-family: ui-monospace, monospace;
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .slot-desc {
+      font-size: 0.74rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .slot-tag {
+      font-size: 0.65rem;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .slot-tag.tag-ra { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+    .slot-tag.tag-s { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .slot-tag.tag-arg { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .slot-tag.tag-pad { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
+
+    .slot-val {
+      font-family: ui-monospace, monospace;
+      font-size: 0.72rem;
+      color: #e2e8f0;
+      text-align: right;
+    }
+
+    /* 16-Byte boundary divider */
+    .boundary-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0;
+      font-size: 0.68rem;
+      color: #38bdf8;
+      font-weight: 700;
+      user-select: none;
+    }
+
+    .boundary-line::before, .boundary-line::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: rgba(56, 189, 248, 0.4);
+    }
+
+    /* ========================================================= */
+    /* RIGHT PANEL: CODE BUILDER & ABI VERIFIER (Teilaufgabe b) */
+    /* ========================================================= */
+    .builder-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .builder-mode-btn {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .builder-mode-btn.active {
+      background: #1e293b;
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    .assembly-editor-area {
+      flex: 1;
+      min-height: 220px;
+      background: #070b14;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      padding: 10px;
+      resize: none;
+      outline: none;
+      tab-size: 4;
+      box-sizing: border-box;
+      white-space: pre;
+    }
+
+    .assembly-editor-area:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.25);
+    }
+
+    .quick-chips-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      padding: 6px 0;
+    }
+
+    .quick-chip {
+      background: #131d31;
+      border: 1px solid #243553;
+      color: #94a3b8;
+      font-family: ui-monospace, monospace;
+      font-size: 0.70rem;
+      padding: 3px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.12s ease;
+    }
+
+    .quick-chip:hover {
+      background: #1e293b;
+      color: #38bdf8;
+      border-color: #38bdf8;
+    }
+
+    /* ABI Verifier Scorecard */
+    .scorecard-box {
+      background: #0b1220;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .scorecard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .scorecard-title {
+      font-size: 0.80rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scorecard-points {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.15);
+      padding: 2px 8px;
+      border-radius: 5px;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+
+    .abi-check-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .abi-check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      font-size: 0.74rem;
+      line-height: 1.35;
+      padding: 4px 6px;
+      border-radius: 4px;
+      background: #0d1527;
+      border-left: 3px solid #334155;
+    }
+
+    .abi-check-item.passed {
+      border-left-color: #10b981;
+      color: #e2e8f0;
+    }
+
+    .abi-check-item.failed {
+      border-left-color: #f43f5e;
+      color: #fb7185;
+      background: rgba(244, 63, 94, 0.08);
+    }
+
+    .check-icon {
+      font-weight: 800;
+      font-size: 0.78rem;
+    }
+
+    .check-icon.passed { color: #10b981; }
+    .check-icon.failed { color: #f43f5e; }
+
+    /* Solution Box Collapsible */
+    .musterloesung-drawer {
+      background: #0e172a;
+      border: 1px solid #283854;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .musterloesung-code {
+      background: #070b14;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 10px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      color: #34d399;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    /* Modal Overlay */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 8, 16, 0.85);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      width: 100%;
+      max-width: 860px;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 12px 18px;
+      background: #0f172a;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-body {
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    /* ABI Cheat-Sheet Table */
+    .abi-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.77rem;
+    }
+
+    .abi-table th {
+      background: #0b1220;
+      color: var(--text-muted);
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 2px solid var(--border-color);
+      font-weight: 700;
+    }
+
+    .abi-table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid #1a2538;
+      vertical-align: middle;
+    }
+
+    .abi-table tr:hover {
+      background: rgba(30, 41, 59, 0.5);
+    }
+
+    .tag-callee {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.70rem;
+    }
+
+    .tag-caller {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.70rem;
+    }
+
+    .tag-special {
+      background: rgba(168, 85, 247, 0.2);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.70rem;
+    }
+
+    /* Rules box in modal */
+    .golden-rules-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .rule-card {
+      background: #0b1220;
+      border: 1px solid #1e293b;
+      border-radius: 7px;
+      padding: 10px;
+    }
+
+    .rule-card h4 {
+      font-size: 0.82rem;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Floating Tooltip */
+    #globalTooltip {
+      position: fixed;
+      background: #0f172a;
+      border: 1px solid #38bdf8;
+      color: #f1f5f9;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      pointer-events: none;
+      z-index: 200;
+      display: none;
+      max-width: 280px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+      line-height: 1.35;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1100px) {
+      main {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+        overflow-y: auto;
+      }
+      .resizer { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="title-area">
+      <h1>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+        <span>Calling Conventions & Stack Trainer</span>
+      </h1>
+      <span class="badge-exam">Aufgabe 4 • 8 Punkte</span>
+      <span class="badge-sub">RISC-V ABI</span>
+    </div>
+
+    <div class="header-actions">
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tabAll" onclick="setAppView('all')">
+          <span>🖥️ Alles</span>
+        </button>
+        <button class="tab-btn" id="tabAuditor" onclick="setAppView('auditor')">
+          <span>🔍 Auditor (2P)</span>
+        </button>
+        <button class="tab-btn" id="tabVisualizer" onclick="setAppView('visualizer')">
+          <span>📦 Stack VM</span>
+        </button>
+        <button class="tab-btn" id="tabBuilder" onclick="setAppView('builder')">
+          <span>🛠️ Builder (6P)</span>
+        </button>
+      </div>
+
+      <button class="btn btn-primary" onclick="openModal('cheatSheetModal')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        ABI Spickzettel
+      </button>
+
+      <button class="btn" onclick="openModal('helpModal')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Hilfe
+      </button>
+    </div>
+  </header>
+
+  <!-- SUBHEADER / TASK BANNER -->
+  <div class="task-banner">
+    <div class="preset-selector-group">
+      <span class="preset-label">Szenario:</span>
+      <select id="presetSelect" class="preset-select" onchange="onSelectPreset(this.value)">
+        <option value="wise26">WiSe26: foo(a,b,c) mit bar(d,a) (8 Punkte)</option>
+        <option value="sose25">SoSe25: foo(a) mit bar(a,c) (8 Punkte)</option>
+        <option value="probeklausur">Probeklausur: magicBox(a,b) mit helper(b,c) (8 Punkte)</option>
+        <option value="leaf">Leaf vs Non-Leaf: Blattfunktion ohne Stack vs Non-Leaf</option>
+        <option value="multicall">Kettenaufruf: f1(x) gefolgt von f2(y, res1)</option>
+        <option value="generator">🎲 Endlos-Generator (Zufälliges Altklausur-Problem)</option>
+      </select>
+
+      <button id="btnRegenerate" class="btn" style="display:none;" onclick="generateRandomScenario()">
+        🔄 Neu würfeln
+      </button>
+
+      <div class="task-meta-badge" id="taskSignatureBadge">
+        <code>int foo(int a, int b, int c)</code>
+      </div>
+    </div>
+
+    <div class="points-hud">
+      <div class="score-chip points-a">
+        <span>Teil a:</span>
+        <span id="scoreAuditorDisplay">0 / 2 P</span>
+      </div>
+      <div class="score-chip points-b">
+        <span>Teil b:</span>
+        <span id="scoreBuilderDisplay">0 / 6 P</span>
+      </div>
+      <div class="score-chip points-total">
+        <span>Gesamt:</span>
+        <span id="scoreTotalDisplay">0 / 8 P</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN 3-PANEL VIEW -->
+  <main id="mainContainer">
+
+    <!-- PANEL 1: CODE AUDITOR (Teilaufgabe a — 2 Punkte) -->
+    <section class="panel" id="panelAuditor">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>🔍</span>
+          <span>Teilaufgabe (a): Fehler-Auditor</span>
+          <span class="panel-subtitle">(2 Punkte)</span>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn btn-success" id="btnVerifyAuditor" onclick="verifyAuditorMarks()">
+            ✓ Prüfen
+          </button>
+          <button class="btn" id="btnRevealAuditor" onclick="toggleAuditorMusterloesung()">
+            Musterlösung
+          </button>
+        </div>
+      </div>
+
+      <div class="panel-body">
+        <!-- C-Code Reference -->
+        <div class="code-card">
+          <div class="code-card-header">
+            <span>Original C-Code</span>
+            <span id="cCodeSignatureTag">C-Funktion</span>
+          </div>
+          <div class="code-content" id="cCodeContent"></div>
+        </div>
+
+        <!-- Auditor instruction -->
+        <div style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.4;">
+          Klicke auf die <span style="color:#38bdf8; font-weight:600;">Register-Chips</span> oder die <span style="color:#f43f5e; font-weight:600;">[Fehler markieren]</span>-Buttons in fehlerhaften Zeilen, um Verstöße gegen die RISC-V Aufrufkonventionen zu rügen.
+        </div>
+
+        <!-- Assembly with Clickable Registers -->
+        <div class="code-card">
+          <div class="code-card-header">
+            <span>Fehlerhafte Übersetzung (RISC-V)</span>
+            <span id="markedErrorsCountTag" style="color: #fb7185;">0 markiert</span>
+          </div>
+          <table class="auditor-table" id="auditorTable">
+            <tbody id="auditorTableBody"></tbody>
+          </table>
+        </div>
+
+        <!-- Error Classifier Drawer -->
+        <div class="error-classifier-card" id="errorClassifierCard" style="display: none;">
+          <div class="error-classifier-header">
+            <span id="classifierTargetLabel">Fehlertyp für Zeile zuweisen</span>
+            <button class="btn" style="padding: 2px 6px; font-size: 0.68rem;" onclick="closeClassifier()">✕</button>
+          </div>
+          <div class="error-tags-grid">
+            <button class="error-tag-btn" onclick="assignSelectedError('CLOBBERED_CALLEE')">
+              💥 Callee-saved s0-s11 überschrieben
+            </button>
+            <button class="error-tag-btn" onclick="assignSelectedError('LOST_RETURN_ADDR')">
+              🔄 ra überschrieben vor jal
+            </button>
+            <button class="error-tag-btn" onclick="assignSelectedError('DESTROYED_CALLER_REG')">
+              🗑️ aX / tX nach Aufruf gelesen
+            </button>
+            <button class="error-tag-btn" onclick="assignSelectedError('MISALIGNED_STACK')">
+              📐 Stack nicht 16-Byte ausgerichtet
+            </button>
+            <button class="error-tag-btn" onclick="assignSelectedError('STACK_ASYMMETRY')">
+              ⚖️ Stack-Leck (addi -X != +Y)
+            </button>
+            <button class="error-tag-btn" onclick="assignSelectedError('WRONG_RETURN_REG')">
+              🎯 Rückgabewert nicht in a0
+            </button>
+          </div>
+        </div>
+
+        <!-- Auditor Feedback & Musterlösung Box -->
+        <div class="audit-feedback-card" id="auditFeedbackCard">
+          <div class="audit-feedback-title info" id="auditFeedbackTitle">
+            <span>ℹ️</span> <span>Status: Warte auf Markierung</span>
+          </div>
+          <div id="auditFeedbackText" style="color: var(--text-muted);">
+            Finde alle Stellen, an denen Register unerlaubt überschrieben oder zerstörte Werte gelesen werden. Klicke auf "Prüfen", um deine Ausbeute zu bewerten.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESIZER 1 -->
+    <div class="resizer" id="resizer1"></div>
+
+    <!-- PANEL 2: STACK FRAME VISUALIZER & VM ANIMATION -->
+    <section class="panel" id="panelVisualizer">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>📦</span>
+          <span>Stack-Frame Visualizer</span>
+          <span class="panel-subtitle">(Animation & Speicher)</span>
+        </div>
+        <div style="display: flex; gap: 4px;">
+          <button class="btn" id="btnVmReset" onclick="resetVmSimulation()">⏮ Reset</button>
+          <button class="btn" id="btnVmStepBack" onclick="stepVmSimulation(-1)">◀</button>
+          <button class="btn btn-primary" id="btnVmStepForward" onclick="stepVmSimulation(1)">▶ Step</button>
+          <button class="btn" id="btnAutoPlay" onclick="toggleAutoPlay()">▶ Auto</button>
+        </div>
+      </div>
+
+      <div class="panel-body">
+        <div class="stack-visualizer-container">
+          
+          <!-- Stepper callout -->
+          <div class="stepper-bar">
+            <span class="curr-step-label" id="currentInstructionCallout">
+              PC: 0x00400000 | start
+            </span>
+            <div class="speed-slider-group">
+              <span>Tempo:</span>
+              <input type="range" min="300" max="1500" value="750" class="speed-slider" id="speedSlider">
+            </div>
+          </div>
+
+          <!-- Register State HUD -->
+          <div class="register-hud-grid">
+            <div class="hud-reg-box">
+              <div class="hud-reg-name">
+                <span>sp</span>
+                <span class="sp-align-badge aligned" id="spAlignBadge">16B OK</span>
+              </div>
+              <div class="hud-reg-val" id="valSp">0x7FFFFFF0</div>
+            </div>
+
+            <div class="hud-reg-box">
+              <div class="hud-reg-name"><span>ra</span> <span style="color:#c084fc;">Callee</span></div>
+              <div class="hud-reg-val" id="valRa">0x00400100</div>
+            </div>
+
+            <div class="hud-reg-box">
+              <div class="hud-reg-name"><span>s0</span> <span style="color:#34d399;">Callee</span></div>
+              <div class="hud-reg-val" id="valS0">0x00000042</div>
+            </div>
+
+            <div class="hud-reg-box">
+              <div class="hud-reg-name"><span>a0</span> <span style="color:#fbbf24;">Ret/Arg</span></div>
+              <div class="hud-reg-val" id="valA0">5</div>
+            </div>
+
+            <div class="hud-reg-box">
+              <div class="hud-reg-name"><span>a1</span> <span style="color:#fbbf24;">Arg</span></div>
+              <div class="hud-reg-val" id="valA1">7</div>
+            </div>
+
+            <div class="hud-reg-box">
+              <div class="hud-reg-name"><span>a2</span> <span style="color:#fbbf24;">Arg</span></div>
+              <div class="hud-reg-val" id="valA2">10</div>
+            </div>
+
+            <div class="hud-reg-box">
+              <div class="hud-reg-name"><span>t0</span> <span style="color:#fbbf24;">Temp</span></div>
+              <div class="hud-reg-val" id="valT0">0</div>
+            </div>
+
+            <div class="hud-reg-box">
+              <div class="hud-reg-name"><span>s1</span> <span style="color:#34d399;">Callee</span></div>
+              <div class="hud-reg-val" id="valS1">0x00000010</div>
+            </div>
+          </div>
+
+          <!-- Vertical Stack Column Visualizer -->
+          <div class="stack-scroll-area">
+            <div class="stack-growth-header">
+              <span>Höhere Adressen (Caller Stack)</span>
+              <div class="stack-growth-arrow">
+                <span>Wachstum ↓ nach unten</span>
+              </div>
+            </div>
+
+            <div class="stack-memory-column" id="stackMemorySlots">
+              <!-- Memory slots rendered by JS -->
+            </div>
+
+            <div style="font-size: 0.68rem; color: #475569; text-align: center; margin-top: auto; padding-top: 8px;">
+              Minderadressen (Heap / Data / Text Segment)
+            </div>
+          </div>
+
+          <!-- Step narration -->
+          <div class="audit-feedback-card" style="padding: 8px 10px;">
+            <div class="audit-feedback-title info" style="font-size: 0.70rem;">
+              <span>📝</span> <span>Ablauf-Protokoll:</span>
+            </div>
+            <div id="vmStepNarration" style="font-size: 0.74rem; color: #cbd5e1;">
+              Bereit zur Simulation. Klicke auf [▶ Step] um zu sehen, wie der Stack-Pointer manipuliert und Register gesichert werden.
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- RESIZER 2 -->
+    <div class="resizer" id="resizer2"></div>
+
+    <!-- PANEL 3: CODE CORRECTION BUILDER & ABI VERIFIER (Teilaufgabe b — 6 Punkte) -->
+    <section class="panel" id="panelBuilder">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>🛠️</span>
+          <span>Teilaufgabe (b): Korrekte Neuimplementierung</span>
+          <span class="panel-subtitle">(6 Punkte)</span>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn btn-primary" id="btnCheckFix" onclick="verifyStudentAssembly()">
+            🚀 Check My Fix
+          </button>
+          <button class="btn" id="btnRevealMusterloesung" onclick="revealBuilderMusterloesung()">
+            Musterlösung
+          </button>
+        </div>
+      </div>
+
+      <div class="panel-body">
+        <div style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.4;">
+          Schreibe die Funktion in RISC-V Assembler neu. Halte alle ABI-Regeln ein: 16-Byte Stack-Ausrichtung, Sicherung von <code style="color:#c084fc;">ra</code> und genutzten <code style="color:#34d399;">s0-s11</code>, Rettung von Argumenten über Aufrufe hinweg und Rückgabe in <code style="color:#fbbf24;">a0</code>.
+        </div>
+
+        <!-- Quick Insert Chips -->
+        <div class="quick-chips-bar">
+          <span style="font-size: 0.70rem; color: #64748b; margin-right: 4px; align-self: center;">Schnellbausteine:</span>
+          <span class="quick-chip" onclick="insertCodeSnippet('addi sp, sp, -16\n')">+ Prolog: addi sp, sp, -16</span>
+          <span class="quick-chip" onclick="insertCodeSnippet('sw ra, 12(sp)\n')">+ sw ra, 12(sp)</span>
+          <span class="quick-chip" onclick="insertCodeSnippet('sw s0, 8(sp)\n')">+ sw s0, 8(sp)</span>
+          <span class="quick-chip" onclick="insertCodeSnippet('jal ra, bar\n')">+ jal ra, bar</span>
+          <span class="quick-chip" onclick="insertCodeSnippet('lw ra, 12(sp)\n')">+ lw ra, 12(sp)</span>
+          <span class="quick-chip" onclick="insertCodeSnippet('addi sp, sp, 16\n')">+ Epilog: addi sp, sp, 16</span>
+          <span class="quick-chip" onclick="insertCodeSnippet('ret\n')">+ ret</span>
+        </div>
+
+        <!-- Monospace Assembly Editor -->
+        <textarea id="assemblyEditor" class="assembly-editor-area" spellcheck="false" placeholder="# Schreibe hier deine RISC-V Assembler-Lösung..."></textarea>
+
+        <!-- Automated ABI VM Scorecard -->
+        <div class="scorecard-box" id="abiScorecard">
+          <div class="scorecard-header">
+            <div class="scorecard-title">
+              <span>📋</span>
+              <span>ABI-Prüfbericht & Bewertungsmatrix</span>
+            </div>
+            <div class="scorecard-points" id="scorecardPointsBadge">0 / 6 P</div>
+          </div>
+
+          <div class="abi-check-list" id="abiCheckList">
+            <div class="abi-check-item">
+              <span class="check-icon">⏳</span>
+              <span>Noch nicht geprüft. Klicke auf [🚀 Check My Fix].</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Musterlösung Box Collapsible -->
+        <div class="musterloesung-drawer" id="builderMusterloesungDrawer" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.78rem; font-weight: 700; color: #34d399;">
+              ✓ Musterlösung der Klausur (100% Punkte)
+            </span>
+            <button class="btn" id="btnCopyMusterloesung" style="padding: 2px 6px; font-size: 0.68rem;" onclick="copyMusterloesungToEditor()">
+              In Editor übernehmen
+            </button>
+          </div>
+          <div class="musterloesung-code" id="builderMusterloesungCode"></div>
+          <div style="font-size: 0.72rem; color: #94a3b8; line-height: 1.4;" id="builderMusterloesungComment"></div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ABI CHEAT-SHEET MODAL -->
+  <div class="modal-overlay" id="cheatSheetModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>
+          <span>📋</span>
+          <span>RISC-V Calling Conventions (ABI) Spickzettel</span>
+        </h2>
+        <button class="btn" onclick="closeModal('cheatSheetModal')">✕ Schließen</button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Golden Rules -->
+        <div class="golden-rules-grid">
+          <div class="rule-card">
+            <h4 style="color: #38bdf8;">1. Wann braucht man den Stack?</h4>
+            <p>
+              • Bei <b>Nicht-Blattfunktionen (Non-leaf)</b>: Jeder Aufruf von <code>jal ra, func</code> überschreibt <code>ra</code>. <code>ra</code> <b>muss</b> im Prolog auf den Stack gerettet werden!<br>
+              • Bei Nutzung von <code>s0–s11</code>: Diese Register gehören dem Aufrufer. Wenn du sie nutzt, musst du sie vorher sichern und vor <code>ret</code> wiederherstellen.
+            </p>
+          </div>
+
+          <div class="rule-card">
+            <h4 style="color: #34d399;">2. 16-Byte Stack-Ausrichtung</h4>
+            <p>
+              • Der RISC-V Standard verlangt strictly <b>16-Byte Alignment</b>!<br>
+              • Jede Vergrößerung des Stacks <b>muss ein Vielfaches von 16 sein</b>: <code>addi sp, sp, -16</code>, <code>addi sp, sp, -32</code>.<br>
+              • <code>-14</code> oder <code>-8</code> ist ein kapitaler Klausurfehler (Punktabzug!).
+            </p>
+          </div>
+
+          <div class="rule-card">
+            <h4 style="color: #fbbf24;">3. Caller-saved vs. Callee-saved</h4>
+            <p>
+              • <b>Caller-saved (<code>t0–t6</code>, <code>a0–a7</code>)</b>: Freiwild! Eine aufgerufene Funktion darf sie beliebig überschreiben. Werte überleben keinen <code>jal</code>!<br>
+              • <b>Callee-saved (<code>s0–s11</code>, <code>sp</code>, <code>ra*</code>)</b>: Müssen über den Funktionsaufruf hinweg unberührt bleiben.
+            </p>
+          </div>
+
+          <div class="rule-card">
+            <h4 style="color: #fb7185;">4. Rückgabewert in a0</h4>
+            <p>
+              • Das Funktionsergebnis liegt <b>immer strictly in <code>a0</code></b> (und bei 64-Bit ggf. <code>a1</code>).<br>
+              • Rückgabe über <code>a1</code> oder ein temporäres Register ist falsch.
+            </p>
+          </div>
+        </div>
+
+        <!-- 32 Registers Table -->
+        <div style="font-weight: 700; font-size: 0.86rem; color: #fff; margin-top: 6px;">
+          Vollständige RISC-V Registertabelle (RV32I)
+        </div>
+
+        <table class="abi-table">
+          <thead>
+            <tr>
+              <th>Register</th>
+              <th>ABI-Name</th>
+              <th>Einstufung (Saver)</th>
+              <th>Überlebt Unterprogrammaufruf?</th>
+              <th>Beschreibung & Klausurrelevanz</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>x0</code></td>
+              <td><code>zero</code></td>
+              <td><span class="tag-special">Konstante 0</span></td>
+              <td>Ja (Hardware 0)</td>
+              <td>Immer 0, Schreibzugriffe werden ignoriert</td>
+            </tr>
+            <tr>
+              <td><code>x1</code></td>
+              <td><code>ra</code></td>
+              <td><span class="tag-callee">Callee-saved*</span></td>
+              <td><b>NEIN (durch jal überschrieben)</b></td>
+              <td>Rücksprungadresse. Bei Unterprogrammaufruf sofort auf den Stack sichern!</td>
+            </tr>
+            <tr>
+              <td><code>x2</code></td>
+              <td><code>sp</code></td>
+              <td><span class="tag-callee">Callee-saved</span></td>
+              <td>Ja</td>
+              <td>Stack-Pointer. Zeigt auf aktuellen Stackkopf. Muss symmetrisch sein!</td>
+            </tr>
+            <tr>
+              <td><code>x8, x9, x18–x27</code></td>
+              <td><code>s0–s1, s2–s11</code></td>
+              <td><span class="tag-callee">Callee-saved</span></td>
+              <td><b>JA (Garantie)</b></td>
+              <td>Gespeicherte Register. Wenn du sie überschreibst, musst du sie sichern & restaurieren!</td>
+            </tr>
+            <tr>
+              <td><code>x10–x17</code></td>
+              <td><code>a0–a7</code></td>
+              <td><span class="tag-caller">Caller-saved</span></td>
+              <td>NEIN (Gefahr!)</td>
+              <td>Funktionsargumente 1–8. <code>a0</code> enthält auch den Rückgabewert.</td>
+            </tr>
+            <tr>
+              <td><code>x5–x7, x28–x31</code></td>
+              <td><code>t0–t2, t3–t6</code></td>
+              <td><span class="tag-caller">Caller-saved</span></td>
+              <td>NEIN (Gefahr!)</td>
+              <td>Temporäre Zwischenspeicher ("Müllhalde"). Nach <code>jal</code> garantiert unbrauchbar.</td>
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- HELP MODAL -->
+  <div class="modal-overlay" id="helpModal">
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2>
+          <span>ℹ️</span>
+          <span>Bedienungsanleitung Trainer Aufgabe 4</span>
+        </h2>
+        <button class="btn" onclick="closeModal('helpModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <h4 style="color:#38bdf8;">Wie trainiere ich optimal für 8/8 Punkte?</h4>
+        <ol style="padding-left: 18px; display: flex; flex-direction: column; gap: 8px;">
+          <li><b>Schritt 1 (Teil a — 2 Punkte)</b>: Wähle ein Szenario (z.B. WiSe26 oder SoSe25). Klicke auf die Register oder Zeilen mit Fehlern und wähle die Fehlerursache aus. Klicke auf <i>Prüfen</i>.</li>
+          <li><b>Schritt 2 (Stack-Visualizer)</b>: Drücke auf <i>▶ Step</i> im mittleren Panel. Beobachte, wie der Stack nach unten wächst (<code>-16</code>) und die Register mit <code>sw</code> auf <code>12(sp)</code>, <code>8(sp)</code> gesichert werden.</li>
+          <li><b>Schritt 3 (Teil b — 6 Punkte)</b>: Schreibe im rechten Panel den korrekten Assemblercode mit sauberem Prolog, Körper und Epilog. Klicke auf <i>🚀 Check My Fix</i>. Die automatische virtuelle ABI-Maschine prüft deine Lösung!</li>
+          <li><b>Schritt 4 (Endlos-Training)</b>: Schalte oben auf <i>🎲 Endlos-Generator</i>, um beliebig viele neue Klausuraufgaben zu generieren und dein Können zu automatisieren.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Tooltip Element -->
+  <div id="globalTooltip"></div>
+
+  <!-- MAIN LOGIC ENGINE -->
+  <script>
+    /* =====================================================================
+       1. DATABASE OF EXAM PRESETS & ERROR METADATA
+       ===================================================================== */
+    const PRESETS = {
+      wise26: {
+        id: "wise26",
+        title: "WiSe26: foo(a,b,c) ruft bar(d,a)",
+        signature: "int foo(int a, int b, int c)",
+        cCode: `int foo(int a, int b, int c) {
+    int d = a + b;
+    int res = bar(d, a);
+    return res - c;
+}`,
+        brokenAsm: [
+          { line: 1, text: "foo:", type: "label" },
+          { line: 2, text: "add s0, a0, zero", mnemonic: "add", rd: "s0", rs1: "a0", rs2: "zero", comment: "s0 = a",
+            hasError: true, errorType: "CLOBBERED_CALLEE", errReg: "s0",
+            explanation: "s0 ist Callee-saved! Es darf nicht überschrieben werden, ohne vorher auf dem Stack gesichert zu werden." },
+          { line: 3, text: "add a0, a0, a1", mnemonic: "add", rd: "a0", rs1: "a0", rs2: "a1", comment: "d = a + b (erstes Arg für bar)" },
+          { line: 4, text: "add a1, s0, zero", mnemonic: "add", rd: "a1", rs1: "s0", rs2: "zero", comment: "zweites Arg für bar" },
+          { line: 5, text: "jal ra, bar", mnemonic: "jal", rd: "ra", target: "bar", comment: "bar(d, a)",
+            hasError: true, errorType: "LOST_RETURN_ADDR", errReg: "ra",
+            explanation: "jal ra, bar überschreibt ra mit der Rückkehradresse in foo! Die ursprüngliche Rückkehradresse zum Aufrufer von foo geht verloren." },
+          { line: 6, text: "sub a0, a0, a2", mnemonic: "sub", rd: "a0", rs1: "a0", rs2: "a2", comment: "res - c",
+            hasError: true, errorType: "DESTROYED_CALLER_REG", errReg: "a2",
+            explanation: "a2 ist Caller-saved! Die aufgerufene Funktion bar(...) hat das Recht, a0-a7 und t0-t6 zu überschreiben. a2 darf nach jal nicht mehr blind gelesen werden." },
+          { line: 7, text: "jalr zero, ra, 0", mnemonic: "jalr", rd: "zero", rs1: "ra", imm: "0", comment: "ret",
+            hasError: true, errorType: "LOST_RETURN_ADDR", errReg: "ra",
+            explanation: "ra zeigt nach dem jal auf Zeile 6, nicht zurück zum Aufrufer von foo!" }
+        ],
+        solutionAsm: `foo:
+    # 1. Prolog: Stack allokieren (16-Byte Ausrichtung)
+    addi sp, sp, -16
+    sw   ra, 12(sp)        # Caller Return-Adresse sichern
+    sw   s0, 8(sp)         # s0 sichern
+    sw   a2, 4(sp)         # c (a2) sichern, da nach bar() benötigt
+
+    # 2. Körper: Argumente vorbereiten
+    addi t0, a0, 0         # t0 = a
+    add  a0, a0, a1        # a0 = d = a + b (1. Argument)
+    addi a1, t0, 0         # a1 = a         (2. Argument)
+    jal  ra, bar           # bar(d, a) aufrufen, Ergebnis kommt in a0
+
+    # 3. Nachbereitung
+    lw   a2, 4(sp)         # c wiederherstellen
+    sub  a0, a0, a2        # a0 = res - c (Rückgabewert in a0!)
+
+    # 4. Epilog
+    lw   s0, 8(sp)         # s0 wiederherstellen
+    lw   ra, 12(sp)        # ra wiederherstellen
+    addi sp, sp, 16        # Stack freigeben (+16)
+    ret                    # Rücksprung zum Aufrufer`,
+        solutionComment: "16-Byte Stackrahmen: 12(sp)=ra, 8(sp)=s0, 4(sp)=a2. Argument a2 wird gerettet und nach dem Aufruf von bar() für die Subtraktion geladen."
+      },
+
+      sose25: {
+        id: "sose25",
+        title: "SoSe25: foo(a) ruft bar(a,c)",
+        signature: "int foo(int a)",
+        cCode: `int foo(int a) {
+    int b = a + 5;
+    int c = b - a;
+    int x = bar(a, c);
+    return x + c;
+}`,
+        brokenAsm: [
+          { line: 1, text: "foo:", type: "label" },
+          { line: 2, text: "addi s0, a0, 5", mnemonic: "addi", rd: "s0", rs1: "a0", imm: "5", comment: "b = a + 5",
+            hasError: true, errorType: "CLOBBERED_CALLEE", errReg: "s0",
+            explanation: "s0 darf nicht überschrieben werden (Callee-saved), ohne dass sein alter Wert vorher auf dem Stack gesichert wurde." },
+          { line: 3, text: "sub a1, s0, a0", mnemonic: "sub", rd: "a1", rs1: "s0", rs2: "a0", comment: "c = b - a" },
+          { line: 4, text: "jal ra, bar", mnemonic: "jal", rd: "ra", target: "bar", comment: "bar(a, c)",
+            hasError: true, errorType: "LOST_RETURN_ADDR", errReg: "ra",
+            explanation: "ra wird durch jal überschrieben und geht ohne Sicherung auf dem Stack verloren." },
+          { line: 5, text: "add a0, a0, a1", mnemonic: "add", rd: "a0", rs1: "a0", rs2: "a1", comment: "x + c",
+            hasError: true, errorType: "DESTROYED_CALLER_REG", errReg: "a1",
+            explanation: "a1 enthielt zuvor c, aber bar(a, c) darf Caller-saved Register verändern. a1 ist nach dem Aufruf unzuverlässig!" },
+          { line: 6, text: "jalr zero, ra, 0", mnemonic: "jalr", rd: "zero", rs1: "ra", imm: "0", comment: "ret",
+            hasError: true, errorType: "LOST_RETURN_ADDR", errReg: "ra",
+            explanation: "ra wurde zuvor überschrieben und springt nicht zum ursprünglichen Aufrufer zurück." }
+        ],
+        solutionAsm: `foo:
+    # 1. Prolog: 16-Byte Stackrahmen
+    addi sp, sp, -16
+    sw   ra, 12(sp)        # ra sichern
+    sw   s0, 8(sp)         # s0 sichern (nutzen wir für c)
+
+    # 2. Körper
+    addi t0, a0, 5         # t0 = b = a + 5
+    sub  s0, t0, a0        # s0 = c = b - a (Callee-saved, überlebt Aufruf!)
+    addi a1, s0, 0         # 2. Arg = c (in a1)
+                           # 1. Arg ist bereits a in a0
+    jal  ra, bar           # bar(a, c) -> Rückgabe in a0
+
+    # 3. Nachbereitung
+    add  a0, a0, s0        # a0 = x + c
+
+    # 4. Epilog
+    lw   s0, 8(sp)         # s0 wiederherstellen
+    lw   ra, 12(sp)        # ra wiederherstellen
+    addi sp, sp, 16        # Stack wiederherstellen (+16)
+    ret`,
+        solutionComment: "s0 wird gesichert und zur Erhaltung von c über bar() genutzt. Stack wird sauber um 16 Byte deallokiert."
+      },
+
+      probeklausur: {
+        id: "probeklausur",
+        title: "Probeklausur: magicBox(a,b) ruft helper(b,c)",
+        signature: "int magicBox(int a, int b)",
+        cCode: `int magicBox(int a, int b) {
+    int c = a + 10;
+    int d = helper(b, c);
+    return d + a;
+}`,
+        brokenAsm: [
+          { line: 1, text: "magicBox:", type: "label" },
+          { line: 2, text: "addi sp, sp, -14", mnemonic: "addi", rd: "sp", rs1: "sp", imm: "-14", comment: "Stack-Allokation",
+            hasError: true, errorType: "MISALIGNED_STACK", errReg: "sp",
+            explanation: "Stack ist nicht auf ein Vielfaches von 16 Byte ausgerichtet! Der Stack-Pointer MUSS strictly 16-Byte-aligned sein (z.B. -16 statt -14)." },
+          { line: 3, text: "sw ra, 0(sp)", mnemonic: "sw", rs2: "ra", rs1: "sp", imm: "0", comment: "ra sichern" },
+          { line: 4, text: "mv t0, a0", mnemonic: "mv", rd: "t0", rs1: "a0", comment: "a in t0 retten",
+            hasError: true, errorType: "DESTROYED_CALLER_REG", errReg: "t0",
+            explanation: "t0 ist ein Caller-Saved Register! helper() darf t0 überschreiben. a muss in einem s-Register oder auf dem Stack gerettet werden." },
+          { line: 5, text: "addi s1, a0, 10", mnemonic: "addi", rd: "s1", rs1: "a0", imm: "10", comment: "c = a + 10",
+            hasError: true, errorType: "CLOBBERED_CALLEE", errReg: "s1",
+            explanation: "s1 ist Callee-Saved! magicBox nutzt s1, sichert es jedoch nicht auf dem Stack." },
+          { line: 6, text: "mv a0, a1", mnemonic: "mv", rd: "a0", rs1: "a1", comment: "1. Arg = b" },
+          { line: 7, text: "mv a1, s1", mnemonic: "mv", rd: "a1", rs1: "s1", comment: "2. Arg = c" },
+          { line: 8, text: "jal ra, helper", mnemonic: "jal", rd: "ra", target: "helper", comment: "helper(b, c)" },
+          { line: 9, text: "add a1, a0, t0", mnemonic: "add", rd: "a1", rs1: "a0", rs2: "t0", comment: "d + a",
+            hasError: true, errorType: "WRONG_RETURN_REG", errReg: "a1",
+            explanation: "Der Rückgabewert muss immer in a0 liegen, nicht in a1! Zudem wird hier das potentiell zerstörte t0 verwendet." },
+          { line: 10, text: "lw ra, 0(sp)", mnemonic: "lw", rd: "ra", rs1: "sp", imm: "0", comment: "ra wiederherstellen" },
+          { line: 11, text: "addi sp, sp, 14", mnemonic: "addi", rd: "sp", rs1: "sp", imm: "14", comment: "Stack freigeben",
+            hasError: true, errorType: "STACK_ASYMMETRY", errReg: "sp",
+            explanation: "Stack-Ausrichtung muss 16-Byte entsprechen (also +16 statt +14)." },
+          { line: 12, text: "ret", mnemonic: "ret", comment: "Rücksprung" }
+        ],
+        solutionAsm: `magicBox:
+    # 1. Prolog: 16-Byte Ausrichtung
+    addi sp, sp, -16       # 16 statt 14 Bytes!
+    sw   ra, 12(sp)        # Rücksprungadresse sichern
+    sw   s0, 8(sp)         # s0 sichern (für a)
+    sw   s1, 4(sp)         # s1 sichern (für c)
+
+    # 2. Körper
+    mv   s0, a0            # s0 = a (im s-Register statt t-Register!)
+    addi s1, a0, 10        # s1 = c = a + 10
+    mv   a0, a1            # a0 = b (1. Argument)
+    mv   a1, s1            # a1 = c (2. Argument)
+    jal  ra, helper        # d = helper(b, c) -> Ergebnis in a0
+
+    # 3. Nachbereitung
+    add  a0, a0, s0        # Ergebnis in a0 = d + a (Korrektur: a0 statt a1!)
+
+    # 4. Epilog
+    lw   s1, 4(sp)         # s1 wiederherstellen
+    lw   s0, 8(sp)         # s0 wiederherstellen
+    lw   ra, 12(sp)        # ra wiederherstellen
+    addi sp, sp, 16        # 16 statt 14 Bytes
+    ret`,
+        solutionComment: "Exakt die offizielle Musterlösung der Probeklausur mit 5 korrigierten Fehlern: 16B Stack, s0 für a, s1 gesichert, Rückgabe in a0."
+      },
+
+      leaf: {
+        id: "leaf",
+        title: "Leaf vs Non-Leaf: Blattfunktion",
+        signature: "int leafCalc(int a, int b)",
+        cCode: `int leafCalc(int a, int b) {
+    // Blattfunktion: ruft KEINE andere Funktion auf!
+    int temp = a * 2 + b;
+    return temp - 1;
+}`,
+        brokenAsm: [
+          { line: 1, text: "leafCalc:", type: "label" },
+          { line: 2, text: "addi sp, sp, -16", mnemonic: "addi", rd: "sp", rs1: "sp", imm: "-16" },
+          { line: 3, text: "sw ra, 12(sp)", mnemonic: "sw", rs2: "ra", rs1: "sp", imm: "12",
+            hasError: false, comment: "Überflüssig aber erlaubt, ODER:" },
+          { line: 4, text: "add s0, a0, a0", mnemonic: "add", rd: "s0", rs1: "a0", rs2: "a0",
+            hasError: true, errorType: "CLOBBERED_CALLEE", errReg: "s0",
+            explanation: "Auch in Blattfunktionen darf s0 nicht ohne Sicherung überschrieben werden! Nutze stattdessen t0-t6." },
+          { line: 5, text: "add a0, s0, a1", mnemonic: "add", rd: "a0", rs1: "s0", rs2: "a1" },
+          { line: 6, text: "addi a0, a0, -1", mnemonic: "addi", rd: "a0", rs1: "a0", imm: "-1" },
+          { line: 7, text: "addi sp, sp, 16", mnemonic: "addi", rd: "sp", rs1: "sp", imm: "16" },
+          { line: 8, text: "ret", mnemonic: "ret" }
+        ],
+        solutionAsm: `leafCalc:
+    # Optimierte Blattfunktion: KEIN Stack nötig, wenn nur t0-t6 genutzt werden!
+    add  t0, a0, a0        # t0 = a * 2 (t0 ist Caller-saved, frei nutzbar!)
+    add  a0, t0, a1        # a0 = temp = t0 + b
+    addi a0, a0, -1        # a0 = temp - 1 (Ergebnis in a0)
+    ret                    # Direkter Rücksprung, ra ist unangetastet`,
+        solutionComment: "Da die Funktion keine Unterprogramme ruft (Blattfunktion), muss ra nicht gesichert werden. Wenn nur t-Register genutzt werden, entfällt der Stack komplett!"
+      },
+
+      multicall: {
+        id: "multicall",
+        title: "Kettenaufruf: f1(x) gefolgt von f2(y, res1)",
+        signature: "int chain(int x, int y)",
+        cCode: `int chain(int x, int y) {
+    int r1 = f1(x);
+    int r2 = f2(y, r1);
+    return r2;
+}`,
+        brokenAsm: [
+          { line: 1, text: "chain:", type: "label" },
+          { line: 2, text: "jal ra, f1", mnemonic: "jal", rd: "ra", target: "f1",
+            hasError: true, errorType: "LOST_RETURN_ADDR", errReg: "ra",
+            explanation: "ra nicht im Prolog auf dem Stack gesichert vor dem ersten Aufruf!" },
+          { line: 3, text: "mv a1, a0", mnemonic: "mv", rd: "a1", rs1: "a0", comment: "res1 als 2. Arg für f2" },
+          { line: 4, text: "mv a0, a1", mnemonic: "mv", rd: "a0", rs1: "a1",
+            hasError: true, errorType: "DESTROYED_CALLER_REG", errReg: "a1",
+            explanation: "y war in a1, wurde aber durch f1 überschrieben oder zerstört! y muss im Prolog gesichert werden." },
+          { line: 5, text: "jal ra, f2", mnemonic: "jal", rd: "ra", target: "f2" },
+          { line: 6, text: "ret", mnemonic: "ret",
+            hasError: true, errorType: "LOST_RETURN_ADDR", errReg: "ra",
+            explanation: "ra ist durch die Aufrufe zerstört." }
+        ],
+        solutionAsm: `chain:
+    # 1. Prolog: 16-Byte Stack
+    addi sp, sp, -16
+    sw   ra, 12(sp)        # ra sichern
+    sw   s0, 8(sp)         # s0 sichern (für y)
+
+    # 2. Körper
+    mv   s0, a1            # y in s0 retten
+    jal  ra, f1            # f1(x), Ergebnis r1 kommt in a0
+
+    mv   a1, a0            # 2. Arg für f2 = r1
+    mv   a0, s0            # 1. Arg für f2 = y (aus s0)
+    jal  ra, f2            # f2(y, r1), Ergebnis r2 kommt in a0
+
+    # 3. Epilog
+    lw   s0, 8(sp)         # s0 wiederherstellen
+    lw   ra, 12(sp)        # ra wiederherstellen
+    addi sp, sp, 16        # Stack freigeben (+16)
+    ret`,
+        solutionComment: "y wird in s0 über den ersten Aufruf f1() gerettet. ra wird gesichert und vor ret wiederhergestellt."
+      }
+    };
+
+    /* Register Classification Catalog for ABI */
+    const REGISTER_META = {
+      zero: { abi: "zero", num: "x0", saver: "constant", desc: "Hardwired 0" },
+      ra:   { abi: "ra",   num: "x1", saver: "callee",   desc: "Return address (Callee-saved across function, but clobbered by jal!)" },
+      sp:   { abi: "sp",   num: "x2", saver: "callee",   desc: "Stack pointer (Must be 16-byte aligned)" },
+      gp:   { abi: "gp",   num: "x3", saver: "special",  desc: "Global pointer" },
+      tp:   { abi: "tp",   num: "x4", saver: "special",  desc: "Thread pointer" },
+      t0:   { abi: "t0",   num: "x5", saver: "caller",   desc: "Temporary 0 (Destroyed by child calls)" },
+      t1:   { abi: "t1",   num: "x6", saver: "caller",   desc: "Temporary 1" },
+      t2:   { abi: "t2",   num: "x7", saver: "caller",   desc: "Temporary 2" },
+      s0:   { abi: "s0",   num: "x8", saver: "callee",   desc: "Saved 0 / Frame pointer (Preserve on stack!)" },
+      s1:   { abi: "s1",   num: "x9", saver: "callee",   desc: "Saved 1 (Preserve on stack!)" },
+      a0:   { abi: "a0",   num: "x10", saver: "caller",  desc: "Arg 0 / Return value" },
+      a1:   { abi: "a1",   num: "x11", saver: "caller",  desc: "Arg 1 / Return value 2" },
+      a2:   { abi: "a2",   num: "x12", saver: "caller",  desc: "Arg 2" },
+      a3:   { abi: "a3",   num: "x13", saver: "caller",  desc: "Arg 3" },
+      a4:   { abi: "a4",   num: "x14", saver: "caller",  desc: "Arg 4" },
+      a5:   { abi: "a5",   num: "x15", saver: "caller",  desc: "Arg 5" },
+      a6:   { abi: "a6",   num: "x16", saver: "caller",  desc: "Arg 6" },
+      a7:   { abi: "a7",   num: "x17", saver: "caller",  desc: "Arg 7" },
+      s2:   { abi: "s2",   num: "x18", saver: "callee",  desc: "Saved 2" },
+      s3:   { abi: "s3",   num: "x19", saver: "callee",  desc: "Saved 3" },
+      s4:   { abi: "s4",   num: "x20", saver: "callee",  desc: "Saved 4" },
+      s5:   { abi: "s5",   num: "x21", saver: "callee",  desc: "Saved 5" },
+      s6:   { abi: "s6",   num: "x22", saver: "callee",  desc: "Saved 6" },
+      s7:   { abi: "s7",   num: "x23", saver: "callee",  desc: "Saved 7" },
+      s8:   { abi: "s8",   num: "x24", saver: "callee",  desc: "Saved 8" },
+      s9:   { abi: "s9",   num: "x25", saver: "callee",  desc: "Saved 9" },
+      s10:  { abi: "s10",  num: "x26", saver: "callee",  desc: "Saved 10" },
+      s11:  { abi: "s11",  num: "x27", saver: "callee",  desc: "Saved 11" },
+      t3:   { abi: "t3",   num: "x28", saver: "caller",  desc: "Temporary 3" },
+      t4:   { abi: "t4",   num: "x29", saver: "caller",  desc: "Temporary 4" },
+      t5:   { abi: "t5",   num: "x30", saver: "caller",  desc: "Temporary 5" },
+      t6:   { abi: "t6",   num: "x31", saver: "caller",  desc: "Temporary 6" }
+    };
+
+    /* Error Classification Info */
+    const ERROR_DEFS = {
+      CLOBBERED_CALLEE: {
+        title: "Callee-saved Register überschrieben",
+        desc: "s0-s11 müssen vor Nutzung gesichert und vor ret wiederhergestellt werden!"
+      },
+      LOST_RETURN_ADDR: {
+        title: "Return-Adresse (ra) verloren",
+        desc: "jal überschreibt ra. Ohne vorheriges sw ra auf den Stack ist kein Rücksprung mehr möglich!"
+      },
+      DESTROYED_CALLER_REG: {
+        title: "Caller-saved Register nach Aufruf gelesen",
+        desc: "Aufgerufene Funktionen dürfen a0-a7 und t0-t6 zerstören. Nicht nach jal blind lesen!"
+      },
+      MISALIGNED_STACK: {
+        title: "Stack-Ausrichtung verletzt",
+        desc: "Stack-Allokation muss strictly ein Vielfaches von 16 Byte sein (-16, -32)!"
+      },
+      STACK_ASYMMETRY: {
+        title: "Stack-Leck / Asymmetrie",
+        desc: "Allokation (-X) und Deallokation (+Y) stimmen nicht überein!"
+      },
+      WRONG_RETURN_REG: {
+        title: "Falsches Rückgaberegister",
+        desc: "Rückgabewert muss laut RISC-V ABI immer strictly in a0 liegen!"
+      }
+    };
+
+    /* =====================================================================
+       2. APPLICATION STATE
+       ===================================================================== */
+    let currentPresetKey = "wise26";
+    let activePreset = PRESETS.wise26;
+    let studentAuditorMarks = {}; // lineIndex -> { errorType, reg }
+    let classifierActiveLine = null;
+    let classifierActiveReg = null;
+
+    // Scores
+    let scoreTeilA = 0; // max 2
+    let scoreTeilB = 0; // max 6
+
+    // VM State for Visualizer
+    let vmTrace = [];
+    let vmCurrentStepIndex = 0;
+    let autoPlayTimer = null;
+
+    /* =====================================================================
+       3. INITIALIZATION
+       ===================================================================== */
+    window.addEventListener("DOMContentLoaded", () => {
+      initResizers();
+      loadPreset("wise26");
+      initTooltips();
+    });
+
+    function setAppView(mode) {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      const pAuditor = document.getElementById("panelAuditor");
+      const pVisualizer = document.getElementById("panelVisualizer");
+      const pBuilder = document.getElementById("panelBuilder");
+      const res1 = document.getElementById("resizer1");
+      const res2 = document.getElementById("resizer2");
+      const container = document.getElementById("mainContainer");
+
+      if (mode === "all") {
+        document.getElementById("tabAll").classList.add("active");
+        pAuditor.style.display = "flex";
+        pVisualizer.style.display = "flex";
+        pBuilder.style.display = "flex";
+        res1.style.display = "flex";
+        res2.style.display = "flex";
+        container.style.gridTemplateColumns = "1fr 6px 440px 6px 1.15fr";
+      } else if (mode === "auditor") {
+        document.getElementById("tabAuditor").classList.add("active");
+        pAuditor.style.display = "flex";
+        pVisualizer.style.display = "none";
+        pBuilder.style.display = "none";
+        res1.style.display = "none";
+        res2.style.display = "none";
+        container.style.gridTemplateColumns = "1fr";
+      } else if (mode === "visualizer") {
+        document.getElementById("tabVisualizer").classList.add("active");
+        pAuditor.style.display = "none";
+        pVisualizer.style.display = "flex";
+        pBuilder.style.display = "none";
+        res1.style.display = "none";
+        res2.style.display = "none";
+        container.style.gridTemplateColumns = "1fr";
+      } else if (mode === "builder") {
+        document.getElementById("tabBuilder").classList.add("active");
+        pAuditor.style.display = "none";
+        pVisualizer.style.display = "none";
+        pBuilder.style.display = "flex";
+        res1.style.display = "none";
+        res2.style.display = "none";
+        container.style.gridTemplateColumns = "1fr";
+      }
+    }
+
+    /* =====================================================================
+       4. PRESET LOADING & RENDERING
+       ===================================================================== */
+    function onSelectPreset(key) {
+      if (key === "generator") {
+        document.getElementById("btnRegenerate").style.display = "inline-flex";
+        generateRandomScenario();
+      } else {
+        document.getElementById("btnRegenerate").style.display = "none";
+        loadPreset(key);
+      }
+    }
+
+    function loadPreset(key) {
+      currentPresetKey = key;
+      activePreset = PRESETS[key];
+      studentAuditorMarks = {};
+      classifierActiveLine = null;
+      document.getElementById("errorClassifierCard").style.display = "none";
+      document.getElementById("builderMusterloesungDrawer").style.display = "none";
+
+      // Reset scores for this task
+      scoreTeilA = 0;
+      scoreTeilB = 0;
+      updateScoreHUD();
+
+      // Set Task Header
+      document.getElementById("taskSignatureBadge").innerHTML = `<code>${activePreset.signature}</code>`;
+      document.getElementById("cCodeSignatureTag").innerText = activePreset.title;
+      renderCCode(activePreset.cCode);
+
+      // Render Auditor Table
+      renderAuditorTable();
+
+      // Reset Auditor Feedback
+      document.getElementById("auditFeedbackTitle").className = "audit-feedback-title info";
+      document.getElementById("auditFeedbackTitle").innerHTML = `<span>ℹ️</span> <span>Status: Warte auf Markierung</span>`;
+      document.getElementById("auditFeedbackText").innerHTML = `Finde alle Stellen, an denen Register unerlaubt überschrieben oder zerstörte Werte gelesen werden. Klicke auf "Prüfen", um deine Ausbeute zu bewerten.`;
+
+      // Load starter template into editor
+      document.getElementById("assemblyEditor").value = `# ${activePreset.signature}\n# Implementiere die korrekte Funktion:\n\n${activePreset.brokenAsm[0].text}\n    # 1. Prolog: Stack allokieren (16-Byte Ausrichtung)\n    addi sp, sp, -16\n    sw   ra, 12(sp)\n\n    # 2. Körper\n\n    # 3. Epilog\n    lw   ra, 12(sp)\n    addi sp, sp, 16\n    ret\n`;
+
+      // Set Musterlösung drawer content
+      document.getElementById("builderMusterloesungCode").innerText = activePreset.solutionAsm;
+      document.getElementById("builderMusterloesungComment").innerText = activePreset.solutionComment;
+
+      // Reset ABI Scorecard
+      document.getElementById("scorecardPointsBadge").innerText = "0 / 6 P";
+      document.getElementById("abiCheckList").innerHTML = `
+        <div class="abi-check-item">
+          <span class="check-icon">⏳</span>
+          <span>Noch nicht geprüft. Klicke auf [🚀 Check My Fix].</span>
+        </div>
+      `;
+
+      // Build & Init VM Simulation Trace
+      buildVmTrace();
+      resetVmSimulation();
+    }
+
+    function renderCCode(code) {
+      // Basic syntax highlight for C code
+      let formatted = code
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/\b(int|void|char)\b/g, '<span class="c-type">$1</span>')
+        .replace(/\b(return)\b/g, '<span class="c-keyword">$1</span>')
+        .replace(/\b(foo|bar|magicBox|helper|leafCalc|chain|f1|f2)\b/g, '<span class="c-func">$1</span>')
+        .replace(/(\/\/.*$)/gm, '<span class="c-comment">$1</span>');
+      document.getElementById("cCodeContent").innerHTML = formatted;
+    }
+
+    function renderAuditorTable() {
+      const tbody = document.getElementById("auditorTableBody");
+      tbody.innerHTML = "";
+
+      let markedCount = Object.keys(studentAuditorMarks).length;
+      document.getElementById("markedErrorsCountTag").innerText = `${markedCount} markiert`;
+
+      activePreset.brokenAsm.forEach((item, idx) => {
+        const tr = document.createElement("tr");
+        tr.id = `auditRow_${idx}`;
+        if (studentAuditorMarks[idx]) {
+          tr.classList.add("has-error-marked");
+        }
+
+        const tdNum = document.createElement("td");
+        tdNum.className = "line-num";
+        tdNum.innerText = item.line;
+
+        const tdCode = document.createElement("td");
+        tdCode.className = "asm-instruction";
+
+        if (item.type === "label") {
+          tdCode.innerHTML = `<span style="color:#fbbf24; font-weight:700;">${item.text}</span>`;
+        } else {
+          // Break into tokens
+          const parts = item.text.split(/(\s+|,|\(|\))/).filter(p => p.trim().length > 0 && p !== ",");
+          const tokensHtml = parts.map(part => {
+            const clean = part.replace(/[(),]/g, "");
+            if (REGISTER_META[clean]) {
+              const r = REGISTER_META[clean];
+              let cls = "reg-plain";
+              if (r.saver === "callee") cls = "reg-callee";
+              else if (r.saver === "caller") cls = "reg-caller";
+              else if (r.saver === "special") cls = "reg-special";
+
+              const isMarked = studentAuditorMarks[idx] && studentAuditorMarks[idx].reg === clean;
+              if (isMarked) cls += " marked-error";
+
+              return `<span class="reg-chip ${cls}" data-tooltip="${r.desc}" onclick="onRegisterChipClick(${idx}, '${clean}', event)">${part}</span>`;
+            } else if (clean === item.mnemonic) {
+              return `<span class="asm-mnemonic">${part}</span>`;
+            } else {
+              return `<span>${part}</span>`;
+            }
+          }).join(" ");
+
+          tdCode.innerHTML = tokensHtml;
+
+          if (item.comment) {
+            tdCode.innerHTML += ` <span style="color:#64748b; font-size:0.72rem; margin-left:8px;"># ${item.comment}</span>`;
+          }
+
+          // Mark button
+          const isMarked = !!studentAuditorMarks[idx];
+          const btnMark = document.createElement("button");
+          btnMark.className = `btn-mark-line ${isMarked ? 'active' : ''}`;
+          btnMark.innerHTML = isMarked ? `⚠️ Markiert` : `🚩 Fehler rügen`;
+          btnMark.onclick = (e) => {
+            e.stopPropagation();
+            openClassifier(idx, null);
+          };
+          tdCode.appendChild(btnMark);
+        }
+
+        tr.appendChild(tdNum);
+        tr.appendChild(tdCode);
+        tbody.appendChild(tr);
+      });
+    }
+
+    /* =====================================================================
+       5. INTERACTIVE CODE AUDITOR (TEILAUFGABE a — 2 PUNKTE)
+       ===================================================================== */
+    function onRegisterChipClick(lineIdx, regName, event) {
+      event.stopPropagation();
+      openClassifier(lineIdx, regName);
+    }
+
+    function openClassifier(lineIdx, regName) {
+      classifierActiveLine = lineIdx;
+      classifierActiveReg = regName;
+      const card = document.getElementById("errorClassifierCard");
+      card.style.display = "flex";
+
+      const lineData = activePreset.brokenAsm[lineIdx];
+      const targetText = regName ? `Register "${regName}" in Zeile ${lineData.line}` : `Zeile ${lineData.line}: ${lineData.text}`;
+      document.getElementById("classifierTargetLabel").innerText = `Fehlertyp wählen für: ${targetText}`;
+
+      // Highlight currently selected tag if already marked
+      document.querySelectorAll(".error-tag-btn").forEach(btn => btn.classList.remove("selected"));
+      if (studentAuditorMarks[lineIdx]) {
+        const markedType = studentAuditorMarks[lineIdx].errorType;
+        document.querySelectorAll(".error-tag-btn").forEach(btn => {
+          if (btn.getAttribute("onclick").includes(markedType)) {
+            btn.classList.add("selected");
+          }
+        });
+      }
+    }
+
+    function closeClassifier() {
+      document.getElementById("errorClassifierCard").style.display = "none";
+      classifierActiveLine = null;
+      classifierActiveReg = null;
+    }
+
+    function assignSelectedError(errorType) {
+      if (classifierActiveLine === null) return;
+      
+      // If already marked with this type, unmark it (toggle)
+      if (studentAuditorMarks[classifierActiveLine] && studentAuditorMarks[classifierActiveLine].errorType === errorType) {
+        delete studentAuditorMarks[classifierActiveLine];
+      } else {
+        studentAuditorMarks[classifierActiveLine] = {
+          errorType: errorType,
+          reg: classifierActiveReg
+        };
+      }
+
+      closeClassifier();
+      renderAuditorTable();
+    }
+
+    function verifyAuditorMarks() {
+      let trueErrors = activePreset.brokenAsm.filter(x => x.hasError);
+      let totalTrue = trueErrors.length;
+      let correctlyFound = 0;
+      let falsePositives = 0;
+
+      activePreset.brokenAsm.forEach((item, idx) => {
+        const row = document.getElementById(`auditRow_${idx}`);
+        if (!row) return;
+
+        row.classList.remove("correctly-marked", "has-error-marked");
+
+        if (studentAuditorMarks[idx]) {
+          if (item.hasError) {
+            correctlyFound++;
+            row.classList.add("correctly-marked");
+          } else {
+            falsePositives++;
+            row.classList.add("has-error-marked");
+          }
+        }
+      });
+
+      // Calculate score for Teilaufgabe a (max 2 points)
+      let score = 0;
+      if (totalTrue > 0) {
+        let ratio = (correctlyFound - falsePositives * 0.5) / totalTrue;
+        if (ratio < 0) ratio = 0;
+        score = Math.round(ratio * 2 * 10) / 10;
+        if (score > 2) score = 2;
+      }
+      scoreTeilA = score;
+      updateScoreHUD();
+
+      const titleEl = document.getElementById("auditFeedbackTitle");
+      const textEl = document.getElementById("auditFeedbackText");
+
+      if (correctlyFound === totalTrue && falsePositives === 0) {
+        titleEl.className = "audit-feedback-title ok";
+        titleEl.innerHTML = `<span>🎉</span> <span>Volle Punktzahl: 2.0 / 2.0 Punkte!</span>`;
+        textEl.innerHTML = `Perfekt! Alle <b>${totalTrue} Fehler</b> wurden treffsicher identifiziert, ohne falsche Verdächtigungen. Die Begründungen decken sich exakt mit der Klausur-Musterlösung!`;
+      } else {
+        titleEl.className = "audit-feedback-title err";
+        titleEl.innerHTML = `<span>⚠️</span> <span>Ergebnis: ${scoreTeilA} / 2.0 Punkte</span>`;
+        textEl.innerHTML = `Gefundene echte Fehler: <b>${correctlyFound} von ${totalTrue}</b>. Falsche Verdächtigungen: <b>${falsePositives}</b>.<br>Tipp: Klicke auf <i>Musterlösung</i>, um alle Klausurfehler mit detaillierten ABI-Begründungen einzublenden.`;
+      }
+    }
+
+    function toggleAuditorMusterloesung() {
+      // Auto-populate all genuine errors
+      studentAuditorMarks = {};
+      activePreset.brokenAsm.forEach((item, idx) => {
+        if (item.hasError) {
+          studentAuditorMarks[idx] = {
+            errorType: item.errorType,
+            reg: item.errReg
+          };
+        }
+      });
+
+      renderAuditorTable();
+      verifyAuditorMarks();
+
+      // Show comprehensive explanation
+      const titleEl = document.getElementById("auditFeedbackTitle");
+      const textEl = document.getElementById("auditFeedbackText");
+      titleEl.className = "audit-feedback-title ok";
+      titleEl.innerHTML = `<span>👁️</span> <span>Musterlösung Teil (a) aufgedeckt</span>`;
+
+      let report = "<ul style='padding-left:16px; margin-top:4px;'>";
+      activePreset.brokenAsm.forEach((item) => {
+        if (item.hasError) {
+          report += `<li style='margin-bottom:4px;'><b>Zeile ${item.line} (<code>${item.text}</code>):</b> ${item.explanation}</li>`;
+        }
+      });
+      report += "</ul>";
+      textEl.innerHTML = report;
+    }
+
+    /* =====================================================================
+       6. STACK FRAME VISUALIZER & VM SIMULATOR ENGINE
+       ===================================================================== */
+    function buildVmTrace() {
+      // We simulate step-by-step execution of the CORRECT solution so student visualizes correct ABI behavior
+      vmTrace = [];
+      const baseSp = 0x7FFFFFF0;
+      let currSp = baseSp;
+      let regs = {
+        sp: baseSp,
+        ra: 0x00400100, // caller return address
+        s0: 0x00000042, // caller's s0 value
+        s1: 0x00000010,
+        a0: 5,
+        a1: 7,
+        a2: 10,
+        t0: 0
+      };
+      let memory = {}; // addr -> { val, tag, label, reg }
+
+      // Step 0: Initial
+      vmTrace.push({
+        inst: "Start: Eintritt in Funktion",
+        narration: "Eintritt in die Funktion. sp zeigt auf 0x7FFFFFF0 (16-Byte ausgerichtet). ra enthält die Rücksprungadresse zum Aufrufer.",
+        regs: { ...regs },
+        memory: JSON.parse(JSON.stringify(memory)),
+        spTargetOffset: null
+      });
+
+      // Step 1: Prologue allocation
+      currSp -= 16;
+      regs.sp = currSp;
+      memory[currSp + 12] = { val: "0x00400100", tag: "tag-ra", label: "12(sp)", name: "ra (Caller Ret)" };
+      memory[currSp + 8]  = { val: "0x00000042", tag: "tag-s",  label: "8(sp)",  name: "s0 (Caller s0)" };
+      memory[currSp + 4]  = { val: "10",         tag: "tag-arg",label: "4(sp)",  name: "a2 / c (Arg Rettung)" };
+      memory[currSp + 0]  = { val: "0x00000000", tag: "tag-pad",label: "0(sp)",  name: "Padding (16B Ausrichtung)" };
+
+      vmTrace.push({
+        inst: "addi sp, sp, -16",
+        narration: "Prolog: Stackpointer um 16 Byte dekrementiert (Stack wächst nach unten!). 0x7FFFFFF0 -> 0x7FFFFFE0. 16-Byte-Ausrichtung bleibt strikt gewahrt.",
+        regs: { ...regs },
+        memory: {
+          [currSp + 12]: { val: "--", tag: "tag-ra", label: "12(sp)", name: "ra Slot" },
+          [currSp + 8]:  { val: "--", tag: "tag-s",  label: "8(sp)",  name: "s0 Slot" },
+          [currSp + 4]:  { val: "--", tag: "tag-arg",label: "4(sp)",  name: "Arg Slot" },
+          [currSp + 0]:  { val: "--", tag: "tag-pad",label: "0(sp)",  name: "16B Padding" }
+        },
+        spTargetOffset: 0
+      });
+
+      // Step 2: sw ra, 12(sp)
+      vmTrace.push({
+        inst: "sw ra, 12(sp)",
+        narration: "Prolog: Ursprüngliche Rücksprungadresse ra (0x00400100) wird auf 12(sp) gesichert. Jetzt darf ra gefahrlos von Unterprogrammen überschrieben werden!",
+        regs: { ...regs },
+        memory: {
+          [currSp + 12]: { val: "0x00400100", tag: "tag-ra", label: "12(sp)", name: "ra (Caller Ret)" },
+          [currSp + 8]:  { val: "--", tag: "tag-s",  label: "8(sp)",  name: "s0 Slot" },
+          [currSp + 4]:  { val: "--", tag: "tag-arg",label: "4(sp)",  name: "Arg Slot" },
+          [currSp + 0]:  { val: "--", tag: "tag-pad",label: "0(sp)",  name: "16B Padding" }
+        },
+        spTargetOffset: 12
+      });
+
+      // Step 3: sw s0, 8(sp)
+      vmTrace.push({
+        inst: "sw s0, 8(sp)",
+        narration: "Prolog: Callee-saved s0 (0x42) wird auf 8(sp) gesichert. Damit darf foo das Register s0 nach Belieben verwenden.",
+        regs: { ...regs },
+        memory: {
+          [currSp + 12]: { val: "0x00400100", tag: "tag-ra", label: "12(sp)", name: "ra (Caller Ret)" },
+          [currSp + 8]:  { val: "0x00000042", tag: "tag-s",  label: "8(sp)",  name: "s0 (Caller s0)" },
+          [currSp + 4]:  { val: "--", tag: "tag-arg",label: "4(sp)",  name: "Arg Slot" },
+          [currSp + 0]:  { val: "--", tag: "tag-pad",label: "0(sp)",  name: "16B Padding" }
+        },
+        spTargetOffset: 8
+      });
+
+      // Step 4: sw a2, 4(sp)
+      vmTrace.push({
+        inst: "sw a2, 4(sp)",
+        narration: "Prolog: Argument c (in a2, Wert 10) wird auf 4(sp) gerettet, da bar(...) Caller-saved a2 überschreiben könnte, wir c aber später noch brauchen.",
+        regs: { ...regs },
+        memory: {
+          [currSp + 12]: { val: "0x00400100", tag: "tag-ra", label: "12(sp)", name: "ra (Caller Ret)" },
+          [currSp + 8]:  { val: "0x00000042", tag: "tag-s",  label: "8(sp)",  name: "s0 (Caller s0)" },
+          [currSp + 4]:  { val: "10",         tag: "tag-arg",label: "4(sp)",  name: "a2 (Arg c)" },
+          [currSp + 0]:  { val: "--", tag: "tag-pad",label: "0(sp)",  name: "16B Padding" }
+        },
+        spTargetOffset: 4
+      });
+
+      // Step 5: Körper: jal ra, bar
+      regs.t0 = 5;
+      regs.a0 = 12; // d = a + b = 5 + 7
+      regs.a1 = 5;  // a
+      regs.ra = 0x00400030; // updated return address within foo!
+      vmTrace.push({
+        inst: "jal ra, bar",
+        narration: "Körper: Unterprogramm bar(d=12, a=5) wird aufgerufen! ra wird hardwaremäßig auf 0x00400030 überschrieben. Da das echte ra sicher auf dem Stack liegt, ist das kein Problem.",
+        regs: { ...regs },
+        memory: {
+          [currSp + 12]: { val: "0x00400100", tag: "tag-ra", label: "12(sp)", name: "ra (Caller Ret)" },
+          [currSp + 8]:  { val: "0x00000042", tag: "tag-s",  label: "8(sp)",  name: "s0 (Caller s0)" },
+          [currSp + 4]:  { val: "10",         tag: "tag-arg",label: "4(sp)",  name: "a2 (Arg c)" },
+          [currSp + 0]:  { val: "--", tag: "tag-pad",label: "0(sp)",  name: "16B Padding" }
+        },
+        spTargetOffset: null
+      });
+
+      // Step 6: Nach Rückkehr aus bar
+      regs.a0 = 25; // bar result
+      regs.a1 = 0xDEADBEEF; // bar was free to destroy caller-saved registers!
+      regs.a2 = 0xDEADBEEF;
+      regs.t0 = 0xDEADBEEF;
+      vmTrace.push({
+        inst: "Rückkehr aus bar(d, a)",
+        narration: "bar() kehrt zurück mit Ergebnis 25 in a0! Beachte: bar() hat wie erwartet a1, a2 und t0 mit Zufallswerten überschrieben (Caller-saved Müllhalde!).",
+        regs: { ...regs },
+        memory: {
+          [currSp + 12]: { val: "0x00400100", tag: "tag-ra", label: "12(sp)", name: "ra (Caller Ret)" },
+          [currSp + 8]:  { val: "0x00000042", tag: "tag-s",  label: "8(sp)",  name: "s0 (Caller s0)" },
+          [currSp + 4]:  { val: "10",         tag: "tag-arg",label: "4(sp)",  name: "a2 (Arg c)" },
+          [currSp + 0]:  { val: "--", tag: "tag-pad",label: "0(sp)",  name: "16B Padding" }
+        },
+        spTargetOffset: null
+      });
+
+      // Step 7: lw a2, 4(sp)
+      regs.a2 = 10;
+      vmTrace.push({
+        inst: "lw a2, 4(sp)",
+        narration: "Wiederherstellung: Das gerettete Argument c (10) wird unversehrt vom Stackslot 4(sp) zurück in a2 geladen.",
+        regs: { ...regs },
+        memory: {
+          [currSp + 12]: { val: "0x00400100", tag: "tag-ra", label: "12(sp)", name: "ra (Caller Ret)" },
+          [currSp + 8]:  { val: "0x00000042", tag: "tag-s",  label: "8(sp)",  name: "s0 (Caller s0)" },
+          [currSp + 4]:  { val: "10",         tag: "tag-arg",label: "4(sp)",  name: "a2 (Arg c)" },
+          [currSp + 0]:  { val: "--", tag: "tag-pad",label: "0(sp)",  name: "16B Padding" }
+        },
+        spTargetOffset: 4
+      });
+
+      // Step 8: sub a0, a0, a2
+      regs.a0 = 15; // 25 - 10
+      vmTrace.push({
+        inst: "sub a0, a0, a2",
+        narration: "Berechnung: a0 = res - c = 25 - 10 = 15. Das Gesamtergebnis von foo liegt nun vorschriftsmäßig in a0!",
+        regs: { ...regs },
+        memory: {
+          [currSp + 12]: { val: "0x00400100", tag: "tag-ra", label: "12(sp)", name: "ra (Caller Ret)" },
+          [currSp + 8]:  { val: "0x00000042", tag: "tag-s",  label: "8(sp)",  name: "s0 (Caller s0)" },
+          [currSp + 4]:  { val: "10",         tag: "tag-arg",label: "4(sp)",  name: "a2 (Arg c)" },
+          [currSp + 0]:  { val: "--", tag: "tag-pad",label: "0(sp)",  name: "16B Padding" }
+        },
+        spTargetOffset: null
+      });
+
+      // Step 9: Epilog: lw s0, 8(sp) & lw ra, 12(sp)
+      regs.s0 = 0x00000042;
+      regs.ra = 0x00400100;
+      vmTrace.push({
+        inst: "lw s0, 8(sp) & lw ra, 12(sp)",
+        narration: "Epilog: s0 und ra werden vom Stack in ihre ursprünglichen Register zurückgeladen. ra zeigt nun wieder exakt auf den Aufrufer von foo!",
+        regs: { ...regs },
+        memory: {
+          [currSp + 12]: { val: "0x00400100", tag: "tag-ra", label: "12(sp)", name: "ra (Caller Ret)" },
+          [currSp + 8]:  { val: "0x00000042", tag: "tag-s",  label: "8(sp)",  name: "s0 (Caller s0)" },
+          [currSp + 4]:  { val: "10",         tag: "tag-arg",label: "4(sp)",  name: "a2 (Arg c)" },
+          [currSp + 0]:  { val: "--", tag: "tag-pad",label: "0(sp)",  name: "16B Padding" }
+        },
+        spTargetOffset: 12
+      });
+
+      // Step 10: addi sp, sp, 16 & ret
+      regs.sp = baseSp;
+      vmTrace.push({
+        inst: "addi sp, sp, 16 -> ret",
+        narration: "Epilog: addi sp, sp, 16 stellt den Stackpointer exakt auf den Ursprungswert zurück (0x7FFFFFF0). 'ret' springt über das wiederhergestellte ra fehlerfrei zum Aufrufer zurück!",
+        regs: { ...regs },
+        memory: {},
+        spTargetOffset: null
+      });
+    }
+
+    function resetVmSimulation() {
+      if (autoPlayTimer) {
+        clearInterval(autoPlayTimer);
+        autoPlayTimer = null;
+        document.getElementById("btnAutoPlay").innerText = "▶ Auto";
+      }
+      vmCurrentStepIndex = 0;
+      renderVmStep();
+    }
+
+    function stepVmSimulation(dir) {
+      let next = vmCurrentStepIndex + dir;
+      if (next < 0) next = 0;
+      if (next >= vmTrace.length) next = vmTrace.length - 1;
+      vmCurrentStepIndex = next;
+      renderVmStep();
+    }
+
+    function toggleAutoPlay() {
+      const btn = document.getElementById("btnAutoPlay");
+      if (autoPlayTimer) {
+        clearInterval(autoPlayTimer);
+        autoPlayTimer = null;
+        btn.innerText = "▶ Auto";
+      } else {
+        btn.innerText = "⏸ Pause";
+        const speed = parseInt(document.getElementById("speedSlider").value, 10);
+        autoPlayTimer = setInterval(() => {
+          if (vmCurrentStepIndex >= vmTrace.length - 1) {
+            clearInterval(autoPlayTimer);
+            autoPlayTimer = null;
+            btn.innerText = "▶ Auto";
+          } else {
+            stepVmSimulation(1);
+          }
+        }, speed);
+      }
+    }
+
+    function renderVmStep() {
+      const step = vmTrace[vmCurrentStepIndex];
+      if (!step) return;
+
+      // Update callout & narration
+      document.getElementById("currentInstructionCallout").innerText = `[${vmCurrentStepIndex + 1}/${vmTrace.length}] ${step.inst}`;
+      document.getElementById("vmStepNarration").innerText = step.narration;
+
+      // Update Registers HUD
+      const isAligned = (step.regs.sp % 16 === 0);
+      const alignBadge = document.getElementById("spAlignBadge");
+      alignBadge.className = `sp-align-badge ${isAligned ? 'aligned' : 'misaligned'}`;
+      alignBadge.innerText = isAligned ? '16B OK' : 'UNALIGNED';
+
+      document.getElementById("valSp").innerText = "0x" + step.regs.sp.toString(16).toUpperCase();
+      document.getElementById("valRa").innerText = "0x" + step.regs.ra.toString(16).toUpperCase();
+      document.getElementById("valS0").innerText = (typeof step.regs.s0 === 'number' && step.regs.s0 > 100) ? "0x" + step.regs.s0.toString(16).toUpperCase() : step.regs.s0;
+      document.getElementById("valS1").innerText = "0x" + step.regs.s1.toString(16).toUpperCase();
+      document.getElementById("valA0").innerText = step.regs.a0;
+      document.getElementById("valA1").innerText = (step.regs.a1 > 1000) ? "0x" + step.regs.a1.toString(16).toUpperCase() : step.regs.a1;
+      document.getElementById("valA2").innerText = (step.regs.a2 > 1000) ? "0x" + step.regs.a2.toString(16).toUpperCase() : step.regs.a2;
+      document.getElementById("valT0").innerText = (step.regs.t0 > 1000) ? "0x" + step.regs.t0.toString(16).toUpperCase() : step.regs.t0;
+
+      // Render Stack memory slots
+      const slotsContainer = document.getElementById("stackMemorySlots");
+      slotsContainer.innerHTML = "";
+
+      const baseSp = 0x7FFFFFF0;
+      const slotAddrs = [
+        baseSp + 4,
+        baseSp,
+        baseSp - 4,
+        baseSp - 8,
+        baseSp - 12,
+        baseSp - 16
+      ];
+
+      slotAddrs.forEach(addr => {
+        const offset = addr - step.regs.sp;
+        const memEntry = step.memory[addr];
+        const isCurrentSp = (addr === step.regs.sp);
+
+        const row = document.createElement("div");
+        row.className = "stack-slot-row";
+        if (isCurrentSp) row.classList.add("active-sp-target");
+
+        if (memEntry) {
+          if (memEntry.tag === "tag-ra") row.classList.add("slot-ra");
+          else if (memEntry.tag === "tag-s") row.classList.add("slot-callee");
+          else if (memEntry.tag === "tag-arg") row.classList.add("slot-arg");
+          else if (memEntry.tag === "tag-pad") row.classList.add("slot-pad");
+        }
+
+        // Addr
+        const tdAddr = document.createElement("div");
+        tdAddr.className = "slot-addr";
+        tdAddr.innerText = "0x" + addr.toString(16).toUpperCase();
+
+        // Offset
+        const tdOff = document.createElement("div");
+        tdOff.className = "slot-offset";
+        if (offset >= 0 && offset <= 32) {
+          tdOff.innerText = `${offset}(sp)`;
+        } else {
+          tdOff.innerText = `--`;
+          tdOff.style.color = "#475569";
+        }
+
+        // Desc
+        const tdDesc = document.createElement("div");
+        tdDesc.className = "slot-desc";
+        if (isCurrentSp) {
+          tdDesc.innerHTML += `<span style="color:#38bdf8; font-weight:800;">👉 sp</span> `;
+        }
+        if (memEntry) {
+          tdDesc.innerHTML += `<span class="slot-tag ${memEntry.tag}">${memEntry.name}</span>`;
+        } else if (addr > baseSp) {
+          tdDesc.innerHTML += `<span style="color:#64748b; font-size:0.68rem;">[Aufrufer-Stackrahmen]</span>`;
+        } else {
+          tdDesc.innerHTML += `<span style="color:#334155; font-size:0.68rem;">[Unallokiert]</span>`;
+        }
+
+        // Value
+        const tdVal = document.createElement("div");
+        tdVal.className = "slot-val";
+        tdVal.innerText = memEntry ? memEntry.val : "--";
+
+        row.appendChild(tdAddr);
+        row.appendChild(tdOff);
+        row.appendChild(tdDesc);
+        row.appendChild(tdVal);
+
+        slotsContainer.appendChild(row);
+
+        // Render 16B alignment boundary divider
+        if (addr % 16 === 0) {
+          const div = document.createElement("div");
+          div.className = "boundary-line";
+          div.innerHTML = `<span>16-BYTE ALIGNMENT GRENZE (0x${addr.toString(16).toUpperCase()})</span>`;
+          slotsContainer.appendChild(div);
+        }
+      });
+    }
+
+    /* =====================================================================
+       7. CODE BUILDER & AUTOMATED ABI VM VERIFIER (TEILAUFGABE b — 6 PUNKTE)
+       ===================================================================== */
+    function insertCodeSnippet(snippet) {
+      const editor = document.getElementById("assemblyEditor");
+      const start = editor.selectionStart;
+      const end = editor.selectionEnd;
+      const text = editor.value;
+      editor.value = text.substring(0, start) + snippet + text.substring(end);
+      editor.selectionStart = editor.selectionEnd = start + snippet.length;
+      editor.focus();
+    }
+
+    function verifyStudentAssembly() {
+      const code = document.getElementById("assemblyEditor").value;
+      const checks = [];
+      let pointsEarned = 0;
+
+      // 1. Stack Allocation 16-byte aligned
+      const allocMatch = code.match(/addi\s+sp,\s*sp,\s*(-?\d+)/i);
+      let allocAmount = allocMatch ? parseInt(allocMatch[1], 10) : 0;
+      if (allocAmount < 0 && Math.abs(allocAmount) % 16 === 0) {
+        checks.push({
+          passed: true,
+          title: "16-Byte Stack-Allokation eingehalten",
+          desc: `Korrekt: ${allocAmount} Bytes allokiert (Vielfaches von 16!).`
+        });
+        pointsEarned += 1.0;
+      } else if (allocAmount < 0) {
+        checks.push({
+          passed: false,
+          title: "Stack-Allokation verletzt 16-Byte-Ausrichtung!",
+          desc: `Fehler: Es wurden ${allocAmount} Bytes allokiert. Dies ist kein Vielfaches von 16! (z.B. -16 oder -32 erforderlich).`
+        });
+      } else {
+        checks.push({
+          passed: false,
+          title: "Keine Stack-Allokation im Prolog gefunden",
+          desc: "Fehler: Fehlendes 'addi sp, sp, -16' im Prolog."
+        });
+      }
+
+      // 2. Caller Return Address (ra) preserved
+      const hasSwRa = /sw\s+ra,\s*\d+\(sp\)/i.test(code);
+      const hasLwRa = /lw\s+ra,\s*\d+\(sp\)/i.test(code);
+      const hasJal = /jal\s+(ra,)?\s*\w+/i.test(code);
+
+      if (hasJal) {
+        if (hasSwRa && hasLwRa) {
+          checks.push({
+            passed: true,
+            title: "Rücksprungadresse (ra) gesichert & restauriert",
+            desc: "ra wurde vor dem Unterprogrammaufruf mit sw auf den Stack gelegt und vor ret mit lw wiederhergestellt."
+          });
+          pointsEarned += 1.0;
+        } else {
+          checks.push({
+            passed: false,
+            title: "ra nicht ordnungsgemäß auf dem Stack gesichert!",
+            desc: "Unterprogrammaufruf überschreibt ra. Es fehlt 'sw ra, X(sp)' im Prolog oder 'lw ra, X(sp)' im Epilog."
+          });
+        }
+      } else {
+        checks.push({
+          passed: true,
+          title: "Blattfunktion: ra muss nicht gesichert werden",
+          desc: "Kein verschachtelter Funktionsaufruf gefunden."
+        });
+        pointsEarned += 1.0;
+      }
+
+      // 3. Callee-saved s0-s11 preservation
+      const sRegsUsed = (code.match(/\b(s\d|s0|s1|s2|s3)\b/gi) || []).map(r => r.toLowerCase());
+      const uniqueSRegs = [...new Set(sRegsUsed)];
+      let sRegsSafe = true;
+
+      for (let s of uniqueSRegs) {
+        const swRegex = new RegExp(`sw\\s+${s},\\s*\\d+\\(sp\\)`, "i");
+        const lwRegex = new RegExp(`lw\\s+${s},\\s*\\d+\\(sp\\)`, "i");
+        if (!swRegex.test(code) || !lwRegex.test(code)) {
+          sRegsSafe = false;
+          break;
+        }
+      }
+
+      if (uniqueSRegs.length === 0) {
+        checks.push({
+          passed: true,
+          title: "Keine Callee-saved s-Register modifiziert",
+          desc: "Es wurden keine s0-s11 verwendet, daher keine Stack-Sicherung nötig."
+        });
+        pointsEarned += 1.0;
+      } else if (sRegsSafe) {
+        checks.push({
+          passed: true,
+          title: `Callee-saved Register (${uniqueSRegs.join(", ")}) vorschriftsmäßig gesichert`,
+          desc: "Alle genutzten s-Register wurden im Prolog gesichert und im Epilog wiederhergestellt."
+        });
+        pointsEarned += 1.0;
+      } else {
+        checks.push({
+          passed: false,
+          title: "Callee-saved s-Register ohne Stack-Sicherung verwendet!",
+          desc: `Die Register (${uniqueSRegs.join(", ")}) wurden benutzt, aber nicht vollständig mit sw gesichert und lw restauriert.`
+        });
+      }
+
+      // 4. Value survival across child call
+      // Checks whether arguments needed after bar are preserved
+      const hasArgPreservation = /sw\s+a\d,\s*\d+\(sp\)/i.test(code) || /mv\s+s\d,\s*a\d/i.test(code) || /addi\s+s\d,\s*a\d,\s*0/i.test(code);
+      if (activePreset.id === "wise26" || activePreset.id === "sose25" || activePreset.id === "probeklausur") {
+        if (hasArgPreservation) {
+          checks.push({
+            passed: true,
+            title: "Benötigte Werte über Unterprogrammaufruf hinweg gerettet",
+            desc: "Argumente/Werte, die nach dem fremden Aufruf noch benötigt werden, wurden sicher auf dem Stack oder in einem s-Register deponiert."
+          });
+          pointsEarned += 1.0;
+        } else {
+          checks.push({
+            passed: false,
+            title: "Verlust von Argumenten über den Unterprogrammaufruf!",
+            desc: "Das nach dem Aufruf benötigte Argument wurde weder auf dem Stack noch in einem callee-saved s-Register gesichert."
+          });
+        }
+      } else {
+        checks.push({
+          passed: true,
+          title: "Keine Parameterverluste über Aufrufe",
+          desc: "Parameterfluss entspricht den ABI-Regeln."
+        });
+        pointsEarned += 1.0;
+      }
+
+      // 5. Return value in a0
+      const hasReturnA0 = /(sub|add|addi|mv)\s+a0,\s*a0/i.test(code) || /ret/i.test(code);
+      const hasWrongReturn = /add\s+a1,\s*a0/i.test(code) || /mv\s+a1,\s*a0/i.test(code);
+      if (hasReturnA0 && !hasWrongReturn) {
+        checks.push({
+          passed: true,
+          title: "Rückgabewert liegt vorschriftsmäßig in a0",
+          desc: "Rückgabe erfolgt standardkonform im ersten Argument-/Rückgaberegister a0."
+        });
+        pointsEarned += 1.0;
+      } else {
+        checks.push({
+          passed: false,
+          title: "Rückgabewert nicht in a0 abgelegt!",
+          desc: "Fehler: Das Resultat wurde in einem anderen Register (z.B. a1) belassen oder nicht nach a0 geschrieben."
+        });
+      }
+
+      // 6. Stack cleanup symmetry & ret
+      const deallocMatch = code.match(/addi\s+sp,\s*sp,\s*(\d+)/i);
+      const deallocAmount = deallocMatch ? parseInt(deallocMatch[1], 10) : 0;
+      const hasRet = /\b(ret|jalr\s+zero,\s*ra,\s*0)\b/i.test(code);
+
+      if (allocAmount < 0 && deallocAmount === Math.abs(allocAmount) && hasRet) {
+        checks.push({
+          passed: true,
+          title: "Symmetrischer Stackabbau & sauberer Rücksprung (ret)",
+          desc: `Stackpointer wurde exakt um +${deallocAmount} restauriert. 'ret' springt sauber zum Aufrufer zurück.`
+        });
+        pointsEarned += 1.0;
+      } else if (allocAmount === 0 && deallocAmount === 0 && hasRet) {
+        checks.push({
+          passed: true,
+          title: "Stack-neutraler Rücksprung",
+          desc: "Kein Stackverbrauch nötig; direkter Rücksprung über ret."
+        });
+        pointsEarned += 1.0;
+      } else {
+        checks.push({
+          passed: false,
+          title: "Stack-Leck oder fehlerhafter Epilog!",
+          desc: `Allokiert: ${allocAmount}, Freigegeben: +${deallocAmount}. Der Stackpointer muss beim Verlassen exakt dem Ursprungswert entsprechen!`
+        });
+      }
+
+      // Render Scorecard
+      scoreTeilB = pointsEarned;
+      updateScoreHUD();
+
+      document.getElementById("scorecardPointsBadge").innerText = `${scoreTeilB} / 6 P`;
+      const listEl = document.getElementById("abiCheckList");
+      listEl.innerHTML = "";
+
+      checks.forEach(c => {
+        const item = document.createElement("div");
+        item.className = `abi-check-item ${c.passed ? 'passed' : 'failed'}`;
+        item.innerHTML = `
+          <span class="check-icon ${c.passed ? 'passed' : 'failed'}">${c.passed ? '✓' : '✗'}</span>
+          <div>
+            <div style="font-weight:700;">${c.title}</div>
+            <div style="font-size:0.71rem; color:${c.passed ? '#94a3b8' : '#fb7185'};">${c.desc}</div>
+          </div>
+        `;
+        listEl.appendChild(item);
+      });
+    }
+
+    function revealBuilderMusterloesung() {
+      const drawer = document.getElementById("builderMusterloesungDrawer");
+      drawer.style.display = (drawer.style.display === "none") ? "flex" : "none";
+    }
+
+    function copyMusterloesungToEditor() {
+      document.getElementById("assemblyEditor").value = activePreset.solutionAsm;
+      verifyStudentAssembly();
+    }
+
+    /* =====================================================================
+       8. INFINITE BROKEN CODE GENERATOR (RANDOM KLAUSUR GENERATOR)
+       ===================================================================== */
+    function generateRandomScenario() {
+      const funcNames = ["calcTotal", "processVector", "evalSample", "transformData", "computeMetrics"];
+      const childNames = ["helper", "subRoutine", "evalCore", "filterOp", "applyWeight"];
+      const fName = funcNames[Math.floor(Math.random() * funcNames.length)];
+      const cName = childNames[Math.floor(Math.random() * childNames.length)];
+
+      const hasS0Bug = Math.random() > 0.3;
+      const hasRaBug = true; // virtually all non-leaf exam questions test ra!
+      const hasArgBug = Math.random() > 0.4;
+      const hasAlignBug = Math.random() > 0.5;
+
+      const brokenAsm = [
+        { line: 1, text: `${fName}:`, type: "label" }
+      ];
+
+      let lineCounter = 2;
+
+      if (hasAlignBug) {
+        brokenAsm.push({
+          line: lineCounter++,
+          text: "addi sp, sp, -14",
+          mnemonic: "addi", rd: "sp", rs1: "sp", imm: "-14",
+          comment: "Stack Allokation",
+          hasError: true, errorType: "MISALIGNED_STACK", errReg: "sp",
+          explanation: "Stack-Allokation ist -14! Der Stack MUSS strikt auf 16 Byte ausgerichtet sein (-16)."
+        });
+      }
+
+      if (hasS0Bug) {
+        brokenAsm.push({
+          line: lineCounter++,
+          text: "add s0, a0, a1",
+          mnemonic: "add", rd: "s0", rs1: "a0", rs2: "a1",
+          comment: "Zwischenergebnis in s0",
+          hasError: true, errorType: "CLOBBERED_CALLEE", errReg: "s0",
+          explanation: "s0 ist ein Callee-saved Register! Es darf nicht ohne vorherige Stack-Sicherung überschrieben werden."
+        });
+      } else {
+        brokenAsm.push({
+          line: lineCounter++,
+          text: "add t0, a0, a1",
+          mnemonic: "add", rd: "t0", rs1: "a0", rs2: "a1",
+          comment: "Zwischenergebnis in t0"
+        });
+      }
+
+      brokenAsm.push({
+        line: lineCounter++,
+        text: `jal ra, ${cName}`,
+        mnemonic: "jal", rd: "ra", target: cName,
+        comment: `${cName}(...) aufrufen`,
+        hasError: true, errorType: "LOST_RETURN_ADDR", errReg: "ra",
+        explanation: `jal überschreibt die Rücksprungadresse ra. Ohne Sicherung im Prolog kann ${fName} nicht zum Aufrufer zurückkehren!`
+      });
+
+      if (hasArgBug) {
+        brokenAsm.push({
+          line: lineCounter++,
+          text: "sub a0, a0, a2",
+          mnemonic: "sub", rd: "a0", rs1: "a0", rs2: "a2",
+          comment: "res - c",
+          hasError: true, errorType: "DESTROYED_CALLER_REG", errReg: "a2",
+          explanation: `a2 ist ein Caller-saved Register. ${cName} hat das Recht, a0-a7 zu überschreiben. a2 ist nach dem jal ungültig!`
+        });
+      } else {
+        brokenAsm.push({
+          line: lineCounter++,
+          text: "addi a0, a0, 5",
+          mnemonic: "addi", rd: "a0", rs1: "a0", imm: "5"
+        });
+      }
+
+      if (hasAlignBug) {
+        brokenAsm.push({
+          line: lineCounter++,
+          text: "addi sp, sp, 14",
+          mnemonic: "addi", rd: "sp", rs1: "sp", imm: "14",
+          comment: "Stack freigeben",
+          hasError: true, errorType: "STACK_ASYMMETRY", errReg: "sp",
+          explanation: "Stack-Ausrichtung muss 16 Byte betragen (+16 statt +14)."
+        });
+      }
+
+      brokenAsm.push({
+        line: lineCounter++,
+        text: "ret",
+        mnemonic: "ret",
+        comment: "Rücksprung"
+      });
+
+      const genPreset = {
+        id: "generated",
+        title: `🎲 Generator: ${fName}(a, b, c)`,
+        signature: `int ${fName}(int a, int b, int c)`,
+        cCode: `int ${fName}(int a, int b, int c) {
+    int temp = a + b;
+    int res = ${cName}(temp);
+    return res - c;
+}`,
+        brokenAsm: brokenAsm,
+        solutionAsm: `${fName}:
+    # 1. Prolog: 16-Byte Stackrahmen
+    addi sp, sp, -16
+    sw   ra, 12(sp)        # ra sichern
+    sw   s0, 8(sp)         # s0 sichern
+    sw   a2, 4(sp)         # a2 sichern
+
+    # 2. Körper
+    add  a0, a0, a1        # a0 = temp = a + b
+    jal  ra, ${cName}      # ${cName}(temp), Ergebnis in a0
+
+    # 3. Nachbereitung
+    lw   a2, 4(sp)         # a2 unbeschädigt laden
+    sub  a0, a0, a2        # a0 = res - c
+
+    # 4. Epilog
+    lw   s0, 8(sp)         # s0 wiederherstellen
+    lw   ra, 12(sp)        # ra wiederherstellen
+    addi sp, sp, 16        # 16 Bytes freigeben
+    ret`,
+        solutionComment: `Generierte Musterlösung mit vollständiger 16-Byte-Ausrichtung und Absicherung von ra und a2 vor dem Aufruf von ${cName}.`
+      };
+
+      PRESETS.generated = genPreset;
+      loadPreset("generated");
+    }
+
+    /* =====================================================================
+       9. HUD SCORE & MODAL HELPERS
+       ===================================================================== */
+    function updateScoreHUD() {
+      document.getElementById("scoreAuditorDisplay").innerText = `${scoreTeilA} / 2 P`;
+      document.getElementById("scoreBuilderDisplay").innerText = `${scoreTeilB} / 6 P`;
+      const total = Math.round((scoreTeilA + scoreTeilB) * 10) / 10;
+      document.getElementById("scoreTotalDisplay").innerText = `${total} / 8 P`;
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add("active");
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove("active");
+    }
+
+    function initTooltips() {
+      const tip = document.getElementById("globalTooltip");
+      document.addEventListener("mouseover", (e) => {
+        const el = e.target.closest("[data-tooltip]");
+        if (el) {
+          tip.innerText = el.getAttribute("data-tooltip");
+          tip.style.display = "block";
+          const rect = el.getBoundingClientRect();
+          tip.style.left = `${Math.min(window.innerWidth - 300, rect.left + 10)}px`;
+          tip.style.top = `${rect.bottom + 6}px`;
+        }
+      });
+      document.addEventListener("mouseout", (e) => {
+        if (e.target.closest("[data-tooltip]")) {
+          tip.style.display = "none";
+        }
+      });
+    }
+
+    /* =====================================================================
+       10. RESIZER SPLITTER LOGIC
+       ===================================================================== */
+    function initResizers() {
+      const container = document.getElementById("mainContainer");
+      const res1 = document.getElementById("resizer1");
+      const res2 = document.getElementById("resizer2");
+
+      let isDragging1 = false;
+      let isDragging2 = false;
+
+      res1.addEventListener("mousedown", (e) => {
+        isDragging1 = true;
+        res1.classList.add("dragging");
+        document.body.style.cursor = "col-resize";
+      });
+
+      res2.addEventListener("mousedown", (e) => {
+        isDragging2 = true;
+        res2.classList.add("dragging");
+        document.body.style.cursor = "col-resize";
+      });
+
+      document.addEventListener("mousemove", (e) => {
+        if (isDragging1) {
+          const totalWidth = container.getBoundingClientRect().width;
+          const leftWidth = e.clientX;
+          if (leftWidth > 200 && leftWidth < totalWidth - 400) {
+            container.style.gridTemplateColumns = `${leftWidth}px 6px 440px 6px 1fr`;
+          }
+        } else if (isDragging2) {
+          const containerRect = container.getBoundingClientRect();
+          const totalWidth = containerRect.width;
+          const rightWidth = containerRect.right - e.clientX;
+          if (rightWidth > 250 && rightWidth < totalWidth - 400) {
+            container.style.gridTemplateColumns = `1fr 6px 440px 6px ${rightWidth}px`;
+          }
+        }
+      });
+
+      document.addEventListener("mouseup", () => {
+        if (isDragging1) {
+          isDragging1 = false;
+          res1.classList.remove("dragging");
+          document.body.style.cursor = "default";
+        }
+        if (isDragging2) {
+          isDragging2 = false;
+          res2.classList.remove("dragging");
+          document.body.style.cursor = "default";
+        }
+      });
+    }
+  </script>
+</body>
+</html>

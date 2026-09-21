@@ -1,0 +1,3980 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RISC-V Machine Code & Decoding Trainer | TU Darmstadt RO</title>
+  <style>
+    :root {
+      --bg-main: #090d16;
+      --bg-card: #111827;
+      --bg-card-hover: #1e293b;
+      --border-color: #243044;
+      --border-focus: #38bdf8;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+
+      /* Format & Field Colors matching official RISC-V spec */
+      --color-opcode: #f59e0b;    /* Amber/Yellow */
+      --color-opcode-bg: rgba(245, 158, 11, 0.15);
+      --color-rd: #0ea5e9;        /* Neon Sky Blue */
+      --color-rd-bg: rgba(14, 165, 233, 0.15);
+      --color-funct3: #a855f7;    /* Violet */
+      --color-funct3-bg: rgba(168, 85, 247, 0.15);
+      --color-rs1: #10b981;       /* Emerald */
+      --color-rs1-bg: rgba(16, 185, 129, 0.15);
+      --color-rs2: #f97316;       /* Bright Orange */
+      --color-rs2-bg: rgba(249, 115, 22, 0.15);
+      --color-funct7: #ef4444;    /* Ruby Red */
+      --color-funct7-bg: rgba(239, 68, 68, 0.15);
+      --color-imm: #06b6d4;       /* Cyan / Teal */
+      --color-imm-bg: rgba(6, 182, 212, 0.15);
+      --color-trap: #ec4899;      /* Pink / Magenta */
+
+      --accent-cyan: #06b6d4;
+      --accent-cyan-glow: #22d3ee;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-yellow: #f59e0b;
+      --accent-purple: #8b5cf6;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    /* Header */
+    header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      padding: 6px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 52px;
+      flex-shrink: 0;
+      z-index: 30;
+    }
+
+    .title-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-area h1 {
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .title-area .badge {
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--accent-cyan-glow);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-weight: 600;
+    }
+
+    .badge-weight {
+      background: rgba(245, 158, 11, 0.15) !important;
+      color: #fbbf24 !important;
+      border-color: rgba(245, 158, 11, 0.35) !important;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-header {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #cbd5e1;
+      font-size: 0.76rem;
+      font-weight: 600;
+      padding: 6px 11px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-header:hover {
+      background: #334155;
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    .btn-header.active {
+      background: rgba(14, 165, 233, 0.2);
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+
+    /* Timer Widget */
+    .timer-widget {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #0b0f19;
+      border: 1px solid var(--border-color);
+      border-radius: 7px;
+      padding: 3px 8px;
+      transition: all 0.2s ease;
+    }
+
+    .timer-widget.running {
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+    }
+
+    .timer-widget.completed-fast {
+      border-color: #10b981;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+    }
+
+    .timer-display {
+      font-family: ui-monospace, monospace;
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #38bdf8;
+      min-width: 58px;
+      text-align: center;
+      letter-spacing: 0.04em;
+    }
+
+    .timer-widget.running .timer-display {
+      color: #22d3ee;
+      text-shadow: 0 0 6px rgba(34, 211, 238, 0.5);
+    }
+
+    .timer-controls {
+      display: flex;
+      gap: 3px;
+    }
+
+    .btn-timer {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #cbd5e1;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      line-height: 1.2;
+      transition: all 0.12s ease;
+    }
+
+    .btn-timer:hover {
+      background: #334155;
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    .timer-target-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 1px 5px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .timer-target-badge.target-klausur {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+
+    .timer-target-badge.target-study {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    /* Klausur vs. Study Assist Switch */
+    .assist-switch {
+      display: flex;
+      background: #0b0f19;
+      padding: 2px;
+      border-radius: 7px;
+      border: 1px solid var(--border-color);
+      gap: 2px;
+    }
+
+    .assist-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .assist-btn:hover {
+      color: #f1f5f9;
+    }
+
+    .assist-btn.active.mode-klausur {
+      background: rgba(245, 158, 11, 0.16);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      font-weight: 700;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+    }
+
+    .assist-btn.active.mode-study {
+      background: rgba(56, 189, 248, 0.16);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      font-weight: 700;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.2);
+    }
+
+    .mode-switch {
+      display: flex;
+      background: #0b0f19;
+      padding: 2px;
+      border-radius: 7px;
+      border: 1px solid var(--border-color);
+      gap: 2px;
+    }
+
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 4px 10px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .mode-btn.active {
+      background: #0284c7;
+      color: #fff;
+      box-shadow: 0 0 8px rgba(6, 182, 212, 0.35);
+    }
+
+    /* Main Container with Resizer */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 6px 450px;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Resizer bar */
+    .resizer {
+      background: #1e293b;
+      cursor: col-resize;
+      transition: background 0.15s ease;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .resizer::after {
+      content: "";
+      width: 2px;
+      height: 28px;
+      background: #475569;
+      border-radius: 2px;
+    }
+
+    .resizer:hover, .resizer.dragging {
+      background: var(--accent-cyan);
+    }
+
+    .resizer:hover::after, .resizer.dragging::after {
+      background: #fff;
+    }
+
+    /* Left Pane */
+    .left-pane {
+      background: var(--bg-main);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+      min-height: 0;
+    }
+
+    /* Task Banner */
+    .task-banner {
+      background: rgba(17, 24, 39, 0.95);
+      border-bottom: 1px solid var(--border-color);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+
+    .task-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .task-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .exam-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-wise26 {
+      background: rgba(16, 185, 129, 0.16);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .badge-sose25 {
+      background: rgba(56, 189, 248, 0.16);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+
+    .badge-probeklausur {
+      background: rgba(168, 85, 247, 0.16);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+    }
+
+    .badge-generator {
+      background: rgba(245, 158, 11, 0.16);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .task-prompt-text {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      line-height: 1.35;
+    }
+
+    .task-sub-prompt {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    .task-nav-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .nav-btn {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #94a3b8;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 700;
+      transition: all 0.15s ease;
+    }
+
+    .nav-btn:hover {
+      background: #334155;
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    .task-picker-select {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #f1f5f9;
+      font-family: ui-monospace, monospace;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 5px 8px;
+      border-radius: 6px;
+      outline: none;
+      max-width: 250px;
+    }
+
+    .task-picker-select:focus {
+      border-color: var(--border-focus);
+    }
+
+    /* Content Area on Left */
+    .left-content {
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Code Display Box */
+    .code-display-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .code-display-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .code-display-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .code-value-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .hex-val {
+      font-family: ui-monospace, monospace;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #38bdf8;
+      letter-spacing: 0.05em;
+      background: #090d16;
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hex-val:hover {
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+    }
+
+    .bin-val-spaced {
+      font-family: ui-monospace, monospace;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      background: #090d16;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      letter-spacing: 0.08em;
+      word-break: break-all;
+    }
+
+    .copy-btn {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #94a3b8;
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+
+    .copy-btn:hover {
+      background: #334155;
+      color: #fff;
+    }
+
+    /* 32-Bit Visual Slicer Ribbon */
+    .slicer-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .slicer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .slicer-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .format-indicator-badge {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* The 32 bit grid ruler */
+    .bits-grid-container {
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .bits-ruler {
+      display: grid;
+      grid-template-columns: repeat(32, minmax(20px, 1fr));
+      gap: 2px;
+      min-width: 680px;
+    }
+
+    .bit-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .bit-idx {
+      font-family: ui-monospace, monospace;
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      font-weight: 600;
+    }
+
+    .bit-cell {
+      width: 100%;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: ui-monospace, monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border-radius: 4px;
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .bit-cell:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+      border-color: #fff;
+    }
+
+    /* Bit Field styling based on instruction format */
+    .field-opcode {
+      background: var(--color-opcode-bg);
+      border-color: var(--color-opcode);
+      color: #fbbf24;
+    }
+    .field-rd {
+      background: var(--color-rd-bg);
+      border-color: var(--color-rd);
+      color: #38bdf8;
+    }
+    .field-funct3 {
+      background: var(--color-funct3-bg);
+      border-color: var(--color-funct3);
+      color: #c084fc;
+    }
+    .field-rs1 {
+      background: var(--color-rs1-bg);
+      border-color: var(--color-rs1);
+      color: #34d399;
+    }
+    .field-rs2 {
+      background: var(--color-rs2-bg);
+      border-color: var(--color-rs2);
+      color: #fb923c;
+    }
+    .field-funct7 {
+      background: var(--color-funct7-bg);
+      border-color: var(--color-funct7);
+      color: #f87171;
+    }
+    .field-imm {
+      background: var(--color-imm-bg);
+      border-color: var(--color-imm);
+      color: #22d3ee;
+    }
+    /* Neutral bit styling in Klausur mode */
+    .bit-cell.neutral-bit {
+      background: #090d16;
+      border: 1px solid #1e293b;
+      color: #cbd5e1;
+    }
+
+    .bit-cell.neutral-bit:hover {
+      border-color: #fbbf24;
+      color: #fbbf24;
+      background: #111827;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.25);
+    }
+
+    /* Subtle separator between byte boundaries (bits 24/23, 16/15, 8/7) */
+    .bit-col.byte-sep-left {
+      margin-left: 6px;
+      position: relative;
+    }
+
+    .bit-col.byte-sep-left::before {
+      content: "";
+      position: absolute;
+      left: -4px;
+      top: 14px;
+      bottom: 0;
+      width: 1px;
+      background: rgba(148, 163, 184, 0.25);
+    }
+
+    .format-indicator-badge.field-neutral {
+      background: rgba(100, 116, 139, 0.15);
+      border: 1px solid rgba(100, 116, 139, 0.35);
+      color: #94a3b8;
+    }
+
+    .klausur-lock-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px dashed rgba(245, 158, 11, 0.35);
+      color: #fbbf24;
+      font-size: 0.72rem;
+      font-weight: 600;
+      width: 100%;
+    }
+
+    /* Klausur Shuffler Lock Overlay */
+    .shuffler-lock-overlay {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      background: rgba(9, 13, 22, 0.85);
+      border: 1px dashed rgba(245, 158, 11, 0.3);
+      border-radius: 6px;
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    .lock-icon-anim {
+      font-size: 1.8rem;
+      margin-bottom: 4px;
+      filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.4));
+    }
+
+    .lock-title-text {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #fbbf24;
+      margin-bottom: 3px;
+    }
+
+    .lock-desc-text {
+      font-size: 0.76rem;
+      color: #94a3b8;
+      max-width: 480px;
+      line-height: 1.35;
+      margin-bottom: 6px;
+    }
+
+    .lock-sub-hint {
+      font-size: 0.7rem;
+      color: #64748b;
+    }
+
+    /* Fields Summary Bar below bits */
+    .fields-legend-bar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .field-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .field-pill:hover {
+      filter: brightness(1.2);
+      transform: translateY(-1px);
+    }
+
+    .field-pill .field-val {
+      font-family: ui-monospace, monospace;
+      font-weight: 700;
+    }
+
+    /* Immediate Reconstruction & Shuffling Visualizer */
+    .imm-shuffler-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+
+    .shuffler-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .shuffler-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .trap-warning-box {
+      background: rgba(236, 72, 153, 0.1);
+      border: 1px solid rgba(236, 72, 153, 0.4);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      color: #fbcfe8;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .trap-warning-box strong {
+      color: #f472b6;
+    }
+
+    /* SVG Bit Routing Diagram */
+    .shuffler-svg-wrap {
+      width: 100%;
+      background: #090d16;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      padding: 8px;
+      overflow-x: auto;
+    }
+
+    svg.routing-svg {
+      display: block;
+      width: 100%;
+      min-width: 600px;
+      height: 160px;
+    }
+
+    /* Reconstructed Immediate & Sign Extension Box */
+    .imm-result-box {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .imm-calc-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 0.8rem;
+    }
+
+    .imm-bits-display {
+      font-family: ui-monospace, monospace;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .imm-chunk {
+      padding: 2px 5px;
+      border-radius: 3px;
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+    }
+
+    .chunk-trap {
+      background: rgba(236, 72, 153, 0.25);
+      border-color: var(--color-trap);
+      color: #f472b6;
+      animation: pulse-border 2s infinite;
+    }
+
+    @keyframes pulse-border {
+      0%, 100% { border-color: rgba(236, 72, 153, 0.6); }
+      50% { border-color: rgba(236, 72, 153, 1); box-shadow: 0 0 8px rgba(236, 72, 153, 0.5); }
+    }
+
+    .imm-val-tag {
+      font-family: ui-monospace, monospace;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #38bdf8;
+      background: rgba(14, 165, 233, 0.15);
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(14, 165, 233, 0.3);
+    }
+
+    /* Matching Mode Arena (Zuordnung) */
+    .matching-arena {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .matching-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .match-col {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .match-col-title {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .match-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .match-card:hover {
+      background: var(--bg-card-hover);
+      border-color: #38bdf8;
+    }
+
+    .match-card.selected {
+      border-color: #38bdf8;
+      background: rgba(14, 165, 233, 0.18);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+    }
+
+    .match-card.paired-correct {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.15);
+    }
+
+    .match-card.paired-wrong {
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.15);
+    }
+
+    .match-tag {
+      font-family: ui-monospace, monospace;
+      font-weight: 700;
+      font-size: 0.78rem;
+      color: #f1f5f9;
+    }
+
+    .match-badge {
+      font-size: 0.68rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      background: #1e293b;
+      color: #94a3b8;
+    }
+
+    /* Right Pane: Quiz, Steps, Solver & Architecture */
+    .right-pane {
+      background: var(--bg-card);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      min-height: 0;
+    }
+
+    .sidebar-actions {
+      padding: 10px 16px;
+      background: #0f172a;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .btn-action {
+      background: #0284c7;
+      color: #fff;
+      border: 1px solid #38bdf8;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 7px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      box-shadow: 0 0 10px rgba(2, 132, 199, 0.3);
+    }
+
+    .btn-action:hover {
+      background: #0369a1;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.5);
+    }
+
+    .btn-secondary {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #cbd5e1;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 7px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-secondary:hover {
+      background: #334155;
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #f87171;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 7px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.3);
+      color: #fff;
+    }
+
+    .sidebar-content {
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Score & Evaluation Card */
+    .eval-card {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .eval-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .eval-header h3 {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .score-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      border: 1px solid transparent;
+    }
+
+    .score-pass {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border-color: #10b981;
+    }
+
+    .score-fail {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border-color: #ef4444;
+    }
+
+    .eval-feedback {
+      font-size: 0.78rem;
+      line-height: 1.4;
+      color: var(--text-muted);
+    }
+
+    /* Quiz Steps Form */
+    .step-box {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .step-box.correct {
+      border-color: #10b981;
+    }
+
+    .step-box.wrong {
+      border-color: #ef4444;
+    }
+
+    .step-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .step-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .step-badge {
+      font-size: 0.65rem;
+      padding: 1px 6px;
+      border-radius: 3px;
+      background: #1e293b;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    /* Format selector buttons */
+    .format-btn-row {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+    }
+
+    .fmt-btn {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #cbd5e1;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 8px 4px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.12s;
+    }
+
+    .fmt-btn:hover {
+      background: #334155;
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    .fmt-btn.active {
+      background: #0284c7;
+      color: #fff;
+      border-color: #38bdf8;
+      box-shadow: 0 0 8px rgba(6, 182, 212, 0.4);
+    }
+
+    /* Field Inputs Grid */
+    .fields-input-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .field-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .field-label span.hint {
+      color: var(--text-dim);
+      font-family: ui-monospace, monospace;
+    }
+
+    .input-box {
+      background: #111827;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      padding: 6px 8px;
+      color: #fff;
+      font-family: ui-monospace, monospace;
+      font-size: 0.82rem;
+      font-weight: 600;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .input-box:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 5px rgba(56, 189, 248, 0.3);
+    }
+
+    .input-box.input-correct {
+      border-color: #10b981 !important;
+      background: rgba(16, 185, 129, 0.1) !important;
+    }
+
+    .input-box.input-wrong {
+      border-color: #ef4444 !important;
+      background: rgba(239, 68, 68, 0.1) !important;
+    }
+
+    /* Final Asm Input */
+    .asm-input-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .asm-input {
+      background: #111827;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: #38bdf8;
+      font-family: ui-monospace, monospace;
+      font-size: 0.95rem;
+      font-weight: 700;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .asm-input:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+    }
+
+    /* Architectural Explanation Box */
+    .explanation-card {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .explanation-header {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .explanation-body {
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: #94a3b8;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .explanation-body p {
+      margin: 0;
+    }
+
+    .explanation-body code {
+      background: #1e293b;
+      color: #38bdf8;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-family: ui-monospace, monospace;
+    }
+
+    .exam-tip-box {
+      background: rgba(245, 158, 11, 0.1);
+      border-left: 3px solid #f59e0b;
+      padding: 6px 10px;
+      border-radius: 0 4px 4px 0;
+      font-size: 0.74rem;
+      color: #fde68a;
+    }
+
+    /* Modal / Drawer Styles */
+    .drawer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      justify-content: flex-end;
+    }
+
+    .drawer-overlay.open {
+      display: flex;
+    }
+
+    .drawer-panel {
+      width: 620px;
+      max-width: 90vw;
+      background: #0f172a;
+      border-left: 1px solid var(--border-color);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.7);
+      animation: slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    .drawer-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111827;
+    }
+
+    .drawer-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .drawer-close {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.25rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .drawer-close:hover {
+      color: #fff;
+    }
+
+    .drawer-nav-tabs {
+      display: flex;
+      background: #090d16;
+      border-bottom: 1px solid var(--border-color);
+      padding: 4px 12px 0 12px;
+      gap: 4px;
+    }
+
+    .drawer-tab {
+      background: transparent;
+      border: 1px solid transparent;
+      border-bottom: none;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 7px 12px;
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+    }
+
+    .drawer-tab.active {
+      background: #0f172a;
+      color: #38bdf8;
+      border-color: var(--border-color);
+      border-bottom: 1px solid #0f172a;
+      margin-bottom: -1px;
+    }
+
+    .drawer-search-bar {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      gap: 8px;
+    }
+
+    .drawer-search-input {
+      flex: 1;
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      outline: none;
+    }
+
+    .drawer-search-input:focus {
+      border-color: var(--border-focus);
+    }
+
+    .drawer-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Reference Tables inside drawer */
+    .ref-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+    }
+
+    .ref-table th, .ref-table td {
+      border: 1px solid var(--border-color);
+      padding: 6px 8px;
+      text-align: left;
+    }
+
+    .ref-table th {
+      background: #1e293b;
+      color: #cbd5e1;
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+    }
+
+    .ref-table tr:hover td {
+      background: #1e293b;
+    }
+
+    .ref-table code {
+      font-family: ui-monospace, monospace;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    /* Modal for Bit Trap */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(5px);
+      z-index: 120;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #0f172a;
+      border: 1px solid #38bdf8;
+      border-radius: 10px;
+      max-width: 680px;
+      width: 100%;
+      max-height: 88vh;
+      overflow-y: auto;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111827;
+    }
+
+    .modal-body {
+      padding: 18px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      color: #cbd5e1;
+    }
+
+    /* Floating Tooltip */
+    #globalTooltip {
+      position: fixed;
+      background: #0f172a;
+      border: 1px solid #38bdf8;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.72rem;
+      color: #fff;
+      pointer-events: none;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+      max-width: 280px;
+      line-height: 1.35;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr 6px 1fr;
+      }
+      .resizer {
+        cursor: row-resize;
+      }
+      .resizer::after {
+        width: 28px;
+        height: 2px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="title-area">
+    <h1>
+      ⚡ RISC-V Machine Code Trainer
+      <span class="badge">TU Darmstadt RO</span>
+      <span class="badge badge-weight">Aufgabe 2 · 8–9 Punkte</span>
+    </h1>
+  </div>
+
+  <div class="top-actions">
+    <!-- Speedrun & Exam Stopwatch -->
+    <div class="timer-widget" id="timerWidget" title="Speedrun-Timer für Prüfungszeit (Ziel: < 90 Sek. für 9 Punkte)">
+      <span style="font-size:0.85rem;">⏱️</span>
+      <span class="timer-display" id="timerDisplay">00:00.0</span>
+      <div class="timer-controls">
+        <button class="btn-timer" id="btnToggleTimer" title="Start / Pause">▶</button>
+        <button class="btn-timer" id="btnResetTimer" title="Zurücksetzen">↺</button>
+      </div>
+      <span class="timer-target-badge target-klausur" id="timerTargetBadge">Ziel: &lt;90s (Klausur)</span>
+    </div>
+
+    <!-- Klausur vs. Study Mode Switch -->
+    <div class="assist-switch" id="assistSwitch">
+      <button class="assist-btn active mode-klausur" id="btnModeKlausur" title="Klausurmodus (Auf Zeit): Neutrale Bits ohne Farbcodes, Shuffler gesperrt bis zur Abgabe — echte Prüfungsbedingungen">⏱️ Klausur (Auf Zeit)</button>
+      <button class="assist-btn" id="btnModeStudy" title="Lernmodus (Mit Hilfen): Live-Farbcodierung, Bit-Routing und Shuffler direkt aktiv">🎓 Lernen (Mit Hilfen)</button>
+    </div>
+
+    <!-- Mode Switch -->
+    <div class="mode-switch" id="modeSwitch">
+      <button class="mode-btn active" data-mode="decode" id="btnModeDecode" title="Hex/Bin to Assembly decoding">🔍 Dec: Hex ➔ Asm</button>
+      <button class="mode-btn" data-mode="encode" id="btnModeEncode" title="Assembly to Hex/Bin encoding">⚙️ Enc: Asm ➔ Hex</button>
+      <button class="mode-btn" data-mode="match" id="btnModeMatch" title="Exam matching tasks (WiSe26, SoSe25, Probeklausur)">🧩 Match: Zuordnung</button>
+      <button class="mode-btn" data-mode="generator" id="btnModeGenerator" title="Infinite random practice generator">🎲 Infinite Gen</button>
+    </div>
+
+    <!-- Quick Utilities -->
+    <button class="btn-header" id="btnOpenReference" title="Open RISC-V Reference Drawer">
+      📖 Reference Sheet
+    </button>
+    <button class="btn-header" id="btnOpenBitTrap" title="Guide: The unencoded zero bit trap in B & J formats">
+      💡 Bit-Trap Guide
+    </button>
+  </div>
+</header>
+
+<!-- Main Workspace -->
+<main id="mainContainer">
+  <!-- Left Column: Visual Slicer & Diagram -->
+  <div class="left-pane" id="leftPane">
+    <!-- Task Banner -->
+    <div class="task-banner">
+      <div class="task-info">
+        <div class="task-title-row">
+          <span class="exam-badge badge-wise26" id="taskExamBadge">WiSe26 · Aufgabe 2b</span>
+          <span class="task-prompt-text" id="taskTitleText">Dekodieren Sie die 32-Bit Hexadezimalzahl in RISC-V Assembler.</span>
+        </div>
+        <div class="task-sub-prompt" id="taskSubText">Bestimmen Sie Typ (R/I/S/B/U/J), Felder und Assembler-Befehl.</div>
+      </div>
+
+      <div class="task-nav-wrap">
+        <button class="nav-btn" id="btnPrevTask" title="Vorherige Aufgabe">◀</button>
+        <select class="task-picker-select" id="taskSelect">
+          <!-- Dynamically populated -->
+        </select>
+        <button class="nav-btn" id="btnNextTask" title="Nächste Aufgabe">▶</button>
+      </div>
+    </div>
+
+    <!-- Content for Decoding / Encoding / Generator -->
+    <div class="left-content" id="standardWorkArea">
+      <!-- Big Code Display Card -->
+      <div class="code-display-card">
+        <div class="code-display-header">
+          <span class="code-display-title">Maschinencode (32-Bit Instruction Word)</span>
+          <div style="display:flex; gap:6px;">
+            <button class="copy-btn" id="btnCopyHex">Copy Hex</button>
+            <button class="copy-btn" id="btnCopyBin">Copy Bin</button>
+          </div>
+        </div>
+
+        <div class="code-value-row">
+          <div class="hex-val" id="hexDisplay" title="Click to edit or copy">0xFE2410E3</div>
+          <div class="bin-val-spaced" id="binDisplay">11111110 00100100 00010000 11100011</div>
+        </div>
+      </div>
+
+      <!-- 32-Bit Visual Slicer Card -->
+      <div class="slicer-card">
+        <div class="slicer-header">
+          <div class="slicer-title">
+            <span>🔬 32-Bit Visual Bit Slicer</span>
+            <span style="font-size:0.7rem; color:var(--text-dim);">(Bit 31 down to Bit 0)</span>
+          </div>
+          <div class="format-indicator-badge field-imm" id="currentFormatBadge">Format: B-Type</div>
+        </div>
+
+        <div class="bits-grid-container">
+          <!-- 32 Bits Ruler: 31 down to 0 -->
+          <div class="bits-ruler" id="bitsRuler">
+            <!-- 32 cells populated by JS -->
+          </div>
+        </div>
+
+        <!-- Field Legend / Breakdown below the bits -->
+        <div class="fields-legend-bar" id="fieldsLegendBar">
+          <!-- Populated by JS: funct7, rs2, rs1, funct3, rd, opcode, imm -->
+        </div>
+      </div>
+
+      <!-- Animated Immediate Shuffling & Sign-Extension Scheme -->
+      <div class="imm-shuffler-card" id="shufflerCard">
+        <div class="shuffler-header">
+          <div class="shuffler-title">
+            <span>🔄 Immediate Bit Shuffling & Reconstruction Scheme</span>
+          </div>
+          <span id="shufflerTypeLabel" style="font-size:0.72rem; color:var(--accent-cyan); font-weight:700;">B-Type Branch Offset</span>
+        </div>
+
+        <!-- Lock Overlay for Klausur mode -->
+        <div class="shuffler-lock-overlay" id="shufflerLockOverlay">
+          <div class="lock-icon-anim">🔒</div>
+          <div class="lock-title-text">Klausurmodus: Immediate-Herleitung gesperrt</div>
+          <div class="lock-desc-text">
+            In der Klausur müssen Sie das Immediate-Bit-Scrambling und Vorzeichen eigenständig bestimmen.<br>
+            Das interaktive Routing und die Rechenschritte werden nach <b>Check Answer</b> oder <b>Reveal Solution</b> aufgedeckt.
+          </div>
+          <div class="lock-sub-hint">
+            💡 Tipp: Wechseln Sie oben auf <b>🎓 Lernen (Mit Hilfen)</b>, wenn Sie die Schaltung schon vorab live sehen möchten.
+          </div>
+        </div>
+
+        <!-- Warning Trap for B and J Types -->
+        <div class="trap-warning-box" id="trapWarningBox">
+          <span style="font-size:1.1rem;">⚠️</span>
+          <div>
+            <strong>Klausur-Falle (Unstored Zero Bit):</strong>
+            In B- und J-Typen wird das Bit <code>imm[0]</code> <strong>NICHT</strong> im Befehl gespeichert, da alle RISC-V Sprungziele mindestens auf 2-Byte-Grenzen ausgerichtet sind! Beim Rekonstruieren MUSS rechts eine <code>0</code> angehängt werden (Links-Shift um 1 Bit).
+          </div>
+        </div>
+
+        <!-- SVG Routing Diagram -->
+        <div class="shuffler-svg-wrap">
+          <svg class="routing-svg" id="routingSvg" viewBox="0 0 760 150">
+            <!-- Rendered dynamically by JS -->
+          </svg>
+        </div>
+
+        <!-- Immediate Reconstruction Calculation Result -->
+        <div class="imm-result-box" id="immResultBox">
+          <div class="imm-calc-row">
+            <span style="color:var(--text-muted);">Reconstructed Binary:</span>
+            <div class="imm-bits-display" id="immBinaryReconstruction">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+          <div class="imm-calc-row" style="border-top:1px solid #1e293b; padding-top:6px;">
+            <span style="color:var(--text-muted);">Sign-Extended 32-Bit Decimal:</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span id="immSignExtFormula" style="font-family:ui-monospace, monospace; color:#94a3b8; font-size:0.75rem;"></span>
+              <span class="imm-val-tag" id="immDecimalDisplay">-32</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content for Matching Mode (Zuordnung) -->
+    <div class="left-content matching-arena" id="matchingWorkArea" style="display:none;">
+      <div class="code-display-card">
+        <div class="code-display-header">
+          <span class="code-display-title">Zuordnungsaufgabe (Klausur-Aufgabe 2a)</span>
+          <span class="exam-badge badge-wise26" id="matchExamBadge">WiSe26 Aufgabe 2a</span>
+        </div>
+        <p style="font-size:0.8rem; color:#cbd5e1; line-height:1.4;">
+          Ordnen Sie die Assembler-Instruktionen den richtigen Binärdarstellungen zu. Klicken Sie zuerst auf eine Assembler-Karte und dann auf den passenden Binärcode. Beachten Sie: Ein Assembler-Befehl kann ggf. mehreren Codes entsprechen (z.B. Pseudo-Instruktion <code>li</code>), und manche Codes können Distraktoren sein!
+        </p>
+      </div>
+
+      <div class="matching-grid">
+        <div class="match-col">
+          <div class="match-col-title">Assembler-Instruktionen</div>
+          <div id="asmMatchList" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+        <div class="match-col">
+          <div class="match-col-title">Binärdarstellungen</div>
+          <div id="binMatchList" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Draggable Resizer -->
+  <div class="resizer" id="dragResizer" title="Spaltenbreite anpassen"></div>
+
+  <!-- Right Column: Quiz Steps, Solver & Architecture Breakdown -->
+  <div class="right-pane" id="rightPane">
+    <!-- Top Action Buttons -->
+    <div class="sidebar-actions">
+      <button class="btn-action" id="btnCheckAnswer">✓ Check Answer</button>
+      <button class="btn-secondary" id="btnRevealSolution">💡 Reveal Solution</button>
+      <button class="btn-danger" id="btnResetInputs">↺ Reset</button>
+    </div>
+
+    <div class="sidebar-content">
+      <!-- Evaluation & Score Card -->
+      <div class="eval-card" id="evalCard">
+        <div class="eval-header">
+          <h3>Klausur-Bewertung</h3>
+          <span class="score-badge score-pass" id="scoreBadge" style="display:none;">9/9 Punkte (100%)</span>
+        </div>
+        <div class="eval-feedback" id="evalFeedback">
+          Wählen Sie den Instruktions-Typ, tragen Sie die extrahierten Felder ein und formulieren Sie den finalen Assembler-Befehl. Klicken Sie dann auf <b>Check Answer</b>.
+        </div>
+      </div>
+
+      <!-- Step 1: Format Selector -->
+      <div class="step-box" id="step1Box">
+        <div class="step-header">
+          <span class="step-title">1. Instruktionsformat (Typ)</span>
+          <span class="step-badge" id="step1Badge">1 Punkt</span>
+        </div>
+        <div class="format-btn-row">
+          <button class="fmt-btn" data-fmt="R">R</button>
+          <button class="fmt-btn" data-fmt="I">I</button>
+          <button class="fmt-btn" data-fmt="S">S</button>
+          <button class="fmt-btn" data-fmt="B">B</button>
+          <button class="fmt-btn" data-fmt="U">U</button>
+          <button class="fmt-btn" data-fmt="J">J</button>
+        </div>
+        <div style="font-size:0.72rem; color:var(--text-muted); display:flex; justify-content:space-between;">
+          <span>Opcode [6:0]: <code id="opcodePreview" style="color:var(--color-opcode);">1100011</code></span>
+          <span id="opcodeMatchRule" style="color:var(--accent-cyan);">Branch Format</span>
+        </div>
+      </div>
+
+      <!-- Step 2: Extracted Fields -->
+      <div class="step-box" id="step2Box">
+        <div class="step-header">
+          <span class="step-title">2. Felder extrahieren (Bit-Slicing)</span>
+          <span class="step-badge" id="step2Badge">4 Punkte</span>
+        </div>
+
+        <div class="fields-input-grid" id="fieldsInputGrid">
+          <!-- Dynamically displayed depending on selected type -->
+          <div class="field-input-group" id="grpOpcode">
+            <label class="field-label">opcode [6:0] <span class="hint">7 bit</span></label>
+            <input type="text" class="input-box" id="inOpcode" placeholder="z.B. 1100011">
+          </div>
+
+          <div class="field-input-group" id="grpFunct3">
+            <label class="field-label">funct3 [14:12] <span class="hint">3 bit</span></label>
+            <input type="text" class="input-box" id="inFunct3" placeholder="z.B. 001">
+          </div>
+
+          <div class="field-input-group" id="grpFunct7">
+            <label class="field-label">funct7 [31:25] <span class="hint">7 bit</span></label>
+            <input type="text" class="input-box" id="inFunct7" placeholder="z.B. 0000000">
+          </div>
+
+          <div class="field-input-group" id="grpRs1">
+            <label class="field-label">rs1 [19:15] <span class="hint">Register (s0 / x8)</span></label>
+            <input type="text" class="input-box" id="inRs1" placeholder="z.B. s0 oder x8">
+          </div>
+
+          <div class="field-input-group" id="grpRs2">
+            <label class="field-label">rs2 [24:20] <span class="hint">Register (s2 / x18)</span></label>
+            <input type="text" class="input-box" id="inRs2" placeholder="z.B. s2 oder x18">
+          </div>
+
+          <div class="field-input-group" id="grpRd">
+            <label class="field-label">rd [11:7] <span class="hint">Register (s1 / x9)</span></label>
+            <input type="text" class="input-box" id="inRd" placeholder="z.B. s1 oder x9">
+          </div>
+
+          <div class="field-input-group" id="grpImm" style="grid-column: span 2;">
+            <label class="field-label">immediate (dezimal vorzeichenbehaftet) <span class="hint">Signed int</span></label>
+            <input type="text" class="input-box" id="inImm" placeholder="z.B. -32 oder 8 oder 180">
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Final Assembly Instruction / Machine Code -->
+      <div class="step-box" id="step3Box">
+        <div class="step-header">
+          <span class="step-title" id="step3Title">3. Finaler Assembler-Befehl</span>
+          <span class="step-badge" id="step3Badge">3–4 Punkte</span>
+        </div>
+
+        <div class="asm-input-wrap">
+          <input type="text" class="asm-input" id="inAsm" placeholder="z.B. bne s0, s2, -32">
+          <span style="font-size:0.7rem; color:var(--text-dim);" id="step3Hint">Akzeptiert sowohl ABI-Namen (s0, a0, sp) als auch x-Namen (x8, x10, x2).</span>
+        </div>
+      </div>
+
+      <!-- Architectural Explanation & Solution Card -->
+      <div class="explanation-card" id="explanationCard">
+        <div class="explanation-header">Architektonische Herleitung & Klausur-Tipps</div>
+        <div class="explanation-body" id="explanationBody">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- In-App RISC-V Reference Drawer -->
+<div class="drawer-overlay" id="referenceDrawer">
+  <div class="drawer-panel">
+    <div class="drawer-header">
+      <div class="drawer-title">
+        <span>📖 RISC-V Official Reference Sheet (RV32I)</span>
+      </div>
+      <button class="drawer-close" id="btnCloseDrawer">&times;</button>
+    </div>
+
+    <div class="drawer-nav-tabs">
+      <button class="drawer-tab active" data-tab="tabInst">Instructions</button>
+      <button class="drawer-tab" data-tab="tabRegs">Registers (ABI)</button>
+      <button class="drawer-tab" data-tab="tabFormats">Formats (R,I,S,B,U,J)</button>
+      <button class="drawer-tab" data-tab="tabPseudo">Pseudo-Ops</button>
+    </div>
+
+    <div class="drawer-search-bar">
+      <input type="text" class="drawer-search-input" id="drawerSearchInput" placeholder="Suche nach Befehl, Opcode, Register (z.B. 'bne', '0110011', 's0', 'jal')...">
+    </div>
+
+    <div class="drawer-content">
+      <!-- Tab 1: Instruction Set -->
+      <div id="tabInst" class="tab-pane">
+        <table class="ref-table" id="refInstTable">
+          <thead>
+            <tr>
+              <th>Befehl</th>
+              <th>Typ</th>
+              <th>Opcode</th>
+              <th>funct3</th>
+              <th>funct7</th>
+              <th>Operation</th>
+            </tr>
+          </thead>
+          <tbody id="refInstBody">
+            <!-- Populated by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tab 2: Registers -->
+      <div id="tabRegs" class="tab-pane" style="display:none;">
+        <table class="ref-table">
+          <thead>
+            <tr>
+              <th>Register</th>
+              <th>ABI-Name</th>
+              <th>Beschreibung</th>
+              <th>Saver-Konvention</th>
+            </tr>
+          </thead>
+          <tbody id="refRegsBody">
+            <!-- Populated by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tab 3: Formats -->
+      <div id="tabFormats" class="tab-pane" style="display:none;">
+        <div style="font-size:0.75rem; color:#cbd5e1; line-height:1.5; display:flex; flex-direction:column; gap:12px;">
+          <div style="background:#1e293b; padding:10px; border-radius:6px; border:1px solid var(--border-color);">
+            <strong style="color:#38bdf8;">R-Type:</strong> [31:25 funct7] [24:20 rs2] [19:15 rs1] [14:12 funct3] [11:7 rd] [6:0 opcode]<br>
+            <em>Verwendung:</em> Register-Register Arithmetik (<code>add</code>, <code>sub</code>, <code>sll</code>, <code>slt</code>, <code>and</code>, <code>or</code>).
+          </div>
+          <div style="background:#1e293b; padding:10px; border-radius:6px; border:1px solid var(--border-color);">
+            <strong style="color:#38bdf8;">I-Type:</strong> [31:20 imm[11:0]] [19:15 rs1] [14:12 funct3] [11:7 rd] [6:0 opcode]<br>
+            <em>Verwendung:</em> Arithmetik mit Konstante (<code>addi</code>, <code>andi</code>) & Ladebefehle (<code>lw</code>, <code>lb</code>, <code>lh</code>).
+          </div>
+          <div style="background:#1e293b; padding:10px; border-radius:6px; border:1px solid var(--border-color);">
+            <strong style="color:#38bdf8;">S-Type:</strong> [31:25 imm[11:5]] [24:20 rs2] [19:15 rs1] [14:12 funct3] [11:7 imm[4:0]] [6:0 opcode]<br>
+            <em>Verwendung:</em> Speicher-Schreibbefehle (<code>sw</code>, <code>sb</code>, <code>sh</code>). <em>Kein rd vorhanden!</em>
+          </div>
+          <div style="background:#1e293b; padding:10px; border-radius:6px; border:1px solid var(--border-color);">
+            <strong style="color:#38bdf8;">B-Type:</strong> [31 imm[12]] [30:25 imm[10:5]] [24:20 rs2] [19:15 rs1] [14:12 funct3] [11:8 imm[4:1]] [7 imm[11]] [6:0 opcode]<br>
+            <em>Verwendung:</em> Bedingte Sprünge (<code>beq</code>, <code>bne</code>, <code>blt</code>, <code>bge</code>). <code>imm[0] = 0</code> wird nicht gespeichert!
+          </div>
+          <div style="background:#1e293b; padding:10px; border-radius:6px; border:1px solid var(--border-color);">
+            <strong style="color:#38bdf8;">U-Type:</strong> [31:12 imm[31:12]] [11:7 rd] [6:0 opcode]<br>
+            <em>Verwendung:</em> Obere 20 Bit laden (<code>lui</code>, <code>auipc</code>).
+          </div>
+          <div style="background:#1e293b; padding:10px; border-radius:6px; border:1px solid var(--border-color);">
+            <strong style="color:#38bdf8;">J-Type:</strong> [31 imm[20]] [30:21 imm[10:1]] [20 imm[11]] [19:12 imm[19:12]] [11:7 rd] [6:0 opcode]<br>
+            <em>Verwendung:</em> Unbedingter Sprung (<code>jal</code>). <code>imm[0] = 0</code> wird nicht gespeichert!
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Pseudo-Instructions -->
+      <div id="tabPseudo" class="tab-pane" style="display:none;">
+        <table class="ref-table">
+          <thead>
+            <tr>
+              <th>Pseudo-Instruktion</th>
+              <th>Basierte RV32I-Instruktion</th>
+              <th>Bedeutung / Operation</th>
+            </tr>
+          </thead>
+          <tbody id="refPseudoBody">
+            <!-- Populated by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Bit Trap Guide -->
+<div class="modal-overlay" id="bitTrapModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div style="font-weight:700; color:#fff; display:flex; align-items:center; gap:8px;">
+        <span>🎯 Die B-Typ & J-Typ Bit-Permutations-Falle (Must-Know für 9 Punkte)</span>
+      </div>
+      <button class="drawer-close" id="btnCloseBitTrap">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>
+        In Rechnerorganisation wird in Klausuraufgabe 2 fast jedes Semester ein <strong>B-Type</strong> (z.B. <code>bne</code> in WiSe26, <code>beq</code> in Probeklausur) oder ein <strong>J-Type</strong> (z.B. <code>jal</code> in SoSe25) abgefragt.
+      </p>
+
+      <div style="background:#1e293b; border-left:4px solid #ef4444; padding:10px 14px; border-radius:0 6px 6px 0;">
+        <strong style="color:#f87171;">Falle 1: Der ungespeicherte 0-te Bit (Bit 0 ist IMMER 0)</strong><br>
+        Weil Befehle im Speicher immer auf gerade Adressen ausgerichtet sind (mindestens 2-Byte-Alignment für RISC-V Compressed, bzw. 4-Byte Standard), ist das niedrigste Bit eines Sprung-Offsets immer 0. Die Entwickler von RISC-V haben beschlossen, dieses Bit gar nicht erst im Befehl zu codieren, um 1 Bit Speicherplatz zu sparen und die Reichweite zu verdoppeln!
+        <br><br>
+        👉 <strong>Regel:</strong> Beim Rekonstruieren des Immediate schreibst du ganz rechts an Position 0 immer eine <code>0</code>!
+      </div>
+
+      <div style="background:#1e293b; border-left:4px solid #a855f7; padding:10px 14px; border-radius:0 6px 6px 0;">
+        <strong style="color:#c084fc;">Falle 2: Warum sind die Bits so "durcheinander gewürfelt"?</strong><br>
+        In B-Type liegen die Bits als <code>[31=imm12 | 30:25=imm10:5 | 11:8=imm4:1 | 7=imm11]</code>. Warum?<br>
+        1. <strong>Vorzeichenbit immer an Bit 31:</strong> Bei ALLEN Typen (I, S, B, U, J) liegt das Vorzeichenbit des Immediates immer exakt an Bit 31 der Instruktion. Das Vorzeichen-Erweiterungsgatter im Prozessor kann also immer fest an Bit 31 angeschlossen sein!<br>
+        2. <strong>Feste Registerpositionen:</strong> <code>rs1</code> und <code>rs2</code> liegen bei R, S und B immer an denselben Bits (19:15 und 24:20). Der Prozessor kann die Registerdatei schon auslesen, bevor er überhaupt weiß, welcher Befehl es ist!
+      </div>
+
+      <div style="background:#1e293b; border-left:4px solid #10b981; padding:10px 14px; border-radius:0 6px 6px 0;">
+        <strong style="color:#34d399;">Falle 3: Vorzeichenerweiterung (Zweierkomplement)</strong><br>
+        Wenn das höchste Bit 1 ist (z.B. Bit 31 = 1), ist die Zahl <strong>negativ</strong>!<br>
+        Beispiel WiSe26: 13-Bit Rohwert ist <code>1_1111_1110_0000</code> ($8160_{10}$).<br>
+        Da Bit 12 gesetzt ist ($2^{12} = 4096$), ziehen wir das Gewicht des Vorzeichenbits ab: $8160 - 2^{13} = 8160 - 8192 = -32$.<br>
+        Der Offset ist also <code>-32</code>!
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Floating Tooltip -->
+<div id="globalTooltip"></div>
+
+<!-- JavaScript Logic -->
+<script>
+/**
+ * RISC-V Machine Code & Decoding Trainer
+ * Standalone offline application for TU Darmstadt Rechnerorganisation (Aufgabe 2)
+ */
+
+// --- 1. Instruction Set & Reference Database ---
+const RV32I_DB = [
+  // R-Type
+  { name: 'add', type: 'R', opcode: '0110011', funct3: '000', funct7: '0000000', desc: 'Add registers: rd = rs1 + rs2' },
+  { name: 'sub', type: 'R', opcode: '0110011', funct3: '000', funct7: '0100000', desc: 'Subtract: rd = rs1 - rs2' },
+  { name: 'sll', type: 'R', opcode: '0110011', funct3: '001', funct7: '0000000', desc: 'Shift left logical: rd = rs1 << rs2' },
+  { name: 'slt', type: 'R', opcode: '0110011', funct3: '010', funct7: '0000000', desc: 'Set less than (signed): rd = (rs1 < rs2)?1:0' },
+  { name: 'sltu', type: 'R', opcode: '0110011', funct3: '011', funct7: '0000000', desc: 'Set less than (unsigned): rd = (rs1 < rs2)?1:0' },
+  { name: 'xor', type: 'R', opcode: '0110011', funct3: '100', funct7: '0000000', desc: 'Bitwise XOR: rd = rs1 ^ rs2' },
+  { name: 'srl', type: 'R', opcode: '0110011', funct3: '101', funct7: '0000000', desc: 'Shift right logical: rd = rs1 >> rs2' },
+  { name: 'sra', type: 'R', opcode: '0110011', funct3: '101', funct7: '0100000', desc: 'Shift right arithmetic: rd = rs1 >>> rs2' },
+  { name: 'or', type: 'R', opcode: '0110011', funct3: '110', funct7: '0000000', desc: 'Bitwise OR: rd = rs1 | rs2' },
+  { name: 'and', type: 'R', opcode: '0110011', funct3: '111', funct7: '0000000', desc: 'Bitwise AND: rd = rs1 & rs2' },
+
+  // I-Type (Arithmetic)
+  { name: 'addi', type: 'I', opcode: '0010011', funct3: '000', funct7: null, desc: 'Add immediate: rd = rs1 + SignExt(imm)' },
+  { name: 'slli', type: 'I', opcode: '0010011', funct3: '001', funct7: '0000000', desc: 'Shift left logical imm: rd = rs1 << shamt' },
+  { name: 'slti', type: 'I', opcode: '0010011', funct3: '010', funct7: null, desc: 'Set less than imm (signed): rd = (rs1 < imm)?1:0' },
+  { name: 'sltiu', type: 'I', opcode: '0010011', funct3: '011', funct7: null, desc: 'Set less than imm (unsigned): rd = (rs1 < imm)?1:0' },
+  { name: 'xori', type: 'I', opcode: '0010011', funct3: '100', funct7: null, desc: 'XOR immediate: rd = rs1 ^ SignExt(imm)' },
+  { name: 'srli', type: 'I', opcode: '0010011', funct3: '101', funct7: '0000000', desc: 'Shift right logical imm: rd = rs1 >> shamt' },
+  { name: 'srai', type: 'I', opcode: '0010011', funct3: '101', funct7: '0100000', desc: 'Shift right arithmetic imm: rd = rs1 >>> shamt' },
+  { name: 'ori', type: 'I', opcode: '0010011', funct3: '110', funct7: null, desc: 'OR immediate: rd = rs1 | SignExt(imm)' },
+  { name: 'andi', type: 'I', opcode: '0010011', funct3: '111', funct7: null, desc: 'AND immediate: rd = rs1 & SignExt(imm)' },
+
+  // I-Type (Loads)
+  { name: 'lb', type: 'I', opcode: '0000011', funct3: '000', funct7: null, desc: 'Load byte: rd = SignExt([rs1 + imm][7:0])' },
+  { name: 'lh', type: 'I', opcode: '0000011', funct3: '001', funct7: null, desc: 'Load halfword: rd = SignExt([rs1 + imm][15:0])' },
+  { name: 'lw', type: 'I', opcode: '0000011', funct3: '010', funct7: null, desc: 'Load word: rd = [rs1 + imm][31:0]' },
+  { name: 'lbu', type: 'I', opcode: '0000011', funct3: '100', funct7: null, desc: 'Load byte unsigned: rd = ZeroExt([rs1 + imm][7:0])' },
+  { name: 'lhu', type: 'I', opcode: '0000011', funct3: '101', funct7: null, desc: 'Load halfword unsigned: rd = ZeroExt([rs1 + imm][15:0])' },
+
+  // I-Type (Jump Register)
+  { name: 'jalr', type: 'I', opcode: '1100111', funct3: '000', funct7: null, desc: 'Jump and link register: PC = (rs1 + imm) & ~1, rd = PC + 4' },
+
+  // S-Type (Stores)
+  { name: 'sb', type: 'S', opcode: '0100011', funct3: '000', funct7: null, desc: 'Store byte: [rs1 + imm][7:0] = rs2[7:0]' },
+  { name: 'sh', type: 'S', opcode: '0100011', funct3: '001', funct7: null, desc: 'Store halfword: [rs1 + imm][15:0] = rs2[15:0]' },
+  { name: 'sw', type: 'S', opcode: '0100011', funct3: '010', funct7: null, desc: 'Store word: [rs1 + imm][31:0] = rs2[31:0]' },
+
+  // B-Type (Branches)
+  { name: 'beq', type: 'B', opcode: '1100011', funct3: '000', funct7: null, desc: 'Branch if equal: if (rs1 == rs2) PC += imm' },
+  { name: 'bne', type: 'B', opcode: '1100011', funct3: '001', funct7: null, desc: 'Branch if not equal: if (rs1 != rs2) PC += imm' },
+  { name: 'blt', type: 'B', opcode: '1100011', funct3: '100', funct7: null, desc: 'Branch if less than (signed): if (rs1 < rs2) PC += imm' },
+  { name: 'bge', type: 'B', opcode: '1100011', funct3: '101', funct7: null, desc: 'Branch if greater or equal: if (rs1 >= rs2) PC += imm' },
+  { name: 'bltu', type: 'B', opcode: '1100011', funct3: '110', funct7: null, desc: 'Branch if less than (unsigned): if (rs1 < rs2) PC += imm' },
+  { name: 'bgeu', type: 'B', opcode: '1100011', funct3: '111', funct7: null, desc: 'Branch if greater or equal (unsigned): if (rs1 >= rs2) PC += imm' },
+
+  // U-Type
+  { name: 'lui', type: 'U', opcode: '0110111', funct3: null, funct7: null, desc: 'Load upper immediate: rd = imm << 12' },
+  { name: 'auipc', type: 'U', opcode: '0010111', funct3: null, funct7: null, desc: 'Add upper imm to PC: rd = PC + (imm << 12)' },
+
+  // J-Type
+  { name: 'jal', type: 'J', opcode: '1101111', funct3: null, funct7: null, desc: 'Jump and link: PC += imm, rd = PC + 4' }
+];
+
+// Register Mappings
+const REG_NAMES = [
+  { num: 0, abi: 'zero', desc: 'Constant value 0', saver: '-' },
+  { num: 1, abi: 'ra', desc: 'Return address', saver: 'Caller' },
+  { num: 2, abi: 'sp', desc: 'Stack pointer', saver: 'Callee' },
+  { num: 3, abi: 'gp', desc: 'Global pointer', saver: '-' },
+  { num: 4, abi: 'tp', desc: 'Thread pointer', saver: '-' },
+  { num: 5, abi: 't0', desc: 'Temporary 0', saver: 'Caller' },
+  { num: 6, abi: 't1', desc: 'Temporary 1', saver: 'Caller' },
+  { num: 7, abi: 't2', desc: 'Temporary 2', saver: 'Caller' },
+  { num: 8, abi: 's0', desc: 'Saved register / Frame pointer (fp)', saver: 'Callee' },
+  { num: 9, abi: 's1', desc: 'Saved register 1', saver: 'Callee' },
+  { num: 10, abi: 'a0', desc: 'Function argument 0 / Return value 0', saver: 'Caller' },
+  { num: 11, abi: 'a1', desc: 'Function argument 1 / Return value 1', saver: 'Caller' },
+  { num: 12, abi: 'a2', desc: 'Function argument 2', saver: 'Caller' },
+  { num: 13, abi: 'a3', desc: 'Function argument 3', saver: 'Caller' },
+  { num: 14, abi: 'a4', desc: 'Function argument 4', saver: 'Caller' },
+  { num: 15, abi: 'a5', desc: 'Function argument 5', saver: 'Caller' },
+  { num: 16, abi: 'a6', desc: 'Function argument 6', saver: 'Caller' },
+  { num: 17, abi: 'a7', desc: 'Function argument 7', saver: 'Caller' },
+  { num: 18, abi: 's2', desc: 'Saved register 2', saver: 'Callee' },
+  { num: 19, abi: 's3', desc: 'Saved register 3', saver: 'Callee' },
+  { num: 20, abi: 's4', desc: 'Saved register 4', saver: 'Callee' },
+  { num: 21, abi: 's5', desc: 'Saved register 5', saver: 'Callee' },
+  { num: 22, abi: 's6', desc: 'Saved register 6', saver: 'Callee' },
+  { num: 23, abi: 's7', desc: 'Saved register 7', saver: 'Callee' },
+  { num: 24, abi: 's8', desc: 'Saved register 8', saver: 'Callee' },
+  { num: 25, abi: 's9', desc: 'Saved register 9', saver: 'Callee' },
+  { num: 26, abi: 's10', desc: 'Saved register 10', saver: 'Callee' },
+  { num: 27, abi: 's11', desc: 'Saved register 11', saver: 'Callee' },
+  { num: 28, abi: 't3', desc: 'Temporary 3', saver: 'Caller' },
+  { num: 29, abi: 't4', desc: 'Temporary 4', saver: 'Caller' },
+  { num: 30, abi: 't5', desc: 'Temporary 5', saver: 'Caller' },
+  { num: 31, abi: 't6', desc: 'Temporary 6', saver: 'Caller' }
+];
+
+const PSEUDO_DB = [
+  { pseudo: 'nop', base: 'addi x0, x0, 0', desc: 'No operation' },
+  { pseudo: 'ret', base: 'jalr x0, ra, 0', desc: 'Return from function call' },
+  { pseudo: 'li rd, imm (12-bit)', base: 'addi rd, x0, imm', desc: 'Load small immediate' },
+  { pseudo: 'li rd, imm (32-bit)', base: 'lui rd, upper; addi rd, rd, lower', desc: 'Load 32-bit immediate' },
+  { pseudo: 'mv rd, rs1', base: 'addi rd, rs1, 0', desc: 'Move register' },
+  { pseudo: 'not rd, rs1', base: 'xori rd, rs1, -1', desc: 'One\'s complement bitwise NOT' },
+  { pseudo: 'neg rd, rs1', base: 'sub rd, x0, rs1', desc: 'Two\'s complement arithmetic negate' },
+  { pseudo: 'j label', base: 'jal x0, label', desc: 'Unconditional jump without saving return address' },
+  { pseudo: 'beqz rs1, label', base: 'beq rs1, x0, label', desc: 'Branch if register equals zero' },
+  { pseudo: 'bnez rs1, label', base: 'bne rs1, x0, label', desc: 'Branch if register not equals zero' }
+];
+
+function regNumToAbi(n) {
+  if (n >= 0 && n < 32) return REG_NAMES[n].abi;
+  return `x${n}`;
+}
+
+function regNameToNum(name) {
+  if (!name) return -1;
+  const s = name.trim().toLowerCase();
+  if (s.startsWith('x')) {
+    const num = parseInt(s.substring(1), 10);
+    return (num >= 0 && num < 32) ? num : -1;
+  }
+  if (s === 'fp') return 8;
+  const found = REG_NAMES.find(r => r.abi === s);
+  return found ? found.num : -1;
+}
+
+// --- 2. Exam Tasks Dataset ---
+const TASKS = [
+  // --- WiSe 2025/2026 ---
+  {
+    id: 'wise26_bne',
+    exam: 'WiSe26',
+    taskNum: 'Aufgabe 2b (Trap B-Type)',
+    hex: '0xFE2410E3',
+    expectedType: 'B',
+    expectedOpcode: '1100011',
+    expectedFunct3: '001',
+    expectedFunct7: null,
+    expectedRs1: 's0',
+    expectedRs2: 's2',
+    expectedRd: null,
+    expectedImm: -32,
+    expectedAsmCanonical: 'bne s0, s2, -32',
+    altAsm: ['bne x8, x18, -32', 'bne s0,s2,-32', 'bne x8,x18,-32'],
+    prompt: 'WiSe26 Aufgabe 2: Dekodieren Sie 0xFE2410E3 in RISC-V Assembler.',
+    explanation: 'Opcode 1100011 -> B-Typ. funct3=001 -> bne. rs1=8 (s0), rs2=18 (s2). Immediate: imm[12]=1, imm[11]=1, imm[10:5]=111111, imm[4:1]=0000, imm[0]=0. Rohwert 0x1FE0 -> Vorzeichenerweiterung 13 Bit -> -32.'
+  },
+  {
+    id: 'wise26_add',
+    exam: 'WiSe26',
+    taskNum: 'Aufgabe 2b (R-Type)',
+    hex: '0x00B504B3',
+    expectedType: 'R',
+    expectedOpcode: '0110011',
+    expectedFunct3: '000',
+    expectedFunct7: '0000000',
+    expectedRs1: 'a0',
+    expectedRs2: 'a1',
+    expectedRd: 's1',
+    expectedImm: null,
+    expectedAsmCanonical: 'add s1, a0, a1',
+    altAsm: ['add x9, x10, x11', 'add s1,a0,a1', 'add x9,x10,x11'],
+    prompt: 'WiSe26 Aufgabe 2: Dekodieren Sie 0x00B504B3 in RISC-V Assembler.',
+    explanation: 'Opcode 0110011 -> R-Typ. funct3=000, funct7=0000000 -> add. rd=9 (s1), rs1=10 (a0), rs2=11 (a1) -> add s1, a0, a1.'
+  },
+  {
+    id: 'wise26_addi',
+    exam: 'WiSe26',
+    taskNum: 'Aufgabe 2 (I-Type)',
+    hex: '0x00850293',
+    expectedType: 'I',
+    expectedOpcode: '0010011',
+    expectedFunct3: '000',
+    expectedFunct7: null,
+    expectedRs1: 'a0',
+    expectedRs2: null,
+    expectedRd: 't0',
+    expectedImm: 8,
+    expectedAsmCanonical: 'addi t0, a0, 8',
+    altAsm: ['addi x5, x10, 8', 'addi t0,a0,8', 'addi x5,x10,8'],
+    prompt: 'WiSe26 Aufgabe 2: Dekodieren Sie 0x00850293 in RISC-V Assembler.',
+    explanation: 'Opcode 0010011 -> I-Typ (ALU). funct3=000 -> addi. rd=5 (t0), rs1=10 (a0), imm=8 -> addi t0, a0, 8.'
+  },
+  {
+    id: 'wise26_sb',
+    exam: 'WiSe26',
+    taskNum: 'Aufgabe 2b (Original)',
+    hex: '0x00BE1A23', // 00001011 11100001 00001010 00100011
+    expectedType: 'S',
+    expectedOpcode: '0100011',
+    expectedFunct3: '000',
+    expectedFunct7: null,
+    expectedRs1: 'sp',
+    expectedRs2: 't5',
+    expectedRd: null,
+    expectedImm: 180,
+    expectedAsmCanonical: 'sb t5, 180(sp)',
+    altAsm: ['sb x30, 180(x2)', 'sb t5,180(sp)', 'sb x30,180(x2)'],
+    prompt: 'WiSe26 Aufgabe 2b: Dekodieren Sie 00001011 11100001 00001010 00100011 (0x00BE1A23).',
+    explanation: 'Opcode 0100011 -> S-Typ (Store). funct3=000 -> sb (Store Byte). rs1=2 (sp), rs2=30 (t5). imm[11:5]=0000101 (5), imm[4:0]=10100 (20). Zusammengesetzt: (5 << 5) | 20 = 160 + 20 = 180. Ergebnis: sb t5, 180(sp).'
+  },
+
+  // --- SoSe 2025 ---
+  {
+    id: 'sose25_lw',
+    exam: 'SoSe25',
+    taskNum: 'Aufgabe 2 (Load Word)',
+    hex: '0x00052283',
+    expectedType: 'I',
+    expectedOpcode: '0000011',
+    expectedFunct3: '010',
+    expectedFunct7: null,
+    expectedRs1: 'a0',
+    expectedRs2: null,
+    expectedRd: 't0',
+    expectedImm: 0,
+    expectedAsmCanonical: 'lw t0, 0(a0)',
+    altAsm: ['lw x5, 0(x10)', 'lw t0,0(a0)', 'lw x5,0(x10)'],
+    prompt: 'SoSe25 Aufgabe 2: Dekodieren Sie 0x00052283 in RISC-V Assembler.',
+    explanation: 'Opcode 0000011 -> I-Typ (Load). funct3=010 -> lw. rd=5 (t0), rs1=10 (a0), imm=0 -> lw t0, 0(a0).'
+  },
+  {
+    id: 'sose25_jal',
+    exam: 'SoSe25',
+    taskNum: 'Aufgabe 2 (J-Type)',
+    hex: '0x028000EF',
+    expectedType: 'J',
+    expectedOpcode: '1101111',
+    expectedFunct3: null,
+    expectedFunct7: null,
+    expectedRs1: null,
+    expectedRs2: null,
+    expectedRd: 'ra',
+    expectedImm: 40,
+    expectedAsmCanonical: 'jal ra, 40',
+    altAsm: ['jal x1, 40', 'jal ra,40', 'jal x1,40'],
+    prompt: 'SoSe25 Aufgabe 2: Dekodieren Sie 0x028000EF (J-Typ Sprungbefehl).',
+    explanation: 'Opcode 1101111 -> J-Typ (jal). rd=1 (ra). Rekonstruktion: imm[20]=0, imm[10:1]=20, imm[11]=0, imm[19:12]=0, imm[0]=0 -> Offset = 20 << 1 = 40. Ergebnis: jal ra, 40.'
+  },
+  {
+    id: 'sose25_sub',
+    exam: 'SoSe25',
+    taskNum: 'Aufgabe 2 (R-Type Sub)',
+    hex: '0x413904B3',
+    expectedType: 'R',
+    expectedOpcode: '0110011',
+    expectedFunct3: '000',
+    expectedFunct7: '0100000',
+    expectedRs1: 's2',
+    expectedRs2: 's3',
+    expectedRd: 's1',
+    expectedImm: null,
+    expectedAsmCanonical: 'sub s1, s2, s3',
+    altAsm: ['sub x9, x18, x19', 'sub s1,s2,s3', 'sub x9,x18,x19'],
+    prompt: 'SoSe25 Aufgabe 2: Dekodieren Sie 0x413904B3 in RISC-V Assembler.',
+    explanation: 'Opcode 0110011 -> R-Typ. funct3=000, funct7=0100000 -> sub. rd=9 (s1), rs1=18 (s2), rs2=19 (s3) -> sub s1, s2, s3.'
+  },
+  {
+    id: 'sose25_srai',
+    exam: 'SoSe25',
+    taskNum: 'Aufgabe 2 (Shift Right Arith)',
+    hex: '0x40455293',
+    expectedType: 'I',
+    expectedOpcode: '0010011',
+    expectedFunct3: '101',
+    expectedFunct7: '0100000',
+    expectedRs1: 'a0',
+    expectedRs2: null,
+    expectedRd: 't0',
+    expectedImm: 4,
+    expectedAsmCanonical: 'srai t0, a0, 4',
+    altAsm: ['srai x5, x10, 4', 'srai t0,a0,4', 'srai x5,x10,4'],
+    prompt: 'SoSe25 Aufgabe 2: Dekodieren Sie 0x40455293 in RISC-V Assembler.',
+    explanation: 'Opcode 0010011 -> I-Typ Shift. funct3=101, funct7(Bits 31:25)=0100000 -> srai (arithmetischer Shift). rd=5 (t0), rs1=10 (a0), shamt=4 -> srai t0, a0, 4.'
+  },
+
+  // --- Probeklausur SoSe 2026 ---
+  {
+    id: 'probe_nop',
+    exam: 'Probeklausur',
+    taskNum: 'Aufgabe 2 (NOP)',
+    hex: '0x00000013',
+    expectedType: 'I',
+    expectedOpcode: '0010011',
+    expectedFunct3: '000',
+    expectedFunct7: null,
+    expectedRs1: 'zero',
+    expectedRs2: null,
+    expectedRd: 'zero',
+    expectedImm: 0,
+    expectedAsmCanonical: 'nop',
+    altAsm: ['addi x0, x0, 0', 'addi zero, zero, 0', 'addi x0,x0,0', 'addi zero,zero,0'],
+    prompt: 'Probeklausur Aufgabe 2: Dekodieren Sie 0x00000013.',
+    explanation: 'Opcode 0010011 -> I-Typ. funct3=000 (addi), rd=x0, rs1=x0, imm=0. Dies entspricht addi x0, x0, 0, also der offiziellen Pseudo-Instruktion nop.'
+  },
+  {
+    id: 'probe_ret',
+    exam: 'Probeklausur',
+    taskNum: 'Aufgabe 2 (RET)',
+    hex: '0x00008067',
+    expectedType: 'I',
+    expectedOpcode: '1100111',
+    expectedFunct3: '000',
+    expectedFunct7: null,
+    expectedRs1: 'ra',
+    expectedRs2: null,
+    expectedRd: 'zero',
+    expectedImm: 0,
+    expectedAsmCanonical: 'ret',
+    altAsm: ['jalr x0, ra, 0', 'jalr zero, ra, 0', 'jalr x0, x1, 0', 'jalr x0,ra,0'],
+    prompt: 'Probeklausur Aufgabe 2: Dekodieren Sie 0x00008067.',
+    explanation: 'Opcode 1100111 -> I-Typ (jalr). funct3=000, rd=x0, rs1=ra (x1), imm=0. Entspricht jalr x0, ra, 0, also der offiziellen Pseudo-Instruktion ret.'
+  },
+  {
+    id: 'probe_beq',
+    exam: 'Probeklausur',
+    taskNum: 'Aufgabe 2 (BEQ)',
+    hex: '0x00948663', // 00000000 10010100 00000110 01100011
+    expectedType: 'B',
+    expectedOpcode: '1100011',
+    expectedFunct3: '000',
+    expectedFunct7: null,
+    expectedRs1: 's0',
+    expectedRs2: 's1',
+    expectedRd: null,
+    expectedImm: 12,
+    expectedAsmCanonical: 'beq s0, s1, 12',
+    altAsm: ['beq x8, x9, 12', 'beq s0,s1,12', 'beq x8,x9,12'],
+    prompt: 'Probeklausur Aufgabe 2: Dekodieren Sie 00000000 10010100 00000110 01100011 (0x00948663).',
+    explanation: 'Opcode 1100011 -> B-Typ. funct3=000 -> beq. rs1=8 (s0), rs2=9 (s1). Rekonstruktion imm: imm[12]=0, imm[11]=0, imm[10:5]=000000, imm[4:1]=0110 (6), imm[0]=0. Rohwert 6 << 1 = 12 -> beq s0, s1, 12.'
+  },
+  {
+    id: 'probe_sw',
+    exam: 'Probeklausur',
+    taskNum: 'Aufgabe 2 (SW)',
+    hex: '0x00E2A423', // 00000000 11100010 10100100 00100011
+    expectedType: 'S',
+    expectedOpcode: '0100011',
+    expectedFunct3: '010',
+    expectedFunct7: null,
+    expectedRs1: 't0',
+    expectedRs2: 'a4',
+    expectedRd: null,
+    expectedImm: 8,
+    expectedAsmCanonical: 'sw a4, 8(t0)',
+    altAsm: ['sw x14, 8(x5)', 'sw a4,8(t0)', 'sw x14,8(x5)'],
+    prompt: 'Probeklausur Aufgabe 2: Dekodieren Sie 00000000 11100010 10100100 00100011 (0x00E2A423).',
+    explanation: 'Opcode 0100011 -> S-Typ (Store). funct3=010 -> sw. rs1=5 (t0), rs2=14 (a4). imm[11:5]=0000000, imm[4:0]=01000 (8) -> Offset = 8 -> sw a4, 8(t0).'
+  },
+  {
+    id: 'probe_bne_neg',
+    exam: 'Probeklausur',
+    taskNum: 'Aufgabe 2 (BNE -16)',
+    hex: '0xFE6298E3',
+    expectedType: 'B',
+    expectedOpcode: '1100011',
+    expectedFunct3: '001',
+    expectedFunct7: null,
+    expectedRs1: 't0',
+    expectedRs2: 't1',
+    expectedRd: null,
+    expectedImm: -16,
+    expectedAsmCanonical: 'bne t0, t1, -16',
+    altAsm: ['bne x5, x6, -16', 'bne t0,t1,-16', 'bne x5,x6,-16'],
+    prompt: 'Probeklausur Aufgabe 2: Dekodieren Sie 0xFE6298E3.',
+    explanation: 'Opcode 1100011 -> B-Typ. funct3=001 -> bne. rs1=5 (t0), rs2=6 (t1). imm[12]=1, imm[11]=1, imm[10:5]=111111, imm[4:1]=1000, imm[0]=0. Rohwert 0x1FF0 -> Vorzeichenerweitert 13 Bit: 8176 - 8192 = -16. Ergebnis: bne t0, t1, -16.'
+  },
+  {
+    id: 'probe_jal32',
+    exam: 'Probeklausur',
+    taskNum: 'Aufgabe 2 (JAL 32)',
+    hex: '0x020000EF', // 00000010 00000000 00000000 11101111
+    expectedType: 'J',
+    expectedOpcode: '1101111',
+    expectedFunct3: null,
+    expectedFunct7: null,
+    expectedRs1: null,
+    expectedRs2: null,
+    expectedRd: 'ra',
+    expectedImm: 32,
+    expectedAsmCanonical: 'jal ra, 32',
+    altAsm: ['jal x1, 32', 'jal ra,32', 'jal x1,32'],
+    prompt: 'Probeklausur Aufgabe 2: Dekodieren Sie 00000010 00000000 00000000 11101111 (0x020000EF).',
+    explanation: 'Opcode 1101111 -> J-Typ (jal). rd=1 (ra). imm[20]=0, imm[10:1]=16, imm[11]=0, imm[19:12]=0, imm[0]=0 -> 16 << 1 = 32. Ergebnis: jal ra, 32.'
+  },
+  {
+    id: 'u_type_lui',
+    exam: 'Übung/Klausur',
+    taskNum: 'U-Typ (LUI)',
+    hex: '0x00001437',
+    expectedType: 'U',
+    expectedOpcode: '0110111',
+    expectedFunct3: null,
+    expectedFunct7: null,
+    expectedRs1: null,
+    expectedRs2: null,
+    expectedRd: 's0',
+    expectedImm: 1,
+    expectedAsmCanonical: 'lui s0, 1',
+    altAsm: ['lui x8, 1', 'lui s0, 0x1', 'lui x8, 0x1', 'lui s0,1', 'lui x8,1'],
+    prompt: 'U-Typ Training: Dekodieren Sie 0x00001437 in RISC-V Assembler.',
+    explanation: 'Opcode 0110111 -> U-Typ (lui). rd=8 (s0), imm[31:12]=0000 0000 0000 0000 0001 (1) -> lui s0, 1.'
+  }
+];
+
+// Zuordnung Exam Data
+const MATCHING_DATASETS = {
+  wise26: {
+    title: 'WiSe 2025/2026 · Aufgabe 2a',
+    asm: [
+      { id: 'w_a1', text: 'addi x9, x9, 1', matches: ['w_b_A', 'w_b_C'], note: 'Matches A AND C (Both encode addi x9, x9, 1)' },
+      { id: 'w_a2', text: 'jal s0, loop', matches: ['w_b_D'], note: 'Matches D' },
+      { id: 'w_a3', text: 'li x9, 4097', matches: ['w_b_B'], note: 'Matches B (Pseudo-instruction expansion)' }
+    ],
+    bin: [
+      { id: 'w_b_A', code: '00000000 00000000 10000111 00110111', label: 'A' },
+      { id: 'w_b_B', code: '00110000 00100000 00000000 01110011', label: 'B' },
+      { id: 'w_b_C', code: '01111111 11110111 00000111 00010011', label: 'C' },
+      { id: 'w_b_D', code: '01000001 01000000 00000111 00110011', label: 'D' },
+      { id: 'w_b_E', code: '00000000 00000000 10010111 00110111', label: 'E (Distraktor)' }
+    ]
+  },
+  sose25: {
+    title: 'SoSe 2025 · Aufgabe 2a',
+    asm: [
+      { id: 's_a1', text: 'ori s0, zero, 6', matches: ['s_b_E'], note: 'Matches E' },
+      { id: 's_a2', text: 'addi x9, x9, 1', matches: ['s_b_A'], note: 'Matches A' },
+      { id: 's_a3', text: 'jal s0, loop', matches: ['s_b_B'], note: 'Matches B' },
+      { id: 's_a4', text: 'li x9, 4097', matches: ['s_b_A', 's_b_D'], note: 'Matches A and D' }
+    ],
+    bin: [
+      { id: 's_b_A', code: '00000000 00010100 10000100 10010011', label: 'A' },
+      { id: 's_b_B', code: '11111111 10011111 11110100 01101111', label: 'B' },
+      { id: 's_b_C', code: '00000000 01100100 10000100 00010011', label: 'C (Distraktor: addi s0, s1, 6)' },
+      { id: 's_b_D', code: '00000000 00000000 00010100 10110111', label: 'D' },
+      { id: 's_b_E', code: '00000000 01100000 01100100 00010011', label: 'E' }
+    ]
+  },
+  probe: {
+    title: 'Probeklausur SoSe 2026 · Aufgabe 2',
+    asm: [
+      { id: 'p_a1', text: 'nop', matches: ['p_b_1'], note: 'nop = addi x0, x0, 0' },
+      { id: 'p_a2', text: 'ret', matches: ['p_b_2'], note: 'ret = jalr x0, ra, 0' },
+      { id: 'p_a3', text: 'beq s0, s1, 12', matches: ['p_b_3'], note: 'B-Type branch' },
+      { id: 'p_a4', text: 'sw a4, 8(t0)', matches: ['p_b_4'], note: 'S-Type store' },
+      { id: 'p_a5', text: 'add t0, a6, t2', matches: ['p_b_5'], note: 'R-Type add' },
+      { id: 'p_a6', text: 'jal ra, 32', matches: ['p_b_6'], note: 'J-Type jump' },
+      { id: 'p_a7', text: 'bne t0, t1, -16', matches: ['p_b_7'], note: 'B-Type negative offset' },
+      { id: 'p_a8', text: 'sll a2, a4, a5', matches: ['p_b_8'], note: 'R-Type shift left' }
+    ],
+    bin: [
+      { id: 'p_b_1', code: '0x00000013', label: '0x00000013' },
+      { id: 'p_b_2', code: '0x00008067', label: '0x00008067' },
+      { id: 'p_b_3', code: '00000000 10010100 00000110 01100011', label: 'beq bin' },
+      { id: 'p_b_4', code: '00000000 11100010 10100100 00100011', label: 'sw bin' },
+      { id: 'p_b_5', code: '0x007802B3', label: '0x007802B3' },
+      { id: 'p_b_6', code: '00000010 00000000 00000000 11101111', label: 'jal bin' },
+      { id: 'p_b_7', code: '0xFE6298E3', label: '0xFE6298E3' },
+      { id: 'p_b_8', code: '00000000 11110111 00010110 00110011', label: 'sll bin' },
+      { id: 'p_b_9', code: 'addi t0, a6, 2 (Distraktor ohne Gegenstück)', label: 'Distraktor' }
+    ]
+  }
+};
+
+// --- 3. Bit Parsing & Assembly Helpers ---
+function hexTo32BitBin(hexStr) {
+  let clean = hexStr.trim();
+  if (clean.toLowerCase().startsWith('0x')) clean = clean.substring(2);
+  clean = clean.replace(/\s+/g, '');
+  const val = parseInt(clean, 16);
+  if (isNaN(val)) return '0'.repeat(32);
+  let b = (val >>> 0).toString(2);
+  return b.padStart(32, '0');
+}
+
+function binToHex(binStr) {
+  const clean = binStr.replace(/\s+/g, '');
+  const val = parseInt(clean, 2);
+  if (isNaN(val)) return '0x00000000';
+  return '0x' + (val >>> 0).toString(16).toUpperCase().padStart(8, '0');
+}
+
+function parseInstructionBits(binStr) {
+  // binStr: 32 chars '0'/'1', where [0] is bit 31, [31] is bit 0!
+  const b = binStr.replace(/\s+/g, '');
+  const bit = (idx) => b.charAt(31 - idx);
+  const slice = (hi, lo) => b.substring(31 - hi, 32 - lo);
+
+  const opcode = slice(6, 0);
+  const rd = parseInt(slice(11, 7), 2);
+  const funct3 = slice(14, 12);
+  const rs1 = parseInt(slice(19, 15), 2);
+  const rs2 = parseInt(slice(24, 20), 2);
+  const funct7 = slice(31, 25);
+
+  // Immediate decoding per format
+  let immI = parseInt(slice(31, 20), 2);
+  if (immI & 0x800) immI = immI - 0x1000; // 12-bit signed
+
+  let immS = (parseInt(slice(31, 25), 2) << 5) | parseInt(slice(11, 7), 2);
+  if (immS & 0x800) immS = immS - 0x1000;
+
+  // B-Type: imm[12|10:5|4:1|11]
+  const b12 = bit(31);
+  const b11 = bit(7);
+  const b10_5 = slice(30, 25);
+  const b4_1 = slice(11, 8);
+  const immB_str = b12 + b11 + b10_5 + b4_1 + '0';
+  let immB = parseInt(immB_str, 2);
+  if (b12 === '1') immB = immB - (1 << 13);
+
+  // U-Type
+  let immU = parseInt(slice(31, 12), 2);
+
+  // J-Type: imm[20|10:1|11|19:12]
+  const j20 = bit(31);
+  const j19_12 = slice(19, 12);
+  const j11 = bit(20);
+  const j10_1 = slice(30, 21);
+  const immJ_str = j20 + j19_12 + j11 + j10_1 + '0';
+  let immJ = parseInt(immJ_str, 2);
+  if (j20 === '1') immJ = immJ - (1 << 21);
+
+  // Format deduction from opcode
+  let fmt = 'Unknown';
+  if (opcode === '0110011') fmt = 'R';
+  else if (opcode === '0010011' || opcode === '0000011' || opcode === '1100111') fmt = 'I';
+  else if (opcode === '0100011') fmt = 'S';
+  else if (opcode === '1100011') fmt = 'B';
+  else if (opcode === '0110111' || opcode === '0010111') fmt = 'U';
+  else if (opcode === '1101111') fmt = 'J';
+
+  return {
+    rawBin: b,
+    opcode,
+    rd,
+    funct3,
+    rs1,
+    rs2,
+    funct7,
+    fmt,
+    immI,
+    immS,
+    immB,
+    immB_chunks: { b12, b11, b10_5, b4_1 },
+    immU,
+    immJ,
+    immJ_chunks: { j20, j19_12, j11, j10_1 }
+  };
+}
+
+// --- 4. Application State & Timer ---
+let currentTaskIndex = 0;
+let currentMode = 'decode'; // 'decode', 'encode', 'match', 'generator'
+let selectedFormat = null;
+let customBin = null;
+let currentMatchingExam = 'wise26';
+let selectedAsmCard = null;
+let userMatches = {};
+
+// Speedrun Timer State
+let timerStartTime = null;
+let timerElapsedTime = 0;
+let timerInterval = null;
+let isTimerRunning = false;
+let timerBestTime = null;
+
+function startTimer() {
+  if (isTimerRunning) return;
+  isTimerRunning = true;
+  timerStartTime = Date.now() - timerElapsedTime;
+  timerInterval = setInterval(updateTimerDisplay, 100);
+  const widget = document.getElementById('timerWidget');
+  if (widget) {
+    widget.classList.add('running');
+    widget.classList.remove('completed-fast');
+  }
+  const btn = document.getElementById('btnToggleTimer');
+  if (btn) btn.textContent = '⏸';
+}
+
+function pauseTimer() {
+  if (!isTimerRunning) return;
+  isTimerRunning = false;
+  clearInterval(timerInterval);
+  timerElapsedTime = Date.now() - timerStartTime;
+  const widget = document.getElementById('timerWidget');
+  if (widget) widget.classList.remove('running');
+  const btn = document.getElementById('btnToggleTimer');
+  if (btn) btn.textContent = '▶';
+}
+
+function resetTimer() {
+  pauseTimer();
+  timerElapsedTime = 0;
+  formatTimerDisplay(0);
+  const widget = document.getElementById('timerWidget');
+  if (widget) widget.classList.remove('completed-fast');
+}
+
+function toggleTimer() {
+  if (isTimerRunning) pauseTimer();
+  else startTimer();
+}
+
+function updateTimerDisplay() {
+  const elapsed = Date.now() - timerStartTime;
+  timerElapsedTime = elapsed;
+  formatTimerDisplay(elapsed);
+}
+
+function formatTimerDisplay(ms) {
+  const totalSec = ms / 1000;
+  const mins = Math.floor(totalSec / 60);
+  const secs = Math.floor(totalSec % 60);
+  const tenths = Math.floor((ms % 1000) / 100);
+  const text = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${tenths}`;
+  const display = document.getElementById('timerDisplay');
+  if (display) display.textContent = text;
+}
+
+// Klausur vs. Study Mode State
+let isKlausurMode = true; // By default active when solving with timer
+let isRevealed = false;   // Unlocks highlights upon Check Answer or Reveal Solution
+
+function setAssistMode(mode) {
+  isKlausurMode = (mode === 'klausur');
+  const btnKlausur = document.getElementById('btnModeKlausur');
+  const btnStudy = document.getElementById('btnModeStudy');
+  if (btnKlausur && btnStudy) {
+    btnKlausur.classList.toggle('active', isKlausurMode);
+    btnStudy.classList.toggle('active', !isKlausurMode);
+  }
+
+  const timerBadge = document.getElementById('timerTargetBadge');
+  if (timerBadge) {
+    if (isKlausurMode) {
+      timerBadge.textContent = 'Ziel: <90s (Klausur)';
+      timerBadge.className = 'timer-target-badge target-klausur';
+    } else {
+      timerBadge.textContent = 'Lernmodus (Mit Hilfen)';
+      timerBadge.className = 'timer-target-badge target-study';
+    }
+  }
+
+  updateVisuals();
+}
+
+// DOM Elements
+const taskSelect = document.getElementById('taskSelect');
+const taskExamBadge = document.getElementById('taskExamBadge');
+const taskTitleText = document.getElementById('taskTitleText');
+const taskSubText = document.getElementById('taskSubText');
+const hexDisplay = document.getElementById('hexDisplay');
+const binDisplay = document.getElementById('binDisplay');
+const bitsRuler = document.getElementById('bitsRuler');
+const fieldsLegendBar = document.getElementById('fieldsLegendBar');
+const currentFormatBadge = document.getElementById('currentFormatBadge');
+const trapWarningBox = document.getElementById('trapWarningBox');
+const shufflerCard = document.getElementById('shufflerCard');
+const shufflerTypeLabel = document.getElementById('shufflerTypeLabel');
+const routingSvg = document.getElementById('routingSvg');
+const immBinaryReconstruction = document.getElementById('immBinaryReconstruction');
+const immSignExtFormula = document.getElementById('immSignExtFormula');
+const immDecimalDisplay = document.getElementById('immDecimalDisplay');
+const evalCard = document.getElementById('evalCard');
+const scoreBadge = document.getElementById('scoreBadge');
+const evalFeedback = document.getElementById('evalFeedback');
+const opcodePreview = document.getElementById('opcodePreview');
+const opcodeMatchRule = document.getElementById('opcodeMatchRule');
+const fieldsInputGrid = document.getElementById('fieldsInputGrid');
+const inOpcode = document.getElementById('inOpcode');
+const inFunct3 = document.getElementById('inFunct3');
+const inFunct7 = document.getElementById('inFunct7');
+const inRs1 = document.getElementById('inRs1');
+const inRs2 = document.getElementById('inRs2');
+const inRd = document.getElementById('inRd');
+const inImm = document.getElementById('inImm');
+const inAsm = document.getElementById('inAsm');
+const explanationBody = document.getElementById('explanationBody');
+const standardWorkArea = document.getElementById('standardWorkArea');
+const matchingWorkArea = document.getElementById('matchingWorkArea');
+
+// --- 5. Initialization ---
+function init() {
+  populateTaskPicker();
+  setupEventListeners();
+  setupReferenceDrawer();
+  loadTask(0);
+}
+
+function populateTaskPicker() {
+  taskSelect.innerHTML = '';
+  TASKS.forEach((t, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `[${t.exam}] ${t.taskNum} (${t.expectedAsmCanonical})`;
+    taskSelect.appendChild(opt);
+  });
+}
+
+function loadTask(idx) {
+  currentTaskIndex = idx;
+  taskSelect.value = idx;
+  const task = TASKS[idx];
+
+  taskExamBadge.textContent = `${task.exam} · ${task.taskNum}`;
+  taskExamBadge.className = 'exam-badge';
+  if (task.exam.includes('WiSe26')) taskExamBadge.classList.add('badge-wise26');
+  else if (task.exam.includes('SoSe25')) taskExamBadge.classList.add('badge-sose25');
+  else if (task.exam.includes('Probeklausur')) taskExamBadge.classList.add('badge-probeklausur');
+  else taskExamBadge.classList.add('badge-generator');
+
+  if (currentMode === 'encode') {
+    taskTitleText.textContent = `Kodieren Sie "${task.expectedAsmCanonical}" in 32-Bit Maschinencode (Hex / Bin).`;
+    taskSubText.textContent = 'Bestimmen Sie Format, Felder und die resultierende 32-Bit Hexadezimalzahl.';
+    const s3Title = document.getElementById('step3Title');
+    const s3Hint = document.getElementById('step3Hint');
+    if (s3Title) s3Title.textContent = '3. Finaler Maschinencode (Hex / Bin)';
+    if (s3Hint) s3Hint.textContent = 'Geben Sie die 32-Bit Hexadezimalzahl (z.B. 0xFE2410E3) oder Binärstring ein.';
+    inAsm.placeholder = `z.B. ${task.hex} oder 11111110...`;
+  } else {
+    taskTitleText.textContent = task.prompt;
+    taskSubText.textContent = 'Bestimmen Sie Typ (R/I/S/B/U/J), Felder und Assembler-Befehl.';
+    const s3Title = document.getElementById('step3Title');
+    const s3Hint = document.getElementById('step3Hint');
+    if (s3Title) s3Title.textContent = '3. Finaler Assembler-Befehl';
+    if (s3Hint) s3Hint.textContent = 'Akzeptiert sowohl ABI-Namen (s0, a0, sp) als auch x-Namen (x8, x10, x2).';
+    inAsm.placeholder = 'z.B. bne s0, s2, -32';
+  }
+
+  customBin = hexTo32BitBin(task.hex);
+  resetQuizInputs();
+  updateVisuals();
+  resetTimer();
+  startTimer();
+}
+
+function resetQuizInputs() {
+  isRevealed = false;
+  selectedFormat = null;
+  document.querySelectorAll('.fmt-btn').forEach(btn => btn.classList.remove('active'));
+  inOpcode.value = '';
+  inFunct3.value = '';
+  inFunct7.value = '';
+  inRs1.value = '';
+  inRs2.value = '';
+  inRd.value = '';
+  inImm.value = '';
+  inAsm.value = '';
+
+  document.querySelectorAll('.input-box, .asm-input').forEach(el => {
+    el.classList.remove('input-correct', 'input-wrong');
+  });
+
+  scoreBadge.style.display = 'none';
+  evalFeedback.innerHTML = 'Wählen Sie den Instruktions-Typ, tragen Sie die extrahierten Felder ein und formulieren Sie den finalen Assembler-Befehl. Klicken Sie dann auf <b>Check Answer</b>.';
+  explanationBody.innerHTML = '<span style="color:var(--text-dim);">Klicken Sie auf <b>Check Answer</b> oder <b>Reveal Solution</b>, um die Schritt-für-Schritt-Herleitung anzuzeigen.</span>';
+}
+
+// --- 6. Visual Updates: Ruler, Slicer, Shuffler ---
+function updateVisuals() {
+  const parsed = parseInstructionBits(customBin);
+  const showHints = (!isKlausurMode) || isRevealed;
+  const activeFmt = selectedFormat || (showHints ? parsed.fmt : null);
+
+  // Update Code Displays
+  if (currentMode === 'encode' && isKlausurMode && !isRevealed) {
+    hexDisplay.textContent = '0x????????';
+    binDisplay.textContent = '???? ???? ???? ???? ???? ???? ???? ????';
+  } else {
+    hexDisplay.textContent = binToHex(parsed.rawBin);
+    let spacedBin = '';
+    for (let i = 0; i < 32; i += 8) {
+      spacedBin += parsed.rawBin.substring(i, i + 8) + ' ';
+    }
+    binDisplay.textContent = spacedBin.trim();
+  }
+
+  // Opcode preview in Step 1
+  opcodePreview.textContent = parsed.opcode;
+  if (showHints) {
+    opcodeMatchRule.textContent = getOpcodeDesc(parsed.opcode);
+  } else {
+    opcodeMatchRule.textContent = 'Typ im RISC-V Sheet nachschlagen';
+  }
+
+  // Update 32-bit Bit Ruler
+  render32BitRuler(parsed, showHints ? (activeFmt || parsed.fmt) : null);
+
+  // Update Field Legend Pills
+  renderFieldPills(parsed, showHints ? (activeFmt || parsed.fmt) : null);
+
+  // Update Format Badge
+  if (showHints) {
+    const dispFmt = activeFmt || parsed.fmt;
+    currentFormatBadge.textContent = `Format: ${dispFmt}-Type`;
+    currentFormatBadge.className = `format-indicator-badge field-${dispFmt.toLowerCase()}`;
+  } else {
+    if (selectedFormat) {
+      currentFormatBadge.textContent = `Gewählt: ${selectedFormat}-Type`;
+      currentFormatBadge.className = 'format-indicator-badge field-neutral';
+    } else {
+      currentFormatBadge.textContent = 'Format: ? (Klausurmodus)';
+      currentFormatBadge.className = 'format-indicator-badge field-neutral';
+    }
+  }
+
+  // Update Immediate Shuffler
+  renderImmediateShuffler(parsed, showHints ? (activeFmt || parsed.fmt) : null);
+
+  // Adjust input fields visibility based on active format
+  adjustInputVisibility(activeFmt);
+}
+
+function getOpcodeDesc(op) {
+  if (op === '0110011') return 'R-Type (Arith/Logic)';
+  if (op === '0010011') return 'I-Type (ALU Imm)';
+  if (op === '0000011') return 'I-Type (Load Word)';
+  if (op === '1100111') return 'I-Type (JALR)';
+  if (op === '0100011') return 'S-Type (Store)';
+  if (op === '1100011') return 'B-Type (Branch)';
+  if (op === '0110111') return 'U-Type (LUI)';
+  if (op === '0010111') return 'U-Type (AUIPC)';
+  if (op === '1101111') return 'J-Type (JAL)';
+  return 'Unbekannter Opcode';
+}
+
+function render32BitRuler(parsed, fmt) {
+  bitsRuler.innerHTML = '';
+  const showColors = (!isKlausurMode) || isRevealed;
+
+  for (let bitIdx = 31; bitIdx >= 0; bitIdx--) {
+    const bitVal = parsed.rawBin.charAt(31 - bitIdx);
+    const col = document.createElement('div');
+    col.className = 'bit-col';
+
+    // Grouping into 4 bytes (31..24, 23..16, 15..8, 7..0)
+    if (bitIdx === 23 || bitIdx === 15 || bitIdx === 7) {
+      col.classList.add('byte-sep-left');
+    }
+
+    const label = document.createElement('span');
+    label.className = 'bit-idx';
+    label.textContent = bitIdx;
+
+    const cell = document.createElement('div');
+    cell.className = 'bit-cell';
+    cell.textContent = bitVal;
+    cell.dataset.bit = bitIdx;
+
+    if (showColors) {
+      const fieldInfo = getFieldForBit(bitIdx, fmt || parsed.fmt);
+      cell.classList.add(fieldInfo.cssClass);
+
+      cell.addEventListener('mouseenter', (e) => {
+        showTooltip(e, `<strong>Bit [${bitIdx}] = ${bitVal}</strong><br>Feld: <b>${fieldInfo.name}</b> (${fieldInfo.desc})`);
+      });
+    } else {
+      cell.classList.add('neutral-bit');
+
+      cell.addEventListener('mouseenter', (e) => {
+        showTooltip(e, `<strong>Bit [${bitIdx}] = ${bitVal}</strong><br><span style="color:var(--text-dim);">Klausurmodus: Feldzuordnung selbst bestimmen</span>`);
+      });
+    }
+    cell.addEventListener('mouseleave', hideTooltip);
+
+    cell.addEventListener('click', () => {
+      toggleBit(bitIdx);
+    });
+
+    col.appendChild(label);
+    col.appendChild(cell);
+    bitsRuler.appendChild(col);
+  }
+}
+
+function getFieldForBit(bitIdx, fmt) {
+  if (bitIdx <= 6) return { name: 'opcode', desc: 'Opcode [6:0]', cssClass: 'field-opcode' };
+
+  if (fmt === 'R') {
+    if (bitIdx <= 11) return { name: 'rd', desc: 'Zielregister rd [11:7]', cssClass: 'field-rd' };
+    if (bitIdx <= 14) return { name: 'funct3', desc: 'Funktionscode funct3 [14:12]', cssClass: 'field-funct3' };
+    if (bitIdx <= 19) return { name: 'rs1', desc: 'Quellregister 1 rs1 [19:15]', cssClass: 'field-rs1' };
+    if (bitIdx <= 24) return { name: 'rs2', desc: 'Quellregister 2 rs2 [24:20]', cssClass: 'field-rs2' };
+    return { name: 'funct7', desc: 'Funktionscode funct7 [31:25]', cssClass: 'field-funct7' };
+  }
+
+  if (fmt === 'I') {
+    if (bitIdx <= 11) return { name: 'rd', desc: 'Zielregister rd [11:7]', cssClass: 'field-rd' };
+    if (bitIdx <= 14) return { name: 'funct3', desc: 'Funktionscode funct3 [14:12]', cssClass: 'field-funct3' };
+    if (bitIdx <= 19) return { name: 'rs1', desc: 'Quellregister 1 rs1 [19:15]', cssClass: 'field-rs1' };
+    return { name: 'imm[11:0]', desc: 'Immediate [31:20]', cssClass: 'field-imm' };
+  }
+
+  if (fmt === 'S') {
+    if (bitIdx <= 11) return { name: 'imm[4:0]', desc: 'Immediate untere Bits [11:7]', cssClass: 'field-imm' };
+    if (bitIdx <= 14) return { name: 'funct3', desc: 'Funktionscode funct3 [14:12]', cssClass: 'field-funct3' };
+    if (bitIdx <= 19) return { name: 'rs1', desc: 'Basisadresse rs1 [19:15]', cssClass: 'field-rs1' };
+    if (bitIdx <= 24) return { name: 'rs2', desc: 'Schreibdaten rs2 [24:20]', cssClass: 'field-rs2' };
+    return { name: 'imm[11:5]', desc: 'Immediate obere Bits [31:25]', cssClass: 'field-imm' };
+  }
+
+  if (fmt === 'B') {
+    if (bitIdx === 7) return { name: 'imm[11]', desc: 'Immediate Bit 11 [Bit 7]', cssClass: 'field-imm' };
+    if (bitIdx <= 11) return { name: 'imm[4:1]', desc: 'Immediate Bits [4:1] [11:8]', cssClass: 'field-imm' };
+    if (bitIdx <= 14) return { name: 'funct3', desc: 'Branch-Bedingung funct3 [14:12]', cssClass: 'field-funct3' };
+    if (bitIdx <= 19) return { name: 'rs1', desc: 'Vergleich 1 rs1 [19:15]', cssClass: 'field-rs1' };
+    if (bitIdx <= 24) return { name: 'rs2', desc: 'Vergleich 2 rs2 [24:20]', cssClass: 'field-rs2' };
+    if (bitIdx <= 30) return { name: 'imm[10:5]', desc: 'Immediate Bits [10:5] [30:25]', cssClass: 'field-imm' };
+    return { name: 'imm[12]', desc: 'Vorzeichenbit imm[12] [Bit 31]', cssClass: 'field-imm' };
+  }
+
+  if (fmt === 'U') {
+    if (bitIdx <= 11) return { name: 'rd', desc: 'Zielregister rd [11:7]', cssClass: 'field-rd' };
+    return { name: 'imm[31:12]', desc: 'Upper Immediate [31:12]', cssClass: 'field-imm' };
+  }
+
+  if (fmt === 'J') {
+    if (bitIdx <= 11) return { name: 'rd', desc: 'Link-Register rd [11:7] (meist ra/x1)', cssClass: 'field-rd' };
+    if (bitIdx <= 19) return { name: 'imm[19:12]', desc: 'Immediate Bits [19:12]', cssClass: 'field-imm' };
+    if (bitIdx === 20) return { name: 'imm[11]', desc: 'Immediate Bit 11 [Bit 20]', cssClass: 'field-imm' };
+    if (bitIdx <= 30) return { name: 'imm[10:1]', desc: 'Immediate Bits [10:1]', cssClass: 'field-imm' };
+    return { name: 'imm[20]', desc: 'Vorzeichenbit imm[20] [Bit 31]', cssClass: 'field-imm' };
+  }
+
+  return { name: 'data', desc: '', cssClass: '' };
+}
+
+function renderFieldPills(parsed, fmt) {
+  fieldsLegendBar.innerHTML = '';
+  const showDetails = (!isKlausurMode) || isRevealed;
+
+  if (!showDetails) {
+    const p = document.createElement('div');
+    p.className = 'klausur-lock-pill';
+    p.innerHTML = '<span>🔒</span> <span>Klausurmodus: Feld-Werte verborgen (wird bei <b>Check Answer</b> aufgedeckt)</span>';
+    fieldsLegendBar.appendChild(p);
+    return;
+  }
+
+  const effectiveFmt = fmt || parsed.fmt;
+  const makePill = (name, val, css, hint) => {
+    const p = document.createElement('div');
+    p.className = `field-pill ${css}`;
+    p.innerHTML = `<span>${name}:</span> <span class="field-val">${val}</span>`;
+    p.title = hint;
+    fieldsLegendBar.appendChild(p);
+  };
+
+  makePill('opcode', parsed.opcode, 'field-opcode', 'Opcode: 7 Bits [6:0]');
+
+  if (effectiveFmt === 'R') {
+    makePill('rd', `${regNumToAbi(parsed.rd)} (x${parsed.rd})`, 'field-rd', 'Destination Reg [11:7]');
+    makePill('funct3', parsed.funct3, 'field-funct3', 'funct3 [14:12]');
+    makePill('rs1', `${regNumToAbi(parsed.rs1)} (x${parsed.rs1})`, 'field-rs1', 'Source 1 [19:15]');
+    makePill('rs2', `${regNumToAbi(parsed.rs2)} (x${parsed.rs2})`, 'field-rs2', 'Source 2 [24:20]');
+    makePill('funct7', parsed.funct7, 'field-funct7', 'funct7 [31:25]');
+  } else if (effectiveFmt === 'I') {
+    makePill('rd', `${regNumToAbi(parsed.rd)} (x${parsed.rd})`, 'field-rd', 'Destination Reg [11:7]');
+    makePill('funct3', parsed.funct3, 'field-funct3', 'funct3 [14:12]');
+    makePill('rs1', `${regNumToAbi(parsed.rs1)} (x${parsed.rs1})`, 'field-rs1', 'Source 1 [19:15]');
+    makePill('imm', parsed.immI, 'field-imm', 'Signed 12-bit Immediate [31:20]');
+  } else if (effectiveFmt === 'S') {
+    makePill('funct3', parsed.funct3, 'field-funct3', 'funct3 [14:12]');
+    makePill('rs1', `${regNumToAbi(parsed.rs1)} (x${parsed.rs1})`, 'field-rs1', 'Base Address [19:15]');
+    makePill('rs2', `${regNumToAbi(parsed.rs2)} (x${parsed.rs2})`, 'field-rs2', 'Source Data [24:20]');
+    makePill('imm', parsed.immS, 'field-imm', 'Signed Store Offset = {imm[11:5], imm[4:0]}');
+  } else if (effectiveFmt === 'B') {
+    makePill('funct3', parsed.funct3, 'field-funct3', 'Branch condition funct3 [14:12]');
+    makePill('rs1', `${regNumToAbi(parsed.rs1)} (x${parsed.rs1})`, 'field-rs1', 'Compare Reg 1 [19:15]');
+    makePill('rs2', `${regNumToAbi(parsed.rs2)} (x${parsed.rs2})`, 'field-rs2', 'Compare Reg 2 [24:20]');
+    makePill('imm', parsed.immB, 'field-imm', 'Branch Target Offset = {imm[12], imm[11], imm[10:5], imm[4:1], 0}');
+  } else if (effectiveFmt === 'U') {
+    makePill('rd', `${regNumToAbi(parsed.rd)} (x${parsed.rd})`, 'field-rd', 'Destination Reg [11:7]');
+    makePill('imm[31:12]', `0x${parsed.immU.toString(16).toUpperCase()} (${parsed.immU})`, 'field-imm', 'Upper 20-bit Immediate');
+  } else if (effectiveFmt === 'J') {
+    makePill('rd', `${regNumToAbi(parsed.rd)} (x${parsed.rd})`, 'field-rd', 'Link Reg [11:7]');
+    makePill('imm', parsed.immJ, 'field-imm', 'Jump Target Offset = {imm[20], imm[19:12], imm[11], imm[10:1], 0}');
+  }
+}
+
+function toggleBit(idx) {
+  if (isKlausurMode && !isRevealed) {
+    showNotice('Im Klausurmodus sind die Instruktions-Bits fixiert.');
+    return;
+  }
+  const chars = customBin.split('');
+  chars[31 - idx] = chars[31 - idx] === '1' ? '0' : '1';
+  customBin = chars.join('');
+  updateVisuals();
+}
+
+function adjustInputVisibility(fmt) {
+  const show = (el, yes) => el.style.display = yes ? 'flex' : 'none';
+  const grpFunct7 = document.getElementById('grpFunct7');
+  const grpRs2 = document.getElementById('grpRs2');
+  const grpRd = document.getElementById('grpRd');
+  const grpImm = document.getElementById('grpImm');
+
+  if (!fmt) {
+    show(grpFunct7, true);
+    show(grpRs2, true);
+    show(grpRd, true);
+    show(grpImm, true);
+    return;
+  }
+
+  show(grpFunct7, fmt === 'R');
+  show(grpRs2, fmt === 'R' || fmt === 'S' || fmt === 'B');
+  show(grpRd, fmt === 'R' || fmt === 'I' || fmt === 'U' || fmt === 'J');
+  show(grpImm, fmt !== 'R');
+}
+
+// --- 7. Immediate Shuffling & SVG Diagram ---
+function renderImmediateShuffler(parsed, fmt) {
+  const showDiagram = (!isKlausurMode) || isRevealed;
+  const lockOverlay = document.getElementById('shufflerLockOverlay');
+  const svgWrap = document.querySelector('.shuffler-svg-wrap');
+  const resultBox = document.getElementById('immResultBox') || document.querySelector('.imm-result-box');
+
+  if (!showDiagram) {
+    shufflerCard.style.display = 'flex';
+    if (lockOverlay) lockOverlay.style.display = 'flex';
+    if (trapWarningBox) trapWarningBox.style.display = 'none';
+    if (svgWrap) svgWrap.style.display = 'none';
+    if (resultBox) resultBox.style.display = 'none';
+    shufflerTypeLabel.textContent = '🔒 Klausurmodus (gesperrt)';
+    return;
+  }
+
+  if (lockOverlay) lockOverlay.style.display = 'none';
+  if (svgWrap) svgWrap.style.display = 'block';
+  if (resultBox) resultBox.style.display = 'flex';
+
+  const effectiveFmt = fmt || parsed.fmt;
+
+  if (effectiveFmt === 'R') {
+    shufflerCard.style.display = 'none';
+    return;
+  }
+  shufflerCard.style.display = 'flex';
+
+  if (effectiveFmt === 'B') {
+    trapWarningBox.style.display = 'flex';
+    shufflerTypeLabel.textContent = 'B-Type Branch Permutation (13-Bit Reconstruction)';
+    renderBSvg(parsed);
+    renderBResult(parsed);
+  } else if (effectiveFmt === 'J') {
+    trapWarningBox.style.display = 'flex';
+    shufflerTypeLabel.textContent = 'J-Type Jump Permutation (21-Bit Reconstruction)';
+    renderJSvg(parsed);
+    renderJResult(parsed);
+  } else if (effectiveFmt === 'S') {
+    trapWarningBox.style.display = 'none';
+    shufflerTypeLabel.textContent = 'S-Type Store Split Immediate (12-Bit Reconstruction)';
+    renderSSvg(parsed);
+    renderSResult(parsed);
+  } else if (effectiveFmt === 'I') {
+    trapWarningBox.style.display = 'none';
+    shufflerTypeLabel.textContent = 'I-Type Immediate (Continuous 12-Bit [31:20])';
+    renderISvg(parsed);
+    renderIResult(parsed);
+  } else if (effectiveFmt === 'U') {
+    trapWarningBox.style.display = 'none';
+    shufflerTypeLabel.textContent = 'U-Type Upper Immediate (Bits [31:12])';
+    renderUSvg(parsed);
+    renderUResult(parsed);
+  }
+}
+
+function renderBSvg(parsed) {
+  const { b12, b11, b10_5, b4_1 } = parsed.immB_chunks;
+  routingSvg.innerHTML = `
+    <!-- Source Instruction Slices (Top Row) -->
+    <g transform="translate(20, 20)">
+      <!-- Instr[31] -->
+      <rect x="0" y="0" width="70" height="28" rx="4" fill="rgba(6,182,212,0.2)" stroke="#06b6d4" />
+      <text x="35" y="18" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">Bit 31 (${b12})</text>
+      <text x="35" y="-5" fill="#94a3b8" font-size="10" text-anchor="middle">imm[12]</text>
+
+      <!-- Instr[30:25] -->
+      <rect x="110" y="0" width="130" height="28" rx="4" fill="rgba(6,182,212,0.2)" stroke="#06b6d4" />
+      <text x="175" y="18" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">Bits 30:25 (${b10_5})</text>
+      <text x="175" y="-5" fill="#94a3b8" font-size="10" text-anchor="middle">imm[10:5]</text>
+
+      <!-- Instr[11:8] -->
+      <rect x="290" y="0" width="120" height="28" rx="4" fill="rgba(6,182,212,0.2)" stroke="#06b6d4" />
+      <text x="350" y="18" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">Bits 11:8 (${b4_1})</text>
+      <text x="350" y="-5" fill="#94a3b8" font-size="10" text-anchor="middle">imm[4:1]</text>
+
+      <!-- Instr[7] -->
+      <rect x="460" y="0" width="70" height="28" rx="4" fill="rgba(6,182,212,0.2)" stroke="#06b6d4" />
+      <text x="495" y="18" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">Bit 7 (${b11})</text>
+      <text x="495" y="-5" fill="#94a3b8" font-size="10" text-anchor="middle">imm[11]</text>
+    </g>
+
+    <!-- Connectors / Spline Paths -->
+    <path d="M 55 48 C 55 85, 45 85, 45 105" fill="none" stroke="#22d3ee" stroke-width="2" stroke-dasharray="3,3" />
+    <path d="M 515 48 C 515 85, 115 85, 115 105" fill="none" stroke="#f472b6" stroke-width="2.5" />
+    <path d="M 195 48 C 195 85, 230 85, 230 105" fill="none" stroke="#22d3ee" stroke-width="2" />
+    <path d="M 370 48 C 370 85, 420 85, 420 105" fill="none" stroke="#22d3ee" stroke-width="2" />
+
+    <!-- Reconstructed Immediate (Bottom Row) -->
+    <g transform="translate(20, 105)">
+      <!-- imm[12] -->
+      <rect x="0" y="0" width="55" height="30" rx="4" fill="rgba(6,182,212,0.3)" stroke="#06b6d4" />
+      <text x="27" y="20" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">${b12}</text>
+      <text x="27" y="42" fill="#94a3b8" font-size="9" text-anchor="middle">[12]</text>
+
+      <!-- imm[11] -->
+      <rect x="65" y="0" width="55" height="30" rx="4" fill="rgba(236,72,153,0.35)" stroke="#ec4899" stroke-width="2" />
+      <text x="92" y="20" fill="#f472b6" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">${b11}</text>
+      <text x="92" y="42" fill="#ec4899" font-size="9" font-weight="700" text-anchor="middle">[11] (Falle!)</text>
+
+      <!-- imm[10:5] -->
+      <rect x="130" y="0" width="150" height="30" rx="4" fill="rgba(6,182,212,0.3)" stroke="#06b6d4" />
+      <text x="205" y="20" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">${b10_5}</text>
+      <text x="205" y="42" fill="#94a3b8" font-size="9" text-anchor="middle">[10:5]</text>
+
+      <!-- imm[4:1] -->
+      <rect x="290" y="0" width="130" height="30" rx="4" fill="rgba(6,182,212,0.3)" stroke="#06b6d4" />
+      <text x="355" y="20" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">${b4_1}</text>
+      <text x="355" y="42" fill="#94a3b8" font-size="9" text-anchor="middle">[4:1]</text>
+
+      <!-- imm[0] Trap -->
+      <rect x="430" y="0" width="70" height="30" rx="4" fill="rgba(245,158,11,0.35)" stroke="#f59e0b" stroke-width="2" />
+      <text x="465" y="20" fill="#fbbf24" font-size="13" font-weight="800" text-anchor="middle" font-family="monospace">0</text>
+      <text x="465" y="42" fill="#fbbf24" font-size="9" font-weight="700" text-anchor="middle">[0] (IMMER 0!)</text>
+    </g>
+  `;
+}
+
+function renderBResult(parsed) {
+  const { b12, b11, b10_5, b4_1 } = parsed.immB_chunks;
+  immBinaryReconstruction.innerHTML = `
+    <span class="imm-chunk">${b12}</span>
+    <span class="imm-chunk chunk-trap">${b11}</span>
+    <span class="imm-chunk">${b10_5}</span>
+    <span class="imm-chunk">${b4_1}</span>
+    <span class="imm-chunk chunk-trap" style="background:rgba(245,158,11,0.3); border-color:#f59e0b; color:#fbbf24;">0</span>
+    <span style="font-size:0.7rem; color:var(--text-dim); margin-left:6px;">(13 Bits total)</span>
+  `;
+
+  if (b12 === '1') {
+    const rawVal = parseInt(b12 + b11 + b10_5 + b4_1 + '0', 2);
+    immSignExtFormula.textContent = `Vorzeichen=1 (Negativ): ${rawVal} - 2^13 (${1 << 13}) =`;
+  } else {
+    immSignExtFormula.textContent = 'Vorzeichen=0 (Positiv):';
+  }
+  immDecimalDisplay.textContent = parsed.immB;
+}
+
+function renderJSvg(parsed) {
+  const { j20, j19_12, j11, j10_1 } = parsed.immJ_chunks;
+  routingSvg.innerHTML = `
+    <!-- Top Row: Source Instruction -->
+    <g transform="translate(20, 20)">
+      <rect x="0" y="0" width="65" height="28" rx="4" fill="rgba(6,182,212,0.2)" stroke="#06b6d4" />
+      <text x="32" y="18" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">Bit 31</text>
+      <text x="32" y="-5" fill="#94a3b8" font-size="10" text-anchor="middle">imm[20]</text>
+
+      <rect x="90" y="0" width="130" height="28" rx="4" fill="rgba(6,182,212,0.2)" stroke="#06b6d4" />
+      <text x="155" y="18" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">Bits 30:21</text>
+      <text x="155" y="-5" fill="#94a3b8" font-size="10" text-anchor="middle">imm[10:1]</text>
+
+      <rect x="250" y="0" width="65" height="28" rx="4" fill="rgba(6,182,212,0.2)" stroke="#06b6d4" />
+      <text x="282" y="18" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">Bit 20</text>
+      <text x="282" y="-5" fill="#94a3b8" font-size="10" text-anchor="middle">imm[11]</text>
+
+      <rect x="340" y="0" width="140" height="28" rx="4" fill="rgba(6,182,212,0.2)" stroke="#06b6d4" />
+      <text x="410" y="18" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">Bits 19:12</text>
+      <text x="410" y="-5" fill="#94a3b8" font-size="10" text-anchor="middle">imm[19:12]</text>
+    </g>
+
+    <!-- Paths -->
+    <path d="M 52 48 C 52 85, 45 85, 45 105" fill="none" stroke="#22d3ee" stroke-width="2" />
+    <path d="M 430 48 C 430 85, 125 85, 125 105" fill="none" stroke="#22d3ee" stroke-width="2" />
+    <path d="M 282 48 C 282 85, 235 85, 235 105" fill="none" stroke="#f472b6" stroke-width="2.5" />
+    <path d="M 175 48 C 175 85, 345 85, 345 105" fill="none" stroke="#22d3ee" stroke-width="2" />
+
+    <!-- Bottom Row: Immediate -->
+    <g transform="translate(20, 105)">
+      <rect x="0" y="0" width="50" height="30" rx="4" fill="rgba(6,182,212,0.3)" stroke="#06b6d4" />
+      <text x="25" y="20" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">${j20}</text>
+      <text x="25" y="42" fill="#94a3b8" font-size="9" text-anchor="middle">[20]</text>
+
+      <rect x="60" y="0" width="120" height="30" rx="4" fill="rgba(6,182,212,0.3)" stroke="#06b6d4" />
+      <text x="120" y="20" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">${j19_12}</text>
+      <text x="120" y="42" fill="#94a3b8" font-size="9" text-anchor="middle">[19:12]</text>
+
+      <rect x="190" y="0" width="50" height="30" rx="4" fill="rgba(236,72,153,0.35)" stroke="#ec4899" stroke-width="2" />
+      <text x="215" y="20" fill="#f472b6" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">${j11}</text>
+      <text x="215" y="42" fill="#ec4899" font-size="9" font-weight="700" text-anchor="middle">[11] (Falle!)</text>
+
+      <rect x="250" y="0" width="130" height="30" rx="4" fill="rgba(6,182,212,0.3)" stroke="#06b6d4" />
+      <text x="315" y="20" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">${j10_1}</text>
+      <text x="315" y="42" fill="#94a3b8" font-size="9" text-anchor="middle">[10:1]</text>
+
+      <rect x="390" y="0" width="60" height="30" rx="4" fill="rgba(245,158,11,0.35)" stroke="#f59e0b" stroke-width="2" />
+      <text x="420" y="20" fill="#fbbf24" font-size="13" font-weight="800" text-anchor="middle" font-family="monospace">0</text>
+      <text x="420" y="42" fill="#fbbf24" font-size="9" font-weight="700" text-anchor="middle">[0] (IMMER 0!)</text>
+    </g>
+  `;
+}
+
+function renderJResult(parsed) {
+  const { j20, j19_12, j11, j10_1 } = parsed.immJ_chunks;
+  immBinaryReconstruction.innerHTML = `
+    <span class="imm-chunk">${j20}</span>
+    <span class="imm-chunk">${j19_12}</span>
+    <span class="imm-chunk chunk-trap">${j11}</span>
+    <span class="imm-chunk">${j10_1}</span>
+    <span class="imm-chunk chunk-trap" style="background:rgba(245,158,11,0.3); border-color:#f59e0b; color:#fbbf24;">0</span>
+    <span style="font-size:0.7rem; color:var(--text-dim); margin-left:6px;">(21 Bits total)</span>
+  `;
+
+  if (j20 === '1') {
+    const rawVal = parseInt(j20 + j19_12 + j11 + j10_1 + '0', 2);
+    immSignExtFormula.textContent = `Vorzeichen=1 (Negativ): ${rawVal} - 2^21 =`;
+  } else {
+    immSignExtFormula.textContent = 'Vorzeichen=0 (Positiv):';
+  }
+  immDecimalDisplay.textContent = parsed.immJ;
+}
+
+function renderSSvg(parsed) {
+  const immHi = parsed.rawBin.substring(0, 7);
+  const immLo = parsed.rawBin.substring(20, 25);
+  routingSvg.innerHTML = `
+    <g transform="translate(40, 20)">
+      <rect x="0" y="0" width="180" height="28" rx="4" fill="rgba(6,182,212,0.2)" stroke="#06b6d4" />
+      <text x="90" y="18" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">Bits 31:25 (${immHi})</text>
+      <text x="90" y="-5" fill="#94a3b8" font-size="10" text-anchor="middle">imm[11:5]</text>
+
+      <rect x="250" y="0" width="160" height="28" rx="4" fill="rgba(6,182,212,0.2)" stroke="#06b6d4" />
+      <text x="330" y="18" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">Bits 11:7 (${immLo})</text>
+      <text x="330" y="-5" fill="#94a3b8" font-size="10" text-anchor="middle">imm[4:0]</text>
+    </g>
+
+    <path d="M 130 48 C 130 85, 130 85, 130 105" fill="none" stroke="#22d3ee" stroke-width="2" />
+    <path d="M 370 48 C 370 85, 275 85, 275 105" fill="none" stroke="#22d3ee" stroke-width="2" />
+
+    <g transform="translate(40, 105)">
+      <rect x="0" y="0" width="180" height="30" rx="4" fill="rgba(6,182,212,0.3)" stroke="#06b6d4" />
+      <text x="90" y="20" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">${immHi}</text>
+      <text x="90" y="42" fill="#94a3b8" font-size="9" text-anchor="middle">imm[11:5]</text>
+
+      <rect x="185" y="0" width="140" height="30" rx="4" fill="rgba(6,182,212,0.3)" stroke="#06b6d4" />
+      <text x="255" y="20" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">${immLo}</text>
+      <text x="255" y="42" fill="#94a3b8" font-size="9" text-anchor="middle">imm[4:0]</text>
+    </g>
+  `;
+}
+
+function renderSResult(parsed) {
+  const immHi = parsed.rawBin.substring(0, 7);
+  const immLo = parsed.rawBin.substring(20, 25);
+  immBinaryReconstruction.innerHTML = `
+    <span class="imm-chunk">${immHi}</span>
+    <span class="imm-chunk">${immLo}</span>
+    <span style="font-size:0.7rem; color:var(--text-dim); margin-left:6px;">(12 Bits total)</span>
+  `;
+  immSignExtFormula.textContent = 'Store Offset = {imm[11:5], imm[4:0]}:';
+  immDecimalDisplay.textContent = parsed.immS;
+}
+
+function renderISvg(parsed) {
+  const immVal = parsed.rawBin.substring(0, 12);
+  routingSvg.innerHTML = `
+    <g transform="translate(60, 30)">
+      <rect x="0" y="0" width="280" height="30" rx="4" fill="rgba(6,182,212,0.2)" stroke="#06b6d4" />
+      <text x="140" y="20" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">Bits 31:20 (${immVal})</text>
+      <text x="140" y="-8" fill="#94a3b8" font-size="10" text-anchor="middle">imm[11:0] (Zusammenhängend)</text>
+    </g>
+    <path d="M 200 60 L 200 95" fill="none" stroke="#22d3ee" stroke-width="2" />
+    <g transform="translate(60, 95)">
+      <rect x="0" y="0" width="280" height="30" rx="4" fill="rgba(6,182,212,0.3)" stroke="#06b6d4" />
+      <text x="140" y="20" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">${immVal}</text>
+      <text x="140" y="42" fill="#94a3b8" font-size="9" text-anchor="middle">imm[11:0] (12-Bit Vorzeichenbehaftet)</text>
+    </g>
+  `;
+}
+
+function renderIResult(parsed) {
+  const immVal = parsed.rawBin.substring(0, 12);
+  immBinaryReconstruction.innerHTML = `
+    <span class="imm-chunk">${immVal}</span>
+    <span style="font-size:0.7rem; color:var(--text-dim); margin-left:6px;">(12 Bits)</span>
+  `;
+  immSignExtFormula.textContent = 'Signed 12-Bit Immediate =';
+  immDecimalDisplay.textContent = parsed.immI;
+}
+
+function renderUSvg(parsed) {
+  const immVal = parsed.rawBin.substring(0, 20);
+  routingSvg.innerHTML = `
+    <g transform="translate(40, 30)">
+      <rect x="0" y="0" width="340" height="30" rx="4" fill="rgba(6,182,212,0.2)" stroke="#06b6d4" />
+      <text x="170" y="20" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">Bits 31:12 (${immVal})</text>
+      <text x="170" y="-8" fill="#94a3b8" font-size="10" text-anchor="middle">imm[31:12] (Obere 20 Bit)</text>
+    </g>
+    <path d="M 210 60 L 210 95" fill="none" stroke="#22d3ee" stroke-width="2" />
+    <g transform="translate(40, 95)">
+      <rect x="0" y="0" width="340" height="30" rx="4" fill="rgba(6,182,212,0.3)" stroke="#06b6d4" />
+      <text x="170" y="20" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">${immVal}</text>
+      <text x="170" y="42" fill="#94a3b8" font-size="9" text-anchor="middle">Upper Immediate</text>
+    </g>
+  `;
+}
+
+function renderUResult(parsed) {
+  const immVal = parsed.rawBin.substring(0, 20);
+  immBinaryReconstruction.innerHTML = `
+    <span class="imm-chunk">${immVal}</span>
+    <span style="font-size:0.7rem; color:var(--text-dim); margin-left:6px;">(20 Bits)</span>
+  `;
+  immSignExtFormula.textContent = 'Hex =';
+  immDecimalDisplay.textContent = `0x${parsed.immU.toString(16).toUpperCase()} (${parsed.immU})`;
+}
+
+// --- 8. Quiz Evaluation & Solution Reveal ---
+function checkCurrentAnswer() {
+  const task = TASKS[currentTaskIndex];
+  const parsed = parseInstructionBits(customBin);
+  let points = 0;
+  let maxPoints = 9;
+  let feedback = [];
+
+  // Step 1: Format check (1 Point)
+  const userFmt = selectedFormat;
+  const isFmtCorrect = userFmt === task.expectedType;
+  if (isFmtCorrect) {
+    points += 1;
+    feedback.push('✓ Format/Typ korrekt (+1P)');
+  } else {
+    feedback.push(`✗ Typ falsch: Erwartet ${task.expectedType}, gewählt ${userFmt || 'keiner'} (0P)`);
+  }
+
+  // Step 2: Extracted Fields (4 Points)
+  let fieldPoints = 0;
+  let fieldChecks = [];
+
+  // Opcode (1P)
+  const uOpcode = inOpcode.value.trim();
+  if (uOpcode === task.expectedOpcode) {
+    fieldPoints += 1;
+    markInput('inOpcode', true);
+  } else {
+    markInput('inOpcode', false);
+    fieldChecks.push(`Opcode: erwartet ${task.expectedOpcode}`);
+  }
+
+  // funct3 (if applicable) (1P)
+  if (task.expectedFunct3 !== null) {
+    const uF3 = inFunct3.value.trim();
+    if (uF3 === task.expectedFunct3) {
+      fieldPoints += 1;
+      markInput('inFunct3', true);
+    } else {
+      markInput('inFunct3', false);
+      fieldChecks.push(`funct3: erwartet ${task.expectedFunct3}`);
+    }
+  } else {
+    fieldPoints += 1; // Not required for this instruction
+  }
+
+  // Registers (1P)
+  let regsCorrect = true;
+  if (task.expectedRs1 !== null) {
+    const uRs1Num = regNameToNum(inRs1.value);
+    const expRs1Num = regNameToNum(task.expectedRs1);
+    if (uRs1Num === expRs1Num && expRs1Num !== -1) {
+      markInput('inRs1', true);
+    } else {
+      regsCorrect = false;
+      markInput('inRs1', false);
+    }
+  }
+  if (task.expectedRs2 !== null) {
+    const uRs2Num = regNameToNum(inRs2.value);
+    const expRs2Num = regNameToNum(task.expectedRs2);
+    if (uRs2Num === expRs2Num && expRs2Num !== -1) {
+      markInput('inRs2', true);
+    } else {
+      regsCorrect = false;
+      markInput('inRs2', false);
+    }
+  }
+  if (task.expectedRd !== null) {
+    const uRdNum = regNameToNum(inRd.value);
+    const expRdNum = regNameToNum(task.expectedRd);
+    if (uRdNum === expRdNum && expRdNum !== -1) {
+      markInput('inRd', true);
+    } else {
+      regsCorrect = false;
+      markInput('inRd', false);
+    }
+  }
+  if (regsCorrect) fieldPoints += 1;
+  else fieldChecks.push('Registerzuordnung unvollständig oder fehlerhaft');
+
+  // Immediate or funct7 (1P)
+  if (task.expectedType === 'R') {
+    const uF7 = inFunct7.value.trim();
+    if (uF7 === task.expectedFunct7) {
+      fieldPoints += 1;
+      markInput('inFunct7', true);
+    } else {
+      markInput('inFunct7', false);
+      fieldChecks.push(`funct7: erwartet ${task.expectedFunct7}`);
+    }
+  } else if (task.expectedImm !== null) {
+    const uImm = parseInt(inImm.value.trim(), 10);
+    if (!isNaN(uImm) && uImm === task.expectedImm) {
+      fieldPoints += 1;
+      markInput('inImm', true);
+    } else {
+      markInput('inImm', false);
+      fieldChecks.push(`Immediate: erwartet ${task.expectedImm}`);
+    }
+  } else {
+    fieldPoints += 1;
+  }
+
+  points += fieldPoints;
+  if (fieldPoints === 4) feedback.push('✓ Alle Felder exakt extrahiert (+4P)');
+  else feedback.push(`⚠ Felder teilweise abweichend (+${fieldPoints}P): ${fieldChecks.join(', ')}`);
+
+  // Step 3: Final Check (4 Points)
+  if (currentMode === 'encode') {
+    const rawVal = inAsm.value.trim().toLowerCase().replace(/^0x/, '').replace(/^0b/, '').replace(/\s+/g, '');
+    const expHexClean = task.hex.toLowerCase().replace(/^0x/, '');
+    const expBinClean = hexTo32BitBin(task.hex);
+
+    let isCodeMatch = (rawVal === expHexClean) || (rawVal === expBinClean);
+    if (!isCodeMatch && /^[0-9a-f]{1,8}$/i.test(rawVal)) {
+      isCodeMatch = parseInt(rawVal, 16) === parseInt(expHexClean, 16);
+    }
+
+    if (isCodeMatch) {
+      points += 4;
+      feedback.push(`✓ Maschinencode "${task.hex}" exakt kodiert! (+4P)`);
+      markInput('inAsm', true);
+    } else {
+      markInput('inAsm', false);
+      feedback.push(`✗ Maschinencode fehlerhaft. Erwartet: <code>${task.hex}</code> (${expBinClean})`);
+    }
+  } else {
+    // Decoding mode
+    const userAsm = inAsm.value.trim().toLowerCase().replace(/\s+/g, ' ');
+    const normExp = task.expectedAsmCanonical.toLowerCase().replace(/\s+/g, ' ');
+    const alts = (task.altAsm || []).map(a => a.toLowerCase().replace(/\s+/g, ' '));
+
+    const isAsmMatch = (userAsm === normExp) || alts.includes(userAsm) || checkFuzzyAsm(userAsm, task);
+
+    if (isAsmMatch) {
+      points += 4;
+      feedback.push(`✓ Assembler-Instruktion "${task.expectedAsmCanonical}" perfekt formuliert! (+4P)`);
+      markInput('inAsm', true);
+    } else {
+      markInput('inAsm', false);
+      feedback.push(`✗ Assembler-Befehl fehlerhaft. Erwartet: <code>${task.expectedAsmCanonical}</code>`);
+    }
+  }
+
+  // Benchmark Speedrun Evaluation
+  if (points === maxPoints) {
+    pauseTimer();
+    const timeSec = (timerElapsedTime / 1000).toFixed(1);
+    const isFast = (timerElapsedTime / 1000) <= 90;
+    const widget = document.getElementById('timerWidget');
+    if (widget) widget.classList.add('completed-fast');
+
+    let pbText = '';
+    if (timerBestTime === null || timerElapsedTime < timerBestTime) {
+      timerBestTime = timerElapsedTime;
+      pbText = ' 🏆 <b style="color:#fbbf24;">Neue Session-Bestzeit!</b>';
+    }
+
+    feedback.push(`⏱️ <b>Benötigte Zeit:</b> ${timeSec}s ${isFast ? '⚡ <b>SPEED PASS!</b> (Unter dem 90-Sekunden-Ziel für 8–9 Klausurpunkte!)' : '🐢 (Tipp: Ziel für 8–9 Klausurpunkte ist &lt; 90 Sekunden)'}${pbText}`);
+  }
+
+  // Update Score Badge & Summary
+  scoreBadge.style.display = 'inline-block';
+  scoreBadge.textContent = `${points}/${maxPoints} Punkte (${Math.round((points/maxPoints)*100)}%)`;
+  scoreBadge.className = `score-badge ${points >= 7 ? 'score-pass' : 'score-fail'}`;
+
+  evalFeedback.innerHTML = feedback.join('<br>');
+
+  // Unlock and reveal all highlights and immediate shuffler
+  isRevealed = true;
+  updateVisuals();
+
+  // Show detailed architectural breakdown
+  renderExplanation(task, parsed);
+}
+
+function checkFuzzyAsm(userStr, task) {
+  if (!userStr) return false;
+  // Strip commas and normalize spaces
+  const clean = s => s.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+  const u = clean(userStr);
+  const exp = clean(task.expectedAsmCanonical);
+  if (u === exp) return true;
+
+  // Check aliases
+  for (const alt of (task.altAsm || [])) {
+    if (u === clean(alt)) return true;
+  }
+  return false;
+}
+
+function markInput(id, isCorrect) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('input-correct', 'input-wrong');
+  el.classList.add(isCorrect ? 'input-correct' : 'input-wrong');
+}
+
+function revealSolution() {
+  pauseTimer();
+  const task = TASKS[currentTaskIndex];
+  const parsed = parseInstructionBits(customBin);
+
+  // Set Format
+  selectedFormat = task.expectedType;
+  document.querySelectorAll('.fmt-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.fmt === selectedFormat);
+  });
+
+  // Set Inputs
+  inOpcode.value = task.expectedOpcode;
+  inFunct3.value = task.expectedFunct3 || '';
+  inFunct7.value = task.expectedFunct7 || '';
+  inRs1.value = task.expectedRs1 ? `${task.expectedRs1} (x${regNameToNum(task.expectedRs1)})` : '';
+  inRs2.value = task.expectedRs2 ? `${task.expectedRs2} (x${regNameToNum(task.expectedRs2)})` : '';
+  inRd.value = task.expectedRd ? `${task.expectedRd} (x${regNameToNum(task.expectedRd)})` : '';
+  inImm.value = task.expectedImm !== null ? task.expectedImm : '';
+  inAsm.value = currentMode === 'encode' ? task.hex : task.expectedAsmCanonical;
+
+  document.querySelectorAll('.input-box, .asm-input').forEach(el => {
+    el.classList.remove('input-wrong');
+    el.classList.add('input-correct');
+  });
+
+  scoreBadge.style.display = 'inline-block';
+  scoreBadge.textContent = 'Musterlösung aufgedeckt (9/9 Punkte)';
+  scoreBadge.className = 'score-badge score-pass';
+
+  evalFeedback.innerHTML = `<strong>Offizielle Musterlösung für ${task.taskNum}:</strong><br>${currentMode === 'encode' ? `Maschinencode: <code>${task.hex}</code>` : `Befehl: <code>${task.expectedAsmCanonical}</code>`}`;
+
+  isRevealed = true;
+  updateVisuals();
+  renderExplanation(task, parsed);
+}
+
+function renderExplanation(task, parsed) {
+  explanationBody.innerHTML = `
+    <p><strong>1. Opcode-Analyse [6:0]:</strong> <code>${parsed.opcode}</code> entspricht laut RISC-V Reference Sheet dem <strong>${task.expectedType}-Typ</strong>.</p>
+    ${task.expectedFunct3 !== null ? `<p><strong>2. funct3 [14:12]:</strong> <code>${parsed.funct3}</code> spezifiziert die genaue Operation (z.B. Vergleich oder Wortbreite).</p>` : ''}
+    ${task.expectedFunct7 !== null ? `<p><strong>3. funct7 [31:25]:</strong> <code>${parsed.funct7}</code> unterscheidet z.B. <code>add</code> (0000000) von <code>sub</code> (0100000).</p>` : ''}
+    ${task.expectedRs1 !== null ? `<p><strong>4. Quellregister rs1 [19:15]:</strong> Binär <code>${parsed.rawBin.substring(12, 17)}</code> = Dezimal ${parsed.rs1} = <code>${task.expectedRs1}</code> (x${parsed.rs1}).</p>` : ''}
+    ${task.expectedRs2 !== null ? `<p><strong>5. Quellregister rs2 [24:20]:</strong> Binär <code>${parsed.rawBin.substring(7, 12)}</code> = Dezimal ${parsed.rs2} = <code>${task.expectedRs2}</code> (x${parsed.rs2}).</p>` : ''}
+    ${task.expectedRd !== null ? `<p><strong>6. Zielregister rd [11:7]:</strong> Binär <code>${parsed.rawBin.substring(20, 25)}</code> = Dezimal ${parsed.rd} = <code>${task.expectedRd}</code> (x${parsed.rd}).</p>` : ''}
+    ${task.expectedImm !== null ? `<p><strong>7. Immediate Rekonstruktion:</strong> Ergibt vorzeichenbehaftet <code>${task.expectedImm}</code>.</p>` : ''}
+    <div class="exam-tip-box">
+      <strong>Klausur-Erkenntnis:</strong> ${task.explanation}
+    </div>
+  `;
+}
+
+// --- 9. Matching Mode Logic (Zuordnung) ---
+function initMatchingMode(examKey) {
+  currentMatchingExam = examKey;
+  const ds = MATCHING_DATASETS[examKey];
+  if (!ds) return;
+
+  const asmList = document.getElementById('asmMatchList');
+  const binList = document.getElementById('binMatchList');
+  const matchBadge = document.getElementById('matchExamBadge');
+
+  matchBadge.textContent = ds.title;
+  asmList.innerHTML = '';
+  binList.innerHTML = '';
+  selectedAsmCard = null;
+  userMatches = {};
+
+  ds.asm.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'match-card';
+    card.dataset.id = item.id;
+    card.innerHTML = `
+      <span class="match-tag">${item.text}</span>
+      <span class="match-badge" id="badge_${item.id}">Keine Zuordnung</span>
+    `;
+    card.addEventListener('click', () => {
+      document.querySelectorAll('#asmMatchList .match-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedAsmCard = item;
+    });
+    asmList.appendChild(card);
+  });
+
+  ds.bin.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'match-card';
+    card.dataset.id = item.id;
+    card.innerHTML = `
+      <span class="match-badge">${item.label}</span>
+      <span class="match-tag" style="font-size:0.72rem; word-break:break-all;">${item.code}</span>
+    `;
+    card.addEventListener('click', () => {
+      if (!selectedAsmCard) {
+        alert('Klicken Sie zuerst links auf einen Assembler-Befehl!');
+        return;
+      }
+      pairCards(selectedAsmCard, item);
+    });
+    binList.appendChild(card);
+  });
+}
+
+function pairCards(asmItem, binItem) {
+  const isCorrect = asmItem.matches.includes(binItem.id);
+  const badge = document.getElementById(`badge_${asmItem.id}`);
+
+  if (isCorrect) {
+    badge.textContent = `✓ ${binItem.label}`;
+    badge.style.background = '#10b981';
+    badge.style.color = '#fff';
+  } else {
+    badge.textContent = `✗ ${binItem.label} (Falsch!)`;
+    badge.style.background = '#ef4444';
+    badge.style.color = '#fff';
+  }
+}
+
+// --- 10. Infinite Generator Logic ---
+function generateRandomTask() {
+  const opcodes = ['0110011', '0010011', '0000011', '0100011', '1100011', '1101111', '0110111'];
+  const chosenOp = opcodes[Math.floor(Math.random() * opcodes.length)];
+  const matchingInsts = RV32I_DB.filter(i => i.opcode === chosenOp);
+  const inst = matchingInsts[Math.floor(Math.random() * matchingInsts.length)];
+
+  // Random registers
+  const rs1 = Math.floor(Math.random() * 32);
+  const rs2 = Math.floor(Math.random() * 32);
+  const rd = (inst.type === 'S' || inst.type === 'B') ? 0 : Math.floor(Math.random() * 31) + 1; // avoid x0 for rd usually
+
+  let imm = 0;
+  if (inst.type === 'I') imm = (Math.floor(Math.random() * 200) - 100);
+  else if (inst.type === 'S') imm = Math.floor(Math.random() * 64) * 4;
+  else if (inst.type === 'B') imm = (Math.floor(Math.random() * 30) - 15) * 2; // must be even!
+  else if (inst.type === 'J') imm = (Math.floor(Math.random() * 30) - 15) * 2;
+  else if (inst.type === 'U') imm = Math.floor(Math.random() * 1000) + 1;
+
+  // Build 32-bit machine code
+  const bin32 = encodeToBin(inst, rd, rs1, rs2, imm);
+  const hex32 = binToHex(bin32);
+
+  // Format canonical assembly
+  let canonAsm = '';
+  if (inst.type === 'R') canonAsm = `${inst.name} ${regNumToAbi(rd)}, ${regNumToAbi(rs1)}, ${regNumToAbi(rs2)}`;
+  else if (inst.type === 'I') {
+    if (inst.opcode === '0000011') canonAsm = `${inst.name} ${regNumToAbi(rd)}, ${imm}(${regNumToAbi(rs1)})`;
+    else canonAsm = `${inst.name} ${regNumToAbi(rd)}, ${regNumToAbi(rs1)}, ${imm}`;
+  } else if (inst.type === 'S') canonAsm = `${inst.name} ${regNumToAbi(rs2)}, ${imm}(${regNumToAbi(rs1)})`;
+  else if (inst.type === 'B') canonAsm = `${inst.name} ${regNumToAbi(rs1)}, ${regNumToAbi(rs2)}, ${imm}`;
+  else if (inst.type === 'U') canonAsm = `${inst.name} ${regNumToAbi(rd)}, ${imm}`;
+  else if (inst.type === 'J') canonAsm = `${inst.name} ${regNumToAbi(rd)}, ${imm}`;
+
+  const generatedTask = {
+    id: `gen_${Date.now()}`,
+    exam: 'Zufalls-Generator',
+    taskNum: `${inst.type}-Typ (${inst.name.toUpperCase()})`,
+    hex: hex32,
+    expectedType: inst.type,
+    expectedOpcode: inst.opcode,
+    expectedFunct3: inst.funct3,
+    expectedFunct7: inst.funct7,
+    expectedRs1: (inst.type !== 'U' && inst.type !== 'J') ? regNumToAbi(rs1) : null,
+    expectedRs2: (inst.type === 'R' || inst.type === 'S' || inst.type === 'B') ? regNumToAbi(rs2) : null,
+    expectedRd: (inst.type !== 'S' && inst.type !== 'B') ? regNumToAbi(rd) : null,
+    expectedImm: inst.type !== 'R' ? imm : null,
+    expectedAsmCanonical: canonAsm,
+    altAsm: [canonAsm.replace(/\s+/g, '')],
+    prompt: `Zufallsaufgabe: Dekodieren Sie ${hex32} (${canonAsm}).`,
+    explanation: `Automatisch generierter ${inst.type}-Typ Befehl für ${inst.name}.`
+  };
+
+  TASKS.push(generatedTask);
+  populateTaskPicker();
+  loadTask(TASKS.length - 1);
+}
+
+function encodeToBin(inst, rd, rs1, rs2, imm) {
+  const pad = (n, len) => ((n >>> 0).toString(2)).padStart(len, '0').slice(-len);
+  const op = inst.opcode;
+  const f3 = inst.funct3 || '000';
+  const f7 = inst.funct7 || '0000000';
+  const r1 = pad(rs1, 5);
+  const r2 = pad(rs2, 5);
+  const rdBits = pad(rd, 5);
+
+  if (inst.type === 'R') return f7 + r2 + r1 + f3 + rdBits + op;
+  if (inst.type === 'I') return pad(imm, 12) + r1 + f3 + rdBits + op;
+  if (inst.type === 'S') {
+    const immBits = pad(imm, 12);
+    return immBits.substring(0, 7) + r2 + r1 + f3 + immBits.substring(7, 12) + op;
+  }
+  if (inst.type === 'B') {
+    const immBits = pad(imm, 13); // 13 bits (bit 12 down to 0)
+    // imm[12] = [0], imm[11] = [1], imm[10:5] = [2:8], imm[4:1] = [8:12]
+    return immBits.charAt(0) + immBits.substring(2, 8) + r2 + r1 + f3 + immBits.substring(8, 12) + immBits.charAt(1) + op;
+  }
+  if (inst.type === 'U') return pad(imm, 20) + rdBits + op;
+  if (inst.type === 'J') {
+    const immBits = pad(imm, 21); // 21 bits (20 down to 0)
+    // imm[20] = [0], imm[19:12] = [1:9], imm[11] = [9], imm[10:1] = [10:20]
+    return immBits.charAt(0) + immBits.substring(10, 20) + immBits.charAt(9) + immBits.substring(1, 9) + rdBits + op;
+  }
+  return '0'.repeat(32);
+}
+
+// --- 11. Event Listeners & UI Controls ---
+function setupEventListeners() {
+  // Mode Switch
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const mode = btn.dataset.mode;
+      currentMode = mode;
+
+      if (mode === 'match') {
+        standardWorkArea.style.display = 'none';
+        matchingWorkArea.style.display = 'flex';
+        initMatchingMode('wise26');
+      } else if (mode === 'generator') {
+        standardWorkArea.style.display = 'flex';
+        matchingWorkArea.style.display = 'none';
+        generateRandomTask();
+      } else {
+        standardWorkArea.style.display = 'flex';
+        matchingWorkArea.style.display = 'none';
+        loadTask(currentTaskIndex);
+      }
+    });
+  });
+
+  // Task navigation
+  taskSelect.addEventListener('change', (e) => loadTask(parseInt(e.target.value, 10)));
+  document.getElementById('btnPrevTask').addEventListener('click', () => {
+    const nextIdx = (currentTaskIndex - 1 + TASKS.length) % TASKS.length;
+    loadTask(nextIdx);
+  });
+  document.getElementById('btnNextTask').addEventListener('click', () => {
+    const nextIdx = (currentTaskIndex + 1) % TASKS.length;
+    loadTask(nextIdx);
+  });
+
+  // Format selector buttons in Quiz
+  document.querySelectorAll('.fmt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedFormat = btn.dataset.fmt;
+      updateVisuals();
+    });
+  });
+
+  // Assist Mode Switch (Klausur vs Study)
+  const btnKlausur = document.getElementById('btnModeKlausur');
+  const btnStudy = document.getElementById('btnModeStudy');
+  if (btnKlausur) btnKlausur.addEventListener('click', () => setAssistMode('klausur'));
+  if (btnStudy) btnStudy.addEventListener('click', () => setAssistMode('study'));
+
+  // Timer Controls
+  document.getElementById('btnToggleTimer').addEventListener('click', toggleTimer);
+  document.getElementById('btnResetTimer').addEventListener('click', resetTimer);
+
+  // Action Buttons
+  document.getElementById('btnCheckAnswer').addEventListener('click', checkCurrentAnswer);
+  document.getElementById('btnRevealSolution').addEventListener('click', revealSolution);
+  document.getElementById('btnResetInputs').addEventListener('click', resetQuizInputs);
+
+  // Copy Buttons
+  document.getElementById('btnCopyHex').addEventListener('click', () => {
+    navigator.clipboard.writeText(hexDisplay.textContent);
+    showNotice('Hex in die Zwischenablage kopiert!');
+  });
+  document.getElementById('btnCopyBin').addEventListener('click', () => {
+    navigator.clipboard.writeText(binDisplay.textContent);
+    showNotice('Binärcode in die Zwischenablage kopiert!');
+  });
+
+  // Resizer bar dragging
+  setupResizer();
+
+  // Drawers and Modals
+  document.getElementById('btnOpenReference').addEventListener('click', () => {
+    document.getElementById('referenceDrawer').classList.add('open');
+  });
+  document.getElementById('btnCloseDrawer').addEventListener('click', () => {
+    document.getElementById('referenceDrawer').classList.remove('open');
+  });
+  document.getElementById('btnOpenBitTrap').addEventListener('click', () => {
+    document.getElementById('bitTrapModal').classList.add('open');
+  });
+  document.getElementById('btnCloseBitTrap').addEventListener('click', () => {
+    document.getElementById('bitTrapModal').classList.remove('open');
+  });
+
+  // Close modals on clicking overlay
+  document.querySelectorAll('.drawer-overlay, .modal-overlay').forEach(ov => {
+    ov.addEventListener('click', (e) => {
+      if (e.target === ov) ov.classList.remove('open');
+    });
+  });
+}
+
+function setupResizer() {
+  const resizer = document.getElementById('dragResizer');
+  const main = document.getElementById('mainContainer');
+  let isDragging = false;
+
+  resizer.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    resizer.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const containerWidth = main.clientWidth;
+    const newRightWidth = Math.max(320, Math.min(650, containerWidth - e.clientX));
+    main.style.gridTemplateColumns = `1fr 6px ${newRightWidth}px`;
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      resizer.classList.remove('dragging');
+      document.body.style.cursor = '';
+    }
+  });
+}
+
+function showNotice(msg) {
+  const t = document.getElementById('globalTooltip');
+  t.innerHTML = msg;
+  t.style.display = 'block';
+  t.style.left = '50%';
+  t.style.top = '70px';
+  t.style.transform = 'translateX(-50%)';
+  setTimeout(() => { t.style.display = 'none'; }, 1800);
+}
+
+// Tooltip handler
+function showTooltip(e, html) {
+  const t = document.getElementById('globalTooltip');
+  t.innerHTML = html;
+  t.style.display = 'block';
+  const rect = e.target.getBoundingClientRect();
+  t.style.left = `${Math.min(window.innerWidth - 290, rect.left)}px`;
+  t.style.top = `${rect.bottom + 8}px`;
+  t.style.transform = 'none';
+}
+
+function hideTooltip() {
+  document.getElementById('globalTooltip').style.display = 'none';
+}
+
+// --- 12. Reference Drawer Population & Search ---
+function setupReferenceDrawer() {
+  // Populate Instructions Table
+  const tbodyInst = document.getElementById('refInstBody');
+  RV32I_DB.forEach(item => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><code>${item.name}</code></td>
+      <td><span class="exam-badge" style="background:#1e293b; color:#38bdf8;">${item.type}</span></td>
+      <td><code>${item.opcode}</code></td>
+      <td><code>${item.funct3 || '-'}</code></td>
+      <td><code>${item.funct7 || '-'}</code></td>
+      <td style="color:var(--text-muted);">${item.desc}</td>
+    `;
+    tbodyInst.appendChild(tr);
+  });
+
+  // Populate Registers Table
+  const tbodyRegs = document.getElementById('refRegsBody');
+  REG_NAMES.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><code>x${r.num}</code></td>
+      <td><code style="color:#34d399;">${r.abi}</code></td>
+      <td style="color:#cbd5e1;">${r.desc}</td>
+      <td><span class="exam-badge" style="background:#1e293b;">${r.saver}</span></td>
+    `;
+    tbodyRegs.appendChild(tr);
+  });
+
+  // Populate Pseudo-Instructions Table
+  const tbodyPseudo = document.getElementById('refPseudoBody');
+  PSEUDO_DB.forEach(p => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><code>${p.pseudo}</code></td>
+      <td><code style="color:#f43f5e;">${p.base}</code></td>
+      <td style="color:#cbd5e1;">${p.desc}</td>
+    `;
+    tbodyPseudo.appendChild(tr);
+  });
+
+  // Drawer Tabs switching
+  document.querySelectorAll('.drawer-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.drawer-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const targetId = tab.dataset.tab;
+      document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+      document.getElementById(targetId).style.display = 'block';
+    });
+  });
+
+  // Search Filter
+  const searchInput = document.getElementById('drawerSearchInput');
+  searchInput.addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase().trim();
+    document.querySelectorAll('#refInstBody tr').forEach(row => {
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(q) ? '' : 'none';
+    });
+    document.querySelectorAll('#refRegsBody tr').forEach(row => {
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(q) ? '' : 'none';
+    });
+  });
+}
+
+// Start application
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

@@ -1,0 +1,3275 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RISC-V Multicycle Architecture Trainer | TU Darmstadt RO</title>
+  <style>
+    :root {
+      --bg-main: #090d16;
+      --bg-card: #111827;
+      --bg-card-hover: #1e293b;
+      --border-color: #243044;
+      --border-focus: #38bdf8;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --accent-cyan: #06b6d4;
+      --accent-cyan-glow: #22d3ee;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-green-glow: #34d399;
+      --accent-red: #ef4444;
+      --accent-yellow: #f59e0b;
+      --accent-purple: #a855f7;
+      --state-node-bg: #1e293b;
+      --state-node-stroke: #475569;
+      --state-active-glow: rgba(34, 211, 238, 0.45);
+      --wire-inactive: #2d3748;
+      --wire-active: #06b6d4;
+      --wire-highlight: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    /* Header */
+    header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      padding: 6px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 50px;
+      flex-shrink: 0;
+      z-index: 30;
+    }
+
+    .title-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-area h1 {
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--accent-cyan-glow);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 9999px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-exam {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-green-glow);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .mode-switch {
+      display: flex;
+      background: #0b0f19;
+      padding: 2px;
+      border-radius: 7px;
+      border: 1px solid var(--border-color);
+      gap: 2px;
+    }
+
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 5px 11px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      border-radius: 5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+
+    .mode-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .mode-btn.active {
+      background: #0284c7;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+    }
+
+    .btn-header {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #cbd5e1;
+      font-size: 0.76rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-header:hover {
+      background: #334155;
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ef4444;
+      display: inline-block;
+      box-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+      transition: all 0.2s ease;
+    }
+
+    .status-dot.active {
+      background: #10b981;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.7);
+    }
+
+    /* Sub-header Banner / Toolbar */
+    .task-banner {
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid var(--border-color);
+      padding: 7px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      min-height: 48px;
+      box-sizing: border-box;
+      flex-shrink: 0;
+      z-index: 20;
+    }
+
+    .task-prompt {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .task-prompt-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .task-prompt-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .task-prompt-desc code {
+      background: #090d16;
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: #38bdf8;
+      font-family: ui-monospace, monospace;
+      font-weight: 700;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .toolbar-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    /* Control Buttons */
+    .ctrl-btn {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #e2e8f0;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .ctrl-btn:hover {
+      background: #334155;
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    .ctrl-btn.primary {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(2, 132, 199, 0.4);
+    }
+
+    .ctrl-btn.primary:hover {
+      background: #0369a1;
+    }
+
+    .ctrl-btn.success {
+      background: #059669;
+      border-color: #34d399;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
+    }
+
+    .ctrl-btn.success:hover {
+      background: #047857;
+    }
+
+    .ctrl-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      border-color: var(--border-color);
+    }
+
+    /* Select Dropdown */
+    .custom-select {
+      background: #1e293b;
+      border: 1px solid #38bdf8;
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      font-family: ui-monospace, monospace;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .custom-select option {
+      background: #0f172a;
+      color: #fff;
+    }
+
+    /* Main Container with Resizer */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 6px 440px;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .viewport-card {
+      background: var(--bg-card);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 0;
+      min-width: 320px;
+      position: relative;
+    }
+
+    /* Splitter / Resizer bar */
+    .resizer {
+      background: #1e293b;
+      cursor: col-resize;
+      transition: background 0.15s ease;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .resizer::after {
+      content: "";
+      width: 2px;
+      height: 24px;
+      background: #475569;
+      border-radius: 2px;
+    }
+
+    .resizer:hover, .resizer.dragging {
+      background: var(--accent-cyan);
+    }
+
+    .resizer:hover::after, .resizer.dragging::after {
+      background: #fff;
+    }
+
+    /* SVG Containers */
+    .svg-wrapper {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, rgba(30, 41, 59, 0.4) 0%, rgba(9, 13, 22, 0.95) 100%);
+    }
+
+    svg.interactive-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Right Side Inspector Panel */
+    .inspector-panel {
+      background: #0d121f;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      min-height: 0;
+      min-width: 300px;
+      border-left: 1px solid var(--border-color);
+    }
+
+    .panel-section {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .panel-section-header {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-section-header .tag {
+      font-size: 0.68rem;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    /* Signal Badges Matrix */
+    .signal-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 7px;
+    }
+
+    .signal-card {
+      background: #111827;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 6px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .signal-card:hover {
+      border-color: #38bdf8;
+      background: #1e293b;
+    }
+
+    .signal-name {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      font-family: ui-monospace, monospace;
+    }
+
+    .signal-val {
+      font-size: 0.8rem;
+      font-weight: 800;
+      font-family: ui-monospace, monospace;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+    }
+
+    .signal-val.active-1 {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.5);
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.3);
+    }
+
+    .signal-val.active-blue {
+      background: rgba(56, 189, 248, 0.2);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.5);
+    }
+
+    .signal-val.active-purple {
+      background: rgba(168, 85, 247, 0.2);
+      color: #c084fc;
+      border-color: rgba(168, 85, 247, 0.5);
+    }
+
+    .signal-val.active-yellow {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border-color: rgba(245, 158, 11, 0.5);
+    }
+
+    /* Micro-ops List */
+    .micro-ops-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .micro-op-item {
+      background: #111827;
+      border-left: 3px solid var(--accent-cyan);
+      padding: 6px 10px;
+      border-radius: 0 5px 5px 0;
+      font-size: 0.77rem;
+      line-height: 1.4;
+      color: #e2e8f0;
+      font-family: ui-monospace, monospace;
+    }
+
+    .micro-op-item .comment {
+      color: #94a3b8;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 0.72rem;
+      display: block;
+      margin-top: 2px;
+    }
+
+    /* Execution Log Ticker */
+    .timeline-log {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      max-height: 180px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .log-entry {
+      background: #111827;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      padding: 5px 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.74rem;
+      transition: all 0.15s ease;
+    }
+
+    .log-entry.active {
+      border-color: #38bdf8;
+      background: rgba(2, 132, 199, 0.15);
+    }
+
+    .log-cycle-badge {
+      background: #1e293b;
+      color: #38bdf8;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-family: ui-monospace, monospace;
+      font-size: 0.7rem;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .log-state-name {
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    /* SVG FSM Node & Edge styles */
+    .fsm-node {
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .fsm-node:hover circle {
+      stroke: var(--accent-cyan);
+      stroke-width: 2.5px;
+    }
+
+    .fsm-node circle {
+      fill: #111827;
+      stroke: #334155;
+      stroke-width: 1.8px;
+      transition: all 0.25s ease;
+    }
+
+    .fsm-node.active circle {
+      fill: #0c4a6e;
+      stroke: #38bdf8;
+      stroke-width: 3.5px;
+      filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.75));
+    }
+
+    .fsm-node.exam-new circle {
+      stroke-dasharray: 4 3;
+      stroke: #a855f7;
+    }
+
+    .fsm-node.exam-new.active circle {
+      fill: #581c87;
+      stroke: #c084fc;
+      filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.8));
+    }
+
+    .fsm-node-title {
+      font-weight: 800;
+      font-size: 13px;
+      fill: #38bdf8;
+      text-anchor: middle;
+      pointer-events: none;
+      font-family: ui-monospace, monospace;
+    }
+
+    .fsm-node.active .fsm-node-title {
+      fill: #ffffff;
+      font-size: 14px;
+    }
+
+    .fsm-node-sub {
+      font-size: 9.5px;
+      fill: #94a3b8;
+      text-anchor: middle;
+      pointer-events: none;
+      font-family: ui-monospace, monospace;
+    }
+
+    .fsm-edge {
+      fill: none;
+      stroke: #334155;
+      stroke-width: 1.6px;
+      transition: stroke 0.2s ease, stroke-width 0.2s ease;
+    }
+
+    .fsm-edge.active {
+      stroke: #38bdf8;
+      stroke-width: 2.8px;
+      filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.6));
+    }
+
+    .fsm-edge.return-edge {
+      stroke-dasharray: 3 3;
+    }
+
+    .fsm-edge-label {
+      font-size: 9.5px;
+      font-weight: 700;
+      fill: #94a3b8;
+      background: #090d16;
+      font-family: ui-monospace, monospace;
+      text-anchor: middle;
+    }
+
+    .fsm-edge.active + .fsm-edge-label {
+      fill: #38bdf8;
+    }
+
+    /* Floating Tooltip */
+    #globalTooltip {
+      position: fixed;
+      display: none;
+      background: #0f172a;
+      border: 1px solid #38bdf8;
+      border-radius: 7px;
+      padding: 8px 12px;
+      color: #f1f5f9;
+      font-size: 0.74rem;
+      line-height: 1.4;
+      pointer-events: none;
+      z-index: 1000;
+      max-width: 320px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+    }
+
+    #globalTooltip h4 {
+      color: #38bdf8;
+      font-size: 0.78rem;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Exam Challenge Tab Elements */
+    .challenge-card {
+      background: #111827;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      transition: border-color 0.15s ease;
+    }
+
+    .challenge-card:hover {
+      border-color: #38bdf8;
+    }
+
+    .challenge-card.active {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+    }
+
+    .challenge-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .challenge-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .points-badge {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .challenge-body {
+      font-size: 0.77rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+      margin-bottom: 10px;
+    }
+
+    .exam-state-builder {
+      background: #0b0f19;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 10px;
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .signal-selector-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.75rem;
+    }
+
+    .signal-selector-row label {
+      font-family: ui-monospace, monospace;
+      font-weight: 700;
+      color: #cbd5e1;
+    }
+
+    .signal-select {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #fff;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: ui-monospace, monospace;
+      font-size: 0.74rem;
+      outline: none;
+    }
+
+    .signal-select:focus {
+      border-color: #38bdf8;
+    }
+
+    .validation-feedback {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.77rem;
+      line-height: 1.4;
+      display: none;
+    }
+
+    .validation-feedback.success {
+      display: block;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid #10b981;
+      color: #34d399;
+    }
+
+    .validation-feedback.error {
+      display: block;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid #ef4444;
+      color: #f87171;
+    }
+
+    /* Critical Path Mode Elements */
+    .path-spec-box {
+      background: #111827;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .formula-display {
+      background: #090d16;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: ui-monospace, monospace;
+      font-size: 0.8rem;
+      color: #38bdf8;
+      line-height: 1.5;
+      margin: 8px 0;
+    }
+
+    .delay-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.74rem;
+      margin-top: 8px;
+    }
+
+    .delay-table th, .delay-table td {
+      border: 1px solid #1e293b;
+      padding: 4px 8px;
+      text-align: left;
+    }
+
+    .delay-table th {
+      background: #1e293b;
+      color: #94a3b8;
+    }
+
+    .delay-table td.val {
+      font-family: ui-monospace, monospace;
+      color: #38bdf8;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .quiz-input-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .quiz-input {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-family: ui-monospace, monospace;
+      font-size: 0.85rem;
+      width: 130px;
+      outline: none;
+    }
+
+    .quiz-input:focus {
+      border-color: #38bdf8;
+    }
+
+    .quiz-input.correct {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .quiz-input.incorrect {
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      width: 650px;
+      max-width: 90vw;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #94a3b8;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    .modal-close:hover {
+      color: #fff;
+      background: #334155;
+    }
+
+    /* Datapath Wire Styles */
+    .dp-wire {
+      fill: none;
+      stroke: var(--wire-inactive);
+      stroke-width: 2.2px;
+      transition: stroke 0.2s ease, stroke-width 0.2s ease;
+    }
+
+    .dp-wire.active {
+      stroke: var(--wire-active);
+      stroke-width: 3.5px;
+      filter: drop-shadow(0 0 6px rgba(6, 182, 212, 0.7));
+    }
+
+    .dp-wire.critical {
+      stroke: var(--wire-highlight);
+      stroke-width: 4px;
+      stroke-dasharray: 6 3;
+      animation: dashMove 1s linear infinite;
+      filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.85));
+    }
+
+    @keyframes dashMove {
+      from { stroke-dashoffset: 18; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    .dp-block {
+      fill: #111827;
+      stroke: #334155;
+      stroke-width: 1.8px;
+      transition: all 0.2s ease;
+    }
+
+    .dp-block.active {
+      stroke: var(--accent-cyan);
+      fill: #0c4a6e;
+    }
+
+    .dp-block.critical {
+      stroke: var(--accent-yellow);
+      fill: rgba(245, 158, 11, 0.15);
+      filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.5));
+    }
+
+    .dp-label {
+      font-size: 11px;
+      font-weight: 700;
+      fill: #cbd5e1;
+      text-anchor: middle;
+      pointer-events: none;
+    }
+
+    .dp-port {
+      font-size: 9px;
+      fill: #64748b;
+      font-family: ui-monospace, monospace;
+      pointer-events: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 1000px) {
+      main {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr 6px 360px;
+      }
+      .resizer {
+        cursor: row-resize;
+      }
+    }
+
+    /* Quiz Mode Styles */
+    .quiz-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .quiz-stats-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #090d16;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      font-size: 0.78rem;
+    }
+    .quiz-stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+    }
+    .quiz-question-box {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .quiz-q-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      line-height: 1.4;
+    }
+    .quiz-q-sub {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+    .quiz-options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .quiz-option-btn {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #e2e8f0;
+      padding: 9px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.15s ease;
+    }
+    .quiz-option-btn:hover:not(:disabled) {
+      background: #334155;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    .quiz-option-btn.correct {
+      background: rgba(16, 185, 129, 0.25) !important;
+      border-color: #10b981 !important;
+      color: #34d399 !important;
+    }
+    .quiz-option-btn.wrong {
+      background: rgba(239, 68, 68, 0.25) !important;
+      border-color: #ef4444 !important;
+      color: #f87171 !important;
+    }
+    .quiz-cheat-card {
+      background: #0b1120;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.74rem;
+      color: #94a3b8;
+      line-height: 1.45;
+    }
+    .quiz-cheat-card code {
+      color: #38bdf8;
+      font-weight: 700;
+      background: rgba(56, 189, 248, 0.1);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="title-area">
+      <h1>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="16" height="16" rx="2" />
+          <rect x="9" y="9" width="6" height="6" />
+          <line x1="9" y1="1" x2="9" y2="4" /><line x1="15" y1="1" x2="15" y2="4" />
+          <line x1="9" y1="20" x2="9" y2="23" /><line x1="15" y1="20" x2="15" y2="23" />
+          <line x1="20" y1="9" x2="23" y2="9" /><line x1="20" y1="14" x2="23" y2="14" />
+          <line x1="1" y1="9" x2="4" y2="9" /><line x1="1" y1="14" x2="4" y2="14" />
+        </svg>
+        <span>RISC-V Mehrtakt-Trainer</span>
+      </h1>
+      <span class="badge">Aufgabe 6</span>
+      <span class="badge badge-exam">WiSe26 • SoSe25 • Probeklausur</span>
+    </div>
+
+    <div class="top-actions">
+      <!-- Mode Tabs -->
+      <div class="mode-switch" role="tablist">
+        <button class="mode-btn active" id="tabModeFsm" data-mode="fsm">
+          <span>🔄</span> 1. FSM Stepper
+        </button>
+        <button class="mode-btn" id="tabModeExam" data-mode="exam">
+          <span>✍️</span> 2. FSM Exam Extension
+        </button>
+        <button class="mode-btn" id="tabModeTiming" data-mode="timing">
+          <span>⏱️</span> 3. Critical Path &amp; f<sub>max</sub>
+        </button>
+        <button class="mode-btn" id="tabModeTheory" data-mode="theory">
+          <span>📚</span> 4. Theorie &amp; Cheat Sheet
+        </button>
+        <button class="mode-btn" id="tabModeQuiz" data-mode="quiz">
+          <span>⚡</span> 5. Signal Blitz-Quiz
+        </button>
+      </div>
+
+      <button class="btn-header" id="btnAudioToggle" title="Audio-Feedback an/aus">
+        <span class="status-dot active" id="audioDot"></span>
+        <span id="audioLabel">Audio</span>
+      </button>
+
+      <button class="btn-header" id="btnHelpModal">
+        <span>❓</span> Hilfe &amp; Formeln
+      </button>
+    </div>
+  </header>
+
+  <!-- Sub-header Toolbar & Scenario Bar -->
+  <div class="task-banner">
+    <div class="task-prompt" id="taskPromptArea">
+      <!-- Dynamically filled based on active mode -->
+    </div>
+
+    <div class="toolbar-controls" id="toolbarControls">
+      <!-- Dynamically filled controls -->
+    </div>
+  </div>
+
+  <!-- Main Split Layout -->
+  <main id="mainLayout">
+    <!-- Left Interactive SVG Viewport -->
+    <div class="viewport-card">
+      <div class="svg-wrapper" id="svgViewport">
+        <!-- SVG injected by JS according to mode -->
+      </div>
+    </div>
+
+    <!-- Draggable Resizer -->
+    <div class="resizer" id="dragResizer" title="Breite anpassen"></div>
+
+    <!-- Right Inspector & Interactive Controls -->
+    <div class="inspector-panel" id="inspectorPanel">
+      <!-- Injected according to mode -->
+    </div>
+  </main>
+
+  <!-- Global Tooltip Element -->
+  <div id="globalTooltip"></div>
+
+  <!-- Help & Formula Modal -->
+  <div class="modal-overlay" id="helpModal">
+    <div class="modal-content">
+      <button class="modal-close" id="btnCloseHelp">&times;</button>
+      <h2 style="color: #38bdf8; margin-bottom: 12px; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+        <span>🎓</span> Rechnerorganisation (RO) – Aufgabe 6 Spickzettel
+      </h2>
+      
+      <div style="font-size: 0.82rem; line-height: 1.5; color: #cbd5e1; display: flex; flex-direction: column; gap: 14px;">
+        <div style="background: #111827; padding: 12px; border-radius: 8px; border: 1px solid #1e293b;">
+          <h3 style="color: #34d399; font-size: 0.85rem; margin-bottom: 6px;">1. Kritischer Pfad &amp; Taktfrequenz ($T_C$ und $f_{max}$)</h3>
+          <p>Für jeden Pfad zwischen zwei getakteten Registern gilt:</p>
+          <div style="background: #090d16; padding: 8px 10px; border-radius: 4px; font-family: ui-monospace, monospace; color: #38bdf8; margin: 6px 0;">
+            T_C = max(t_FSMpcq, t_pcq) + &sum; t_logik + t_setup
+          </div>
+          <p>Maximale Taktfrequenz:</p>
+          <div style="background: #090d16; padding: 8px 10px; border-radius: 4px; font-family: ui-monospace, monospace; color: #38bdf8; margin: 6px 0;">
+            f_max = 1 / T_clk &nbsp; mit &nbsp; T_clk = max(T_Fetch, T_Decode, T_Execute, ...)
+          </div>
+          <p style="color: #94a3b8; font-size: 0.75rem; margin-top: 4px;">
+            ⚠️ <b>Klausur-Falle:</b> Immer <code>t_setup</code> des Zielregisters addieren! Wenn das Signal sowohl von der FSM als auch von einem Datenregister gesteuert wird, gilt <code>max(t_FSMpcq, t_pcq)</code>.
+          </p>
+        </div>
+
+        <div style="background: #111827; padding: 12px; border-radius: 8px; border: 1px solid #1e293b;">
+          <h3 style="color: #38bdf8; font-size: 0.85rem; margin-bottom: 6px;">2. Steuerlogik: Moore-Automat</h3>
+          <ul style="padding-left: 18px; margin-top: 4px; display: flex; flex-direction: column; gap: 4px;">
+            <li><b>S0 (Fetch):</b> <code>AdrSrc=0, IRWrite=1, ALUSrcA=00, ALUSrcB=10, ALUOp=00, ResultSrc=10, PCUpdate=1</code></li>
+            <li><b>S1 (Decode):</b> <code>ALUSrcA=01, ALUSrcB=01, ALUOp=00</code> (ALU berechnet vorsorglich BTA = PC + ImmExt)</li>
+            <li><b>S2 (MemAdr):</b> <code>ALUSrcA=10, ALUSrcB=01, ALUOp=00</code> (rs1 + ImmExt)</li>
+            <li><b>S3 (MemRead):</b> <code>AdrSrc=1, ResultSrc=00</code> &rarr; S4: <b>MemWB:</b> <code>ResultSrc=01, RegWrite=1</code></li>
+            <li><b>S5 (MemWrite):</b> <code>AdrSrc=1, ResultSrc=00, MemWrite=1</code></li>
+            <li><b>S6 (ExecuteR):</b> <code>ALUSrcA=10, ALUSrcB=00, ALUOp=10</code> &rarr; S7: <b>ALUWB:</b> <code>ResultSrc=00, RegWrite=1</code></li>
+            <li><b>S8 (ExecuteI):</b> <code>ALUSrcA=10, ALUSrcB=01, ALUOp=10</code> &rarr; S7: <b>ALUWB</b></li>
+            <li><b>S9 (JAL):</b> <code>ALUSrcA=01, ALUSrcB=10, ALUOp=00, ResultSrc=00, PCUpdate=1</code> &rarr; S7: <b>ALUWB</b></li>
+            <li><b>S10 (BEQ):</b> <code>ALUSrcA=10, ALUSrcB=00, ALUOp=01, ResultSrc=00, Branch=1</code></li>
+          </ul>
+        </div>
+
+        <div style="background: #111827; padding: 12px; border-radius: 8px; border: 1px solid #1e293b;">
+          <h3 style="color: #c084fc; font-size: 0.85rem; margin-bottom: 6px;">3. Tastatur-Shortcuts</h3>
+          <p><code>Leertaste</code> = Nächster Takt &nbsp;|&nbsp; <code>R</code> = Reset &nbsp;|&nbsp; <code>1 - 4</code> = Modus wechseln</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // AUDIO SYNTHESIZER (No external files)
+    // =========================================================================
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+      }
+      playStep() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.05);
+          gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.05);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.05);
+        } catch (e) {}
+      }
+      playSuccess() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = "triangle";
+            osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+            gain.gain.setValueAtTime(0.09, now + idx * 0.07);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.18);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + idx * 0.07);
+            osc.stop(now + idx * 0.07 + 0.18);
+          });
+        } catch (e) {}
+      }
+      playError() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = "sawtooth";
+          osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(110, this.ctx.currentTime + 0.15);
+          gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.15);
+        } catch (e) {}
+      }
+    }
+    const sound = new SoundEngine();
+
+    // =========================================================================
+    // DATA MODEL: FSM DEFINITIONS & INSTRUCTIONS
+    // =========================================================================
+    const FSM_STATES = {
+      S0: {
+        id: "S0",
+        name: "S0: Fetch",
+        short: "Fetch",
+        x: 200, y: 75, r: 42,
+        signals: { AdrSrc: "0", IRWrite: "1", ALUSrcA: "00", ALUSrcB: "10", ALUOp: "00", ResultSrc: "10", RegWrite: "0", MemWrite: "0", PCUpdate: "1", Branch: "0" },
+        microOps: [
+          { code: "IR <= Mem[PC]", comment: "Lade Instruktion aus dem Befehlsspeicher" },
+          { code: "PC <= PC + 4", comment: "Erhöhe Programmzähler via ALUResult (ResultSrc = 10)" }
+        ],
+        desc: "Holphase: Instruktion wird aus Speicher geladen und der PC vorsorglich um 4 erhöht."
+      },
+      S1: {
+        id: "S1",
+        name: "S1: Decode",
+        short: "Decode",
+        x: 420, y: 75, r: 42,
+        signals: { AdrSrc: "X", IRWrite: "0", ALUSrcA: "01", ALUSrcB: "01", ALUOp: "00", ResultSrc: "XX", RegWrite: "0", MemWrite: "0", PCUpdate: "0", Branch: "0" },
+        microOps: [
+          { code: "A <= Reg[rs1], B <= Reg[rs2]", comment: "Lese Quellregister rs1 und rs2 aus Register File" },
+          { code: "ALUOut <= OldPC + ImmExt", comment: "Berechne vorsorglich Sprungzieladresse (BTA)" }
+        ],
+        desc: "Dekodierphase: Quelloperanden lesen & Sprungzieladresse vorsorglich im ALUOut ablegen."
+      },
+      S2: {
+        id: "S2",
+        name: "S2: MemAdr",
+        short: "MemAdr",
+        x: 100, y: 230, r: 38,
+        signals: { AdrSrc: "X", IRWrite: "0", ALUSrcA: "10", ALUSrcB: "01", ALUOp: "00", ResultSrc: "XX", RegWrite: "0", MemWrite: "0", PCUpdate: "0", Branch: "0" },
+        microOps: [
+          { code: "ALUOut <= A + ImmExt", comment: "Berechne effektive Speicheradresse (Basis + Offset)" }
+        ],
+        desc: "Adressberechnung für Lese-/Schreibzugriffe (lw / sw)."
+      },
+      S3: {
+        id: "S3",
+        name: "S3: MemRead",
+        short: "MemRead",
+        x: 70, y: 380, r: 36,
+        signals: { AdrSrc: "1", IRWrite: "0", ALUSrcA: "XX", ALUSrcB: "XX", ALUOp: "XX", ResultSrc: "00", RegWrite: "0", MemWrite: "0", PCUpdate: "0", Branch: "0" },
+        microOps: [
+          { code: "Data <= Mem[ALUOut]", comment: "Lese Datum aus dem Speicher an Adresse ALUOut" }
+        ],
+        desc: "Lesezugriff: Datenwort aus Speicher ins interne Data-Register transferieren."
+      },
+      S4: {
+        id: "S4",
+        name: "S4: MemWB",
+        short: "MemWB",
+        x: 70, y: 520, r: 36,
+        signals: { AdrSrc: "X", IRWrite: "0", ALUSrcA: "XX", ALUSrcB: "XX", ALUOp: "XX", ResultSrc: "01", RegWrite: "1", MemWrite: "0", PCUpdate: "0", Branch: "0" },
+        microOps: [
+          { code: "Reg[rd] <= Data", comment: "Schreibe geladenes Wort ins Zielregister rd (ResultSrc = 01)" }
+        ],
+        desc: "Rückschreibphase für lw: Speicherwert ins Registerfeld übernehmen."
+      },
+      S5: {
+        id: "S5",
+        name: "S5: MemWrite",
+        short: "MemWrite",
+        x: 210, y: 380, r: 36,
+        signals: { AdrSrc: "1", IRWrite: "0", ALUSrcA: "XX", ALUSrcB: "XX", ALUOp: "XX", ResultSrc: "00", RegWrite: "0", MemWrite: "1", PCUpdate: "0", Branch: "0" },
+        microOps: [
+          { code: "Mem[ALUOut] <= B", comment: "Schreibe Register B (rs2) an Speicheradresse ALUOut" }
+        ],
+        desc: "Speicher-Schreibzugriff: sw speichert Wert von Register B im RAM ab."
+      },
+      S6: {
+        id: "S6",
+        name: "S6: ExecuteR",
+        short: "ExecuteR",
+        x: 340, y: 230, r: 38,
+        signals: { AdrSrc: "X", IRWrite: "0", ALUSrcA: "10", ALUSrcB: "00", ALUOp: "10", ResultSrc: "XX", RegWrite: "0", MemWrite: "0", PCUpdate: "0", Branch: "0" },
+        microOps: [
+          { code: "ALUOut <= A op B", comment: "ALU führt R-Typ-Rechenoperation durch (add, sub, etc.)" }
+        ],
+        desc: "Ausführungsphase für R-Typ: ALU verknüpft Quellregister A und B."
+      },
+      S7: {
+        id: "S7",
+        name: "S7: ALUWB",
+        short: "ALUWB",
+        x: 460, y: 410, r: 38,
+        signals: { AdrSrc: "X", IRWrite: "0", ALUSrcA: "XX", ALUSrcB: "XX", ALUOp: "XX", ResultSrc: "00", RegWrite: "1", MemWrite: "0", PCUpdate: "0", Branch: "0" },
+        microOps: [
+          { code: "Reg[rd] <= ALUOut", comment: "Schreibe ALUOut ins Zielregister rd" }
+        ],
+        desc: "Rückschreiben für R-Typ, I-Typ und JAL (Rücksprungadresse PC+4)."
+      },
+      S8: {
+        id: "S8",
+        name: "S8: ExecuteI",
+        short: "ExecuteI",
+        x: 480, y: 230, r: 38,
+        signals: { AdrSrc: "X", IRWrite: "0", ALUSrcA: "10", ALUSrcB: "01", ALUOp: "10", ResultSrc: "XX", RegWrite: "0", MemWrite: "0", PCUpdate: "0", Branch: "0" },
+        microOps: [
+          { code: "ALUOut <= A op ImmExt", comment: "ALU berechnet A op Konstante (addi, andi, slli)" }
+        ],
+        desc: "Ausführungsphase für I-Typ: Register A mit Immediate verknüpfen."
+      },
+      S9: {
+        id: "S9",
+        name: "S9: JAL",
+        short: "JAL",
+        x: 640, y: 230, r: 38,
+        signals: { AdrSrc: "X", IRWrite: "0", ALUSrcA: "01", ALUSrcB: "10", ALUOp: "00", ResultSrc: "00", RegWrite: "0", MemWrite: "0", PCUpdate: "1", Branch: "0" },
+        microOps: [
+          { code: "PC <= ALUOut", comment: "Setze PC auf die in S1 vorbereitete Sprungzieladresse" },
+          { code: "ALUOut <= OldPC + 4", comment: "Berechne Rücksprungadresse für das nachfolgende S7 (ALUWB)" }
+        ],
+        desc: "Sprung ausführen: PC auf Ziel setzen und Link-Adresse (PC+4) berechnen."
+      },
+      S10: {
+        id: "S10",
+        name: "S10: BEQ",
+        short: "BEQ",
+        x: 780, y: 230, r: 38,
+        signals: { AdrSrc: "X", IRWrite: "0", ALUSrcA: "10", ALUSrcB: "00", ALUOp: "01", ResultSrc: "00", RegWrite: "0", MemWrite: "0", PCUpdate: "0", Branch: "1" },
+        microOps: [
+          { code: "ALUResult <= A - B", comment: "Subtrahiere zur Prüfung auf Gleichheit (Zero-Flag)" },
+          { code: "if (Zero) PC <= ALUOut", comment: "Falls gleich, übernimm Sprungadresse aus ALUOut" }
+        ],
+        desc: "Bedingter Sprung: Quellregister vergleichen. Bei Gleichheit PC aktualisieren."
+      }
+    };
+
+    // Instruction Sequences
+    const INSTRUCTIONS = [
+      {
+        id: "lw",
+        asm: "lw t0, 8(s1)",
+        type: "I-Type (Load Word)",
+        cycles: 5,
+        cpi: 5,
+        states: ["S0", "S1", "S2", "S3", "S4"],
+        desc: "Lädt 32-Bit Datenwort aus dem Speicher: Fetch -> Decode -> MemAdr -> MemRead -> MemWB"
+      },
+      {
+        id: "sw",
+        asm: "sw t0, 4(s2)",
+        type: "S-Type (Store Word)",
+        cycles: 4,
+        cpi: 4,
+        states: ["S0", "S1", "S2", "S5"],
+        desc: "Speichert Wort ins RAM: Fetch -> Decode -> MemAdr -> MemWrite"
+      },
+      {
+        id: "add",
+        asm: "add a0, t0, t1",
+        type: "R-Type (Arithmetic)",
+        cycles: 4,
+        cpi: 4,
+        states: ["S0", "S1", "S6", "S7"],
+        desc: "R-Typ Addition: Fetch -> Decode -> ExecuteR -> ALUWB"
+      },
+      {
+        id: "addi",
+        asm: "addi t0, a0, 10",
+        type: "I-Type ALU",
+        cycles: 4,
+        cpi: 4,
+        states: ["S0", "S1", "S8", "S7"],
+        desc: "I-Typ Konstanten-Addition: Fetch -> Decode -> ExecuteI -> ALUWB"
+      },
+      {
+        id: "beq_taken",
+        asm: "beq t0, t1, label [Sprung genommen]",
+        type: "B-Type (Branch Taken)",
+        cycles: 3,
+        cpi: 3,
+        states: ["S0", "S1", "S10"],
+        desc: "Bedingter Sprung (erfüllt): Fetch -> Decode -> BEQ (PC übernimmt ALUOut)"
+      },
+      {
+        id: "beq_nottaken",
+        asm: "beq t0, t1, label [Nicht genommen]",
+        type: "B-Type (Not Taken)",
+        cycles: 3,
+        cpi: 3,
+        states: ["S0", "S1", "S10"],
+        desc: "Bedingter Sprung (nicht erfüllt): Fetch -> Decode -> BEQ (PC bleibt unverändert)"
+      },
+      {
+        id: "jal",
+        asm: "jal ra, function",
+        type: "J-Type (Jump and Link)",
+        cycles: 4,
+        cpi: 4,
+        states: ["S0", "S1", "S9", "S7"],
+        desc: "Unbedingter Sprung: Fetch -> Decode -> JAL (PC gesetzt) -> ALUWB (ra <= PC+4)"
+      }
+    ];
+
+    // =========================================================================
+    // CRITICAL PATH DATA (Exam Aufgabe 6b)
+    // =========================================================================
+    const DELAY_PRESETS = {
+      wise26_pc_instr: {
+        id: "wise26_pc_instr",
+        title: "WiSe 26: PC -> Instr",
+        source: "PC",
+        target: "Instr",
+        components: [
+          { name: "max(t_FSMpcq, t_pcq)", desc: "Taktung FSM / PC", delay: 50 },
+          { name: "t_mux", desc: "Multiplexer (AdrSrc)", delay: 30 },
+          { name: "t_mem", desc: "Speicherzugriff (Memory)", delay: 200 },
+          { name: "t_setup", desc: "Setup-Zeit Instr-Register", delay: 50 }
+        ],
+        formula: "T_C = max(t_FSMpcq, t_pcq) + t_mux + t_mem + t_setup",
+        totalDelay: 330, // 50 + 30 + 200 + 50 = 330 ps
+        fmaxGhz: 3.03, // 1 / 330ps = 3.03 GHz
+        examTag: "WiSe 26 Klausur",
+        tip: "Achtung: max(t_FSMpcq, t_pcq) wird verwendet, da Steuersignal AdrSrc aus der FSM und Daten aus dem PC-Register kommen!"
+      },
+      wise26_aluout_instr: {
+        id: "wise26_aluout_instr",
+        title: "WiSe 26: ALUOut -> Instr",
+        source: "ALUOut",
+        target: "Instr",
+        components: [
+          { name: "max(t_FSMpcq, t_pcq)", desc: "Taktung FSM / ALUOut", delay: 50 },
+          { name: "2 * t_mux", desc: "2x Multiplexer (ResultSrc + AdrSrc)", delay: 60 },
+          { name: "t_mem", desc: "Speicherzugriff (Memory)", delay: 200 },
+          { name: "t_setup", desc: "Setup-Zeit Instr-Register", delay: 50 }
+        ],
+        formula: "T_C = max(t_FSMpcq, t_pcq) + 2 * t_mux + t_mem + t_setup",
+        totalDelay: 360, // 50 + 60 + 200 + 50 = 360 ps
+        fmaxGhz: 2.78, // 1 / 360ps = 2.78 GHz
+        examTag: "WiSe 26 Klausur",
+        tip: "Hier durchläuft das Signal zwei Multiplexer: Zuerst ResultSrc-Mux, danach den AdrSrc-Mux vor dem Speicher!"
+      },
+      sose25_instr_aluout: {
+        id: "sose25_instr_aluout",
+        title: "SoSe 25: Instr -> ALUOut",
+        source: "Instr",
+        target: "ALUOut",
+        components: [
+          { name: "t_pcq", desc: "Instr Register Taktung", delay: 40 },
+          { name: "t_dec", desc: "Control Unit Decoder", delay: 25 },
+          { name: "t_ext", desc: "Immediate Extender", delay: 35 },
+          { name: "t_mux", desc: "Multiplexer (ALUSrcB)", delay: 30 },
+          { name: "t_ALU", desc: "ALU Rechenverzögerung", delay: 120 },
+          { name: "t_setup", desc: "Setup-Zeit ALUOut Register", delay: 50 }
+        ],
+        formula: "T_C = t_pcq + t_dec + t_ext + t_mux + t_ALU + t_setup",
+        totalDelay: 300, // 40 + 25 + 35 + 30 + 120 + 50 = 300 ps
+        fmaxGhz: 3.33,
+        examTag: "SoSe 25 Klausur",
+        tip: "Aus SoSe 25 Aufgabe 6b: Pfad vom Befehlsregister über Decoder, Extender, Mux und ALU zum ALUOut-Register."
+      },
+      probeklausur_global: {
+        id: "probeklausur_global",
+        title: "Probeklausur: Phasen-Vergleich & globales f_max",
+        source: "Global",
+        target: "T_clk",
+        components: [
+          { name: "T_Fetch (T1)", desc: "t_mem + t_setup = 200 + 50", delay: 250 },
+          { name: "T_Decode (T2)", desc: "t_pcq + t_RFread + t_setup = 40 + 100 + 50", delay: 190 },
+          { name: "T_Execute (T3)", desc: "t_pcq + t_mux + t_ALU + t_setup = 40 + 30 + 120 + 50", delay: 240 }
+        ],
+        formula: "T_clk = max(T1, T2, T3) = max(250, 190, 240) = 250 ps",
+        totalDelay: 250,
+        fmaxGhz: 4.00, // 1 / 250ps = 4.0 GHz
+        examTag: "Probeklausur",
+        tip: "Alle Takte teilen dieselbe Taktfrequenz! Daher bestimmt der langsamste Einzeltakt (hier T1: Fetch = 250 ps) das gesamte f_max!"
+      }
+    };
+
+    // =========================================================================
+    // EXAM CHALLENGES (Aufgabe 6a)
+    // =========================================================================
+    const EXAM_CHALLENGES = [
+      {
+        id: "wise26_aluj",
+        title: "WiSe 26 Aufgabe 6a: Instruktion PC = ALU(rs1, rs2)",
+        points: "5 Punkte",
+        semester: "WiSe 2025/2026",
+        opcode: "0001011",
+        description: `Erweitern Sie die FSM des Prozessors um eine neue Klasse von Instruktionen, die zwei Registeroperanden via <code>ALUOp = 10</code> verrechnet und den PC mit dem Ergebnis aktualisiert: <code>PC = ALU(rs1, rs2)</code>. Das Zielregisterfeld rd wird nicht verwendet. Opcode = <code>0001011</code>.<br>Die Instruktion soll mit einem neuen Zustand (S10: ALUJ) implementiert werden.`,
+        states: [
+          {
+            name: "S10: ALUJ",
+            requiredSignals: {
+              ALUSrcA: "10", // Register A
+              ALUSrcB: "00", // Register B
+              ALUOp: "10",   // R-type ALU operation
+              ResultSrc: "00", // ALUOut (or 10 ALUResult)
+              PCUpdate: "1",   // Write to PC
+              RegWrite: "0",
+              MemWrite: "0"
+            }
+          }
+        ],
+        solutionText: "Neuer Zustand S10 (ALUJ) ausgehend von S1 mit Opcode 0001011. ALUSrcA = 10 (rs1), ALUSrcB = 00 (rs2), ALUOp = 10, ResultSrc = 00, PCUpdate = 1. Transition zurück zu S0."
+      },
+      {
+        id: "sose25_jalm",
+        title: "SoSe 25 Aufgabe 6a: Instruktion jalm rd, imm(rs1)",
+        points: "11 Punkte",
+        semester: "SoSe 2025",
+        opcode: "0001011",
+        description: `Implementieren Sie <code>jalm rd, imm(rs1)</code> (Jump and Link Memory, Opcode <code>0001011</code>).<br>
+        Reihenfolge der 4 neuen Zustände:
+        <ol style="margin-left: 18px; margin-top: 4px;">
+          <li><b>JALM:</b> Berechnet PC+4</li>
+          <li><b>JALMAdr:</b> Legt PC+4 in rd ab und berechnet Speicheradresse rs1 + imm</li>
+          <li><b>JALMRead:</b> Legt Adresse an Speicher an</li>
+          <li><b>JALMJump:</b> Setzt PC zum gelesenen Sprungziel</li>
+        </ol>`,
+        states: [
+          {
+            name: "S10: JALM",
+            requiredSignals: {
+              ALUSrcA: "01", // OldPC / PC
+              ALUSrcB: "10", // 4
+              ALUOp: "00"    // Add
+            }
+          },
+          {
+            name: "S11: JALMAdr",
+            requiredSignals: {
+              ALUSrcA: "10", // A (rs1)
+              ALUSrcB: "01", // ImmExt
+              ALUOp: "00",   // Add
+              ResultSrc: "00", // ALUOut (PC+4)
+              RegWrite: "1"  // Write PC+4 to rd
+            }
+          },
+          {
+            name: "S12: JALMRead",
+            requiredSignals: {
+              AdrSrc: "1",   // Address from Result
+              ResultSrc: "00" // ALUOut (rs1+imm)
+            }
+          },
+          {
+            name: "S13: JALMJump",
+            requiredSignals: {
+              ResultSrc: "01", // ReadData from Memory
+              PCUpdate: "1"   // Write to PC
+            }
+          }
+        ],
+        solutionText: "Reihenfolge: S1 -> JALM (ALUSrcA=01, ALUSrcB=10, ALUOp=00) -> JALMAdr (ALUSrcA=10, ALUSrcB=01, ALUOp=00, ResultSrc=00, RegWrite=1) -> JALMRead (ResultSrc=00, AdrSrc=1) -> JALMJump (ResultSrc=01, PCUpdate=1) -> Rücksprung zu S0."
+      },
+      {
+        id: "addi_pc",
+        title: "Klausur-Training: PC = rs1 + imm (I-Type Sprung)",
+        points: "5 Punkte",
+        semester: "Klausur-Typ A",
+        opcode: "0001100",
+        description: "Erweitern Sie die FSM um eine I-Typ Sprung-Instruktion: <code>PC = rs1 + imm</code> (Opcode <code>0001100</code>). Zielregister rd wird nicht verwendet. Benötigt 1 Zustand (S10: ADDI_PC).",
+        states: [
+          {
+            name: "S10: ADDI_PC",
+            requiredSignals: {
+              ALUSrcA: "10", // Register A (rs1)
+              ALUSrcB: "01", // ImmExt (imm)
+              ALUOp: "00",   // Add
+              ResultSrc: "00", // ALUOut
+              PCUpdate: "1",   // Write to PC
+              RegWrite: "0",
+              MemWrite: "0"
+            }
+          }
+        ],
+        solutionText: "S10 (ADDI_PC): ALUSrcA=10 (rs1), ALUSrcB=01 (imm), ALUOp=00 (Add), ResultSrc=00 (ALUOut), PCUpdate=1. Transition zurück zu S0."
+      },
+      {
+        id: "sub_pc",
+        title: "Klausur-Training: PC = rs1 - rs2 (R-Type Sprung)",
+        points: "5 Punkte",
+        semester: "Klausur-Typ B",
+        opcode: "0001101",
+        description: "Erweitern Sie die FSM um eine R-Typ Sprung-Instruktion: <code>PC = rs1 - rs2</code> (Opcode <code>0001101</code>). Zielregister rd wird nicht verwendet. Benötigt 1 Zustand (S10: SUB_PC).",
+        states: [
+          {
+            name: "S10: SUB_PC",
+            requiredSignals: {
+              ALUSrcA: "10", // Register A (rs1)
+              ALUSrcB: "00", // Register B (rs2)
+              ALUOp: "01",   // Sub
+              ResultSrc: "00", // ALUOut
+              PCUpdate: "1",   // Write to PC
+              RegWrite: "0",
+              MemWrite: "0"
+            }
+          }
+        ],
+        solutionText: "S10 (SUB_PC): ALUSrcA=10 (rs1), ALUSrcB=00 (rs2), ALUOp=01 (Sub), ResultSrc=00, PCUpdate=1. Transition zurück zu S0."
+      },
+      {
+        id: "jump_rel",
+        title: "Klausur-Training: PC = OldPC + imm (Relativer Sprung)",
+        points: "5 Punkte",
+        semester: "Klausur-Typ C",
+        opcode: "0001110",
+        description: "Erweitern Sie die FSM um einen PC-relativen Sprung: <code>PC = OldPC + imm</code> (Opcode <code>0001110</code>). Zielregister rd wird nicht verwendet. Benötigt 1 Zustand (S10: JUMP_REL).",
+        states: [
+          {
+            name: "S10: JUMP_REL",
+            requiredSignals: {
+              ALUSrcA: "01", // OldPC
+              ALUSrcB: "01", // ImmExt
+              ALUOp: "00",   // Add
+              ResultSrc: "00", // ALUOut
+              PCUpdate: "1",   // Write to PC
+              RegWrite: "0",
+              MemWrite: "0"
+            }
+          }
+        ],
+        solutionText: "S10 (JUMP_REL): ALUSrcA=01 (OldPC), ALUSrcB=01 (imm), ALUOp=00 (Add), ResultSrc=00, PCUpdate=1. Transition zurück zu S0."
+      },
+      {
+        id: "fast_add",
+        title: "Klausur-Training: rd = rs1 + rs2 (Direct Writeback)",
+        points: "5 Punkte",
+        semester: "Klausur-Typ D",
+        opcode: "0001111",
+        description: "Erweitern Sie die FSM um eine schnelle R-Typ Addition mit direktem Rückschreiben: <code>rd = rs1 + rs2</code>. Das Ergebnis wird sofort in rd geschrieben. Benötigt 1 Zustand (S10: FAST_ADD).",
+        states: [
+          {
+            name: "S10: FAST_ADD",
+            requiredSignals: {
+              ALUSrcA: "10", // Register A (rs1)
+              ALUSrcB: "00", // Register B (rs2)
+              ALUOp: "10",   // R-Type Funct
+              ResultSrc: "00", // ALUOut
+              PCUpdate: "0",
+              RegWrite: "1",   // Write to rd!
+              MemWrite: "0"
+            }
+          }
+        ],
+        solutionText: "S10 (FAST_ADD): ALUSrcA=10 (rs1), ALUSrcB=00 (rs2), ALUOp=10 (R-Type), ResultSrc=00, RegWrite=1, PCUpdate=0. Transition zurück zu S0."
+      }
+    ];
+
+    // =========================================================================
+    // QUIZ QUESTIONS (Rapid Flashcards)
+    // =========================================================================
+    const QUIZ_QUESTIONS = [
+      {
+        q: "Верхний вход ALU (ALUSrcA): нужно подать операнд из регистра rs1. Какой код выставить?",
+        sub: "Команды: add, sub, addi, адрес для lw/sw",
+        options: [
+          { val: "10", label: "Код 10", correct: true },
+          { val: "00", label: "Код 00", correct: false },
+          { val: "01", label: "Код 01", correct: false }
+        ],
+        expl: "Код 10 подключает регистр A (значение rs1 из регистрового файла) к верхнему входу ALU."
+      },
+      {
+        q: "Нижний вход ALU (ALUSrcB): складываем регистр с константой (rs1 + imm). Какой код выставить?",
+        sub: "Команды: addi, andi, адрес для lw/sw",
+        options: [
+          { val: "01", label: "Код 01", correct: true },
+          { val: "00", label: "Код 00", correct: false },
+          { val: "10", label: "Код 10", correct: false }
+        ],
+        expl: "Код 01 выбирает выход блока знакового расширения ImmExt (константа из битов команды)."
+      },
+      {
+        q: "Нижний вход ALU (ALUSrcB): складываем два регистра (rs1 + rs2). Какой код выставить?",
+        sub: "R-тип команды: add, sub, and, or, xor",
+        options: [
+          { val: "00", label: "Код 00", correct: true },
+          { val: "01", label: "Код 01", correct: false },
+          { val: "10", label: "Код 10", correct: false }
+        ],
+        expl: "Код 00 подключает регистр B (значение rs2) к нижнему входу ALU."
+      },
+      {
+        q: "Нижний вход ALU (ALUSrcB): на шаге Fetch (S0) вычисляем PC + 4. Какой код подает константу 4?",
+        sub: "Шаг S0: выборка команды и инкремент счетчика",
+        options: [
+          { val: "10", label: "Код 10", correct: true },
+          { val: "00", label: "Код 00", correct: false },
+          { val: "01", label: "Код 01", correct: false }
+        ],
+        expl: "Код 10 подключает провод с фиксированной константой 4, чтобы АЛУ прибавило 4 к PC."
+      },
+      {
+        q: "Верхний вход ALU (ALUSrcA): на шаге Fetch (S0) нужно взять текущий адрес команды. Какой код?",
+        sub: "Шаг S0: ALU считает PC + 4",
+        options: [
+          { val: "00", label: "Код 00", correct: true },
+          { val: "01", label: "Код 01", correct: false },
+          { val: "10", label: "Код 10", correct: false }
+        ],
+        expl: "Код 00 берет значение текущего счетчика PC и подает его на вход АЛУ."
+      },
+      {
+        q: "Что поступит на верхний вход ALU, если переключатель ALUSrcA установлен в 01?",
+        sub: "Используется при вычислении относительных переходов",
+        options: [
+          { val: "oldpc", label: "Старый адрес команды (OldPC)", correct: true },
+          { val: "pc", label: "Текущий счетчик команд (PC)", correct: false },
+          { val: "rs1", label: "Регистр rs1 (Register A)", correct: false }
+        ],
+        expl: "Код 01 подключает регистр OldPC (сохраненный адрес текущей команды для вычисления BTA = OldPC + Imm)."
+      },
+      {
+        q: "Выбор результата (ResultSrc): команда lw прочитала байты из RAM. Какой код направить на шину Result?",
+        sub: "Шаг S4: запись прочитанных данных в rd",
+        options: [
+          { val: "01", label: "Код 01", correct: true },
+          { val: "00", label: "Код 00", correct: false },
+          { val: "10", label: "Код 10", correct: false }
+        ],
+        expl: "Код 01 берет данные из регистра Data (памяти) и направляет их на шину Result для записи в rd."
+      },
+      {
+        q: "Выбор результата (ResultSrc): завершили вычисление в АЛУ. Какой код направить на шину Result?",
+        sub: "Шаг S7: запись результата вычислений в rd",
+        options: [
+          { val: "00", label: "Код 00", correct: true },
+          { val: "01", label: "Код 01", correct: false },
+          { val: "10", label: "Код 10", correct: false }
+        ],
+        expl: "Код 00 направляет на шину Result результат АЛУ, зафиксированный в регистре ALUOut."
+      },
+      {
+        q: "Режим ALU (ALUOp): вычисляем адрес в памяти (rs1 + imm) или PC + 4. Какой код жестко включает сложение?",
+        sub: "Шаги S0 (Fetch) и S2 (MemAdr)",
+        options: [
+          { val: "00", label: "Код 00", correct: true },
+          { val: "01", label: "Код 01", correct: false },
+          { val: "10", label: "Код 10", correct: false }
+        ],
+        expl: "ALUOp = 00 жестко включает операцию сложения (Add) независимо от кода команды."
+      },
+      {
+        q: "Режим ALU (ALUOp): условный переход beq сравнивает rs1 и rs2. Какой код включает вычитание?",
+        sub: "Шаг S10 (BEQ): проверка на равенство через Zero-флаг",
+        options: [
+          { val: "01", label: "Код 01", correct: true },
+          { val: "00", label: "Код 00", correct: false },
+          { val: "10", label: "Код 10", correct: false }
+        ],
+        expl: "ALUOp = 01 включает вычитание (rs1 - rs2). Если разность 0, вырабатывается флаг Zero=1."
+      },
+      {
+        q: "Режим ALU (ALUOp): выполняем обычные R-команды (add, sub, or, and...). Какой код заставляет ALU декодировать funct?",
+        sub: "Шаг S6 (ExecuteR)",
+        options: [
+          { val: "10", label: "Код 10", correct: true },
+          { val: "00", label: "Код 00", correct: false },
+          { val: "01", label: "Код 01", correct: false }
+        ],
+        expl: "ALUOp = 10 приказывает АЛУ посмотреть на биты funct3 и funct7 инструкции, чтобы выбрать точную операцию."
+      },
+      {
+        q: "Флаг PCUpdate: инструкция делает прыжок (PC = ...). Какое значение флага выставить?",
+        sub: "Команды JAL, JALR, новая команда прыжка",
+        options: [
+          { val: "1", label: "1 (Aktiv)", correct: true },
+          { val: "0", label: "0 (Inaktiv)", correct: false }
+        ],
+        expl: "PCUpdate = 1 защелкивает новое значение с шины Result прямо в счетчик команд PC."
+      },
+      {
+        q: "Флаг RegWrite: команда сохраняет результат в регистр назначения rd. Что выставить?",
+        sub: "Шаг WriteBack (add, addi, lw, etc.)",
+        options: [
+          { val: "1", label: "1 (Aktiv)", correct: true },
+          { val: "0", label: "0 (Inaktiv)", correct: false }
+        ],
+        expl: "RegWrite = 1 разрешает запись данных с шины Result в регистр назначения rd."
+      },
+      {
+        q: "Флаг MemWrite: команда sw (Store Word) записывает слово в память RAM. Что выставить?",
+        sub: "Шаг S5 (MemWrite)",
+        options: [
+          { val: "1", label: "1 (Aktiv)", correct: true },
+          { val: "0", label: "0 (Inaktiv)", correct: false }
+        ],
+        expl: "MemWrite = 1 подает строб записи на память RAM, чтобы сохранить значение регистра B по вычисленному адресу."
+      },
+      {
+        q: "Адрес памяти (AdrSrc): на шаге Fetch (S0) нужно прочитать код следующей команды. Чей адрес подать?",
+        sub: "Шаг S0: выборка команды",
+        options: [
+          { val: "0", label: "Код 0 (Адрес из PC)", correct: true },
+          { val: "1", label: "Код 1 (Адрес с шины Result)", correct: false }
+        ],
+        expl: "AdrSrc = 0 подключает регистр PC к шине адреса памяти для загрузки инструкции."
+      },
+      {
+        q: "Адрес памяти (AdrSrc): на шаге MemRead/MemWrite обращаемся к переменной в памяти по адресу rs1 + imm. Откуда брать адрес?",
+        sub: "Шаги S3 и S5",
+        options: [
+          { val: "1", label: "Код 1 (С шины Result)", correct: true },
+          { val: "0", label: "Код 0 (Из PC)", correct: false }
+        ],
+        expl: "AdrSrc = 1 переключает вход адреса памяти на шину Result, куда подается вычисленный АЛУ адрес."
+      }
+    ];
+
+    // =========================================================================
+    // APP STATE
+    // =========================================================================
+    const state = {
+      mode: "fsm", // "fsm", "exam", "timing", "theory", "quiz"
+      currentInstIdx: 0,
+      currentCycle: 0,
+      autoPlaying: false,
+      autoPlayTimer: null,
+      autoSpeed: 1000,
+      activeFsmStateId: "S0",
+      activeExamChallengeIdx: 0,
+      examAnswers: {},
+      timingPresetKey: "wise26_pc_instr",
+      timingUserDelay: "",
+      timingUserFmax: "",
+      timingFeedback: null,
+      customExtensionActive: false,
+      quizIdx: 0,
+      quizScore: 0,
+      quizStreak: 0,
+      quizSelected: null,
+      quizAnswered: false
+    };
+
+    // =========================================================================
+    // SVG RENDERING: FSM GRAPH
+    // =========================================================================
+    function renderFsmSvg() {
+      const activeState = state.activeFsmStateId;
+      const isCustomS10 = state.customExtensionActive;
+
+      return `
+        <svg viewBox="0 0 920 620" class="interactive-svg" id="fsmSvg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#475569" />
+            </marker>
+            <marker id="arrow-active" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#38bdf8" />
+            </marker>
+            <marker id="arrow-exam" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#c084fc" />
+            </marker>
+            <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="6" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+
+          <!-- Reset Input Pointer -->
+          <g>
+            <path d="M 110 30 L 170 60" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)" />
+            <text x="100" y="24" fill="#94a3b8" font-size="11" font-weight="700" font-family="ui-monospace, monospace">Reset</text>
+          </g>
+
+          <!-- EDGES LAYER -->
+          <g id="fsmEdges">
+            <!-- S0 -> S1 -->
+            <path class="fsm-edge ${activeState === 'S1' ? 'active' : ''}" d="M 242 75 L 378 75" marker-end="${activeState === 'S1' ? 'url(#arrow-active)' : 'url(#arrow)'}" />
+            
+            <!-- S1 -> S2 (lw/sw) -->
+            <path class="fsm-edge ${(activeState === 'S2') ? 'active' : ''}" d="M 390 105 L 130 205" marker-end="${activeState === 'S2' ? 'url(#arrow-active)' : 'url(#arrow)'}" />
+            <text class="fsm-edge-label" x="235" y="145">op = 0000011 (lw) / 0100011 (sw)</text>
+
+            <!-- S1 -> S6 (R-type) -->
+            <path class="fsm-edge ${(activeState === 'S6') ? 'active' : ''}" d="M 405 115 L 350 195" marker-end="${activeState === 'S6' ? 'url(#arrow-active)' : 'url(#arrow)'}" />
+            <text class="fsm-edge-label" x="345" y="160">op = 0110011</text>
+
+            <!-- S1 -> S8 (I-type ALU) -->
+            <path class="fsm-edge ${(activeState === 'S8') ? 'active' : ''}" d="M 435 115 L 475 195" marker-end="${activeState === 'S8' ? 'url(#arrow-active)' : 'url(#arrow)'}" />
+            <text class="fsm-edge-label" x="490" y="160">op = 0010011</text>
+
+            <!-- S1 -> S9 (jal) -->
+            <path class="fsm-edge ${(activeState === 'S9') ? 'active' : ''}" d="M 455 105 L 610 200" marker-end="${activeState === 'S9' ? 'url(#arrow-active)' : 'url(#arrow)'}" />
+            <text class="fsm-edge-label" x="555" y="145">op = 1101111 (jal)</text>
+
+            <!-- S1 -> S10 (beq) -->
+            <path class="fsm-edge ${(activeState === 'S10') ? 'active' : ''}" d="M 460 95 L 745 210" marker-end="${activeState === 'S10' ? 'url(#arrow-active)' : 'url(#arrow)'}" />
+            <text class="fsm-edge-label" x="655" y="125">op = 1100011 (beq)</text>
+
+            <!-- S2 -> S3 (lw) -->
+            <path class="fsm-edge ${(activeState === 'S3') ? 'active' : ''}" d="M 90 268 L 75 344" marker-end="${activeState === 'S3' ? 'url(#arrow-active)' : 'url(#arrow)'}" />
+            <text class="fsm-edge-label" x="50" y="305">op = 0000011 (lw)</text>
+
+            <!-- S2 -> S5 (sw) -->
+            <path class="fsm-edge ${(activeState === 'S5') ? 'active' : ''}" d="M 125 260 L 195 348" marker-end="${activeState === 'S5' ? 'url(#arrow-active)' : 'url(#arrow)'}" />
+            <text class="fsm-edge-label" x="180" y="305">op = 0100011 (sw)</text>
+
+            <!-- S3 -> S4 -->
+            <path class="fsm-edge ${(activeState === 'S4') ? 'active' : ''}" d="M 70 416 L 70 484" marker-end="${activeState === 'S4' ? 'url(#arrow-active)' : 'url(#arrow)'}" />
+
+            <!-- S6 -> S7 -->
+            <path class="fsm-edge ${(activeState === 'S7' && state.currentInstIdx === 2) ? 'active' : ''}" d="M 365 260 L 440 375" marker-end="${activeState === 'S7' ? 'url(#arrow-active)' : 'url(#arrow)'}" />
+
+            <!-- S8 -> S7 -->
+            <path class="fsm-edge ${(activeState === 'S7' && state.currentInstIdx === 3) ? 'active' : ''}" d="M 475 268 L 465 372" marker-end="${activeState === 'S7' ? 'url(#arrow-active)' : 'url(#arrow)'}" />
+
+            <!-- S9 -> S7 -->
+            <path class="fsm-edge ${(activeState === 'S7' && state.currentInstIdx === 6) ? 'active' : ''}" d="M 615 255 L 490 380" marker-end="${activeState === 'S7' ? 'url(#arrow-active)' : 'url(#arrow)'}" />
+
+            <!-- Bottom Return Bus back to S0 -->
+            <!-- S4 -> S0 -->
+            <path class="fsm-edge return-edge" d="M 70 556 L 70 590 L 890 590 L 890 20 L 210 20 L 205 33" marker-end="url(#arrow)" />
+            <!-- S5 -> Bus -->
+            <path class="fsm-edge return-edge" d="M 210 416 L 210 590" />
+            <!-- S7 -> Bus -->
+            <path class="fsm-edge return-edge" d="M 460 448 L 460 590" />
+            <!-- S10 -> Bus -->
+            <path class="fsm-edge return-edge" d="M 780 268 L 780 590" />
+
+            <!-- Dynamic Exam States (WiSe 26 S10 ALUJ) -->
+            ${isCustomS10 ? `
+              <path class="fsm-edge active" stroke="#c084fc" stroke-width="2.5" d="M 420 117 L 340 500" marker-end="url(#arrow-exam)" />
+              <text class="fsm-edge-label" fill="#c084fc" x="350" y="470">op = 0001011 (ALUJ)</text>
+              <path class="fsm-edge return-edge" stroke="#c084fc" d="M 340 540 L 340 590" />
+            ` : ''}
+          </g>
+
+          <!-- NODES LAYER -->
+          <g id="fsmNodes">
+            <!-- S0: Fetch -->
+            <g class="fsm-node ${activeState === 'S0' ? 'active' : ''}" data-state="S0" transform="translate(200, 75)">
+              <circle r="42" />
+              <text class="fsm-node-title" y="-12">S0: Fetch</text>
+              <text class="fsm-node-sub" y="5">AdrSrc = 0</text>
+              <text class="fsm-node-sub" y="17">IRWrite = 1</text>
+              <text class="fsm-node-sub" y="29">PCUpdate = 1</text>
+            </g>
+
+            <!-- S1: Decode -->
+            <g class="fsm-node ${activeState === 'S1' ? 'active' : ''}" data-state="S1" transform="translate(420, 75)">
+              <circle r="42" />
+              <text class="fsm-node-title" y="-12">S1: Decode</text>
+              <text class="fsm-node-sub" y="5">ALUSrcA = 01</text>
+              <text class="fsm-node-sub" y="17">ALUSrcB = 01</text>
+              <text class="fsm-node-sub" y="29">ALUOp = 00</text>
+            </g>
+
+            <!-- S2: MemAdr -->
+            <g class="fsm-node ${activeState === 'S2' ? 'active' : ''}" data-state="S2" transform="translate(100, 230)">
+              <circle r="38" />
+              <text class="fsm-node-title" y="-10">S2: MemAdr</text>
+              <text class="fsm-node-sub" y="5">ALUSrcA = 10</text>
+              <text class="fsm-node-sub" y="18">ALUSrcB = 01</text>
+            </g>
+
+            <!-- S3: MemRead -->
+            <g class="fsm-node ${activeState === 'S3' ? 'active' : ''}" data-state="S3" transform="translate(70, 380)">
+              <circle r="36" />
+              <text class="fsm-node-title" y="-8">S3: MemRead</text>
+              <text class="fsm-node-sub" y="7">AdrSrc = 1</text>
+              <text class="fsm-node-sub" y="19">ResultSrc = 00</text>
+            </g>
+
+            <!-- S4: MemWB -->
+            <g class="fsm-node ${activeState === 'S4' ? 'active' : ''}" data-state="S4" transform="translate(70, 520)">
+              <circle r="36" />
+              <text class="fsm-node-title" y="-8">S4: MemWB</text>
+              <text class="fsm-node-sub" y="7">RegWrite = 1</text>
+              <text class="fsm-node-sub" y="19">ResultSrc = 01</text>
+            </g>
+
+            <!-- S5: MemWrite -->
+            <g class="fsm-node ${activeState === 'S5' ? 'active' : ''}" data-state="S5" transform="translate(210, 380)">
+              <circle r="36" />
+              <text class="fsm-node-title" y="-8">S5: MemWrite</text>
+              <text class="fsm-node-sub" y="7">MemWrite = 1</text>
+              <text class="fsm-node-sub" y="19">AdrSrc = 1</text>
+            </g>
+
+            <!-- S6: ExecuteR -->
+            <g class="fsm-node ${activeState === 'S6' ? 'active' : ''}" data-state="S6" transform="translate(340, 230)">
+              <circle r="38" />
+              <text class="fsm-node-title" y="-10">S6: ExecuteR</text>
+              <text class="fsm-node-sub" y="5">ALUSrcA = 10</text>
+              <text class="fsm-node-sub" y="18">ALUSrcB = 00</text>
+            </g>
+
+            <!-- S7: ALUWB -->
+            <g class="fsm-node ${activeState === 'S7' ? 'active' : ''}" data-state="S7" transform="translate(460, 410)">
+              <circle r="38" />
+              <text class="fsm-node-title" y="-10">S7: ALUWB</text>
+              <text class="fsm-node-sub" y="5">RegWrite = 1</text>
+              <text class="fsm-node-sub" y="18">ResultSrc = 00</text>
+            </g>
+
+            <!-- S8: ExecuteI -->
+            <g class="fsm-node ${activeState === 'S8' ? 'active' : ''}" data-state="S8" transform="translate(480, 230)">
+              <circle r="38" />
+              <text class="fsm-node-title" y="-10">S8: ExecuteI</text>
+              <text class="fsm-node-sub" y="5">ALUSrcA = 10</text>
+              <text class="fsm-node-sub" y="18">ALUSrcB = 01</text>
+            </g>
+
+            <!-- S9: JAL -->
+            <g class="fsm-node ${activeState === 'S9' ? 'active' : ''}" data-state="S9" transform="translate(640, 230)">
+              <circle r="38" />
+              <text class="fsm-node-title" y="-10">S9: JAL</text>
+              <text class="fsm-node-sub" y="5">PCUpdate = 1</text>
+              <text class="fsm-node-sub" y="18">ALUSrcA = 01</text>
+            </g>
+
+            <!-- S10: BEQ -->
+            <g class="fsm-node ${activeState === 'S10' ? 'active' : ''}" data-state="S10" transform="translate(780, 230)">
+              <circle r="38" />
+              <text class="fsm-node-title" y="-10">S10: BEQ</text>
+              <text class="fsm-node-sub" y="5">Branch = 1</text>
+              <text class="fsm-node-sub" y="18">ALUOp = 01</text>
+            </g>
+
+            <!-- Injected Exam Node if active -->
+            ${isCustomS10 ? `
+              <g class="fsm-node exam-new ${activeState === 'S10_ALUJ' ? 'active' : ''}" data-state="S10_ALUJ" transform="translate(340, 520)">
+                <circle r="38" />
+                <text class="fsm-node-title" fill="#c084fc" y="-10">S10: ALUJ</text>
+                <text class="fsm-node-sub" y="5">PCUpdate = 1</text>
+                <text class="fsm-node-sub" y="18">ALUOp = 10</text>
+              </g>
+            ` : ''}
+          </g>
+        </svg>
+      `;
+    }
+
+    // =========================================================================
+    // SVG RENDERING: DATAPATH FOR CRITICAL PATH (Aufgabe 6b)
+    // =========================================================================
+    function renderDatapathSvg() {
+      const p = DELAY_PRESETS[state.timingPresetKey];
+      const isPcInstr = p.id === "wise26_pc_instr";
+      const isAluoutInstr = p.id === "wise26_aluout_instr";
+      const isInstrAluout = p.id === "sose25_instr_aluout";
+
+      return `
+        <svg viewBox="0 0 950 620" class="interactive-svg" id="datapathSvg">
+          <defs>
+            <marker id="dp-arr" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 2 L 7 5 L 0 8 z" fill="#64748b" />
+            </marker>
+            <marker id="dp-arr-crit" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M 0 2 L 7 5 L 0 8 z" fill="#f59e0b" />
+            </marker>
+          </defs>
+
+          <!-- GRID / WIRES LAYER -->
+          <!-- 1. PC to AdrSrc Mux -->
+          <path class="dp-wire ${isPcInstr ? 'critical' : 'active'}" d="M 120 180 L 160 180" marker-end="${isPcInstr ? 'url(#dp-arr-crit)' : 'url(#dp-arr)'}" />
+          
+          <!-- 2. AdrSrc Mux to Memory Address input -->
+          <path class="dp-wire ${(isPcInstr || isAluoutInstr) ? 'critical' : 'active'}" d="M 190 190 L 230 190" marker-end="${(isPcInstr || isAluoutInstr) ? 'url(#dp-arr-crit)' : 'url(#dp-arr)'}" />
+
+          <!-- 3. Memory ReadData to Instr Register (IR) -->
+          <path class="dp-wire ${(isPcInstr || isAluoutInstr) ? 'critical' : 'active'}" d="M 330 190 L 375 190" marker-end="${(isPcInstr || isAluoutInstr) ? 'url(#dp-arr-crit)' : 'url(#dp-arr)'}" />
+
+          <!-- 4. Memory ReadData to Data Register -->
+          <path class="dp-wire" d="M 350 190 L 350 290 L 375 290" marker-end="url(#dp-arr)" />
+
+          <!-- 5. Instr to Control Unit / Decoder -->
+          <path class="dp-wire ${isInstrAluout ? 'critical' : ''}" d="M 425 180 L 470 180 L 470 70 L 510 70" marker-end="${isInstrAluout ? 'url(#dp-arr-crit)' : 'url(#dp-arr)'}" />
+
+          <!-- 6. Instr to Register File Read Regs -->
+          <path class="dp-wire" d="M 425 190 L 480 190 L 480 230 L 510 230" marker-end="url(#dp-arr)" />
+          
+          <!-- 7. Instr to Immediate Extender -->
+          <path class="dp-wire ${isInstrAluout ? 'critical' : ''}" d="M 460 190 L 460 380 L 510 380" marker-end="${isInstrAluout ? 'url(#dp-arr-crit)' : 'url(#dp-arr)'}" />
+
+          <!-- 8. Immediate Extender to ALUSrcB Mux -->
+          <path class="dp-wire ${isInstrAluout ? 'critical' : ''}" d="M 580 380 L 670 380 L 670 300" marker-end="${isInstrAluout ? 'url(#dp-arr-crit)' : 'url(#dp-arr)'}" />
+
+          <!-- 9. RegFile RD1/RD2 to A & B registers -->
+          <path class="dp-wire" d="M 610 230 L 640 230" marker-end="url(#dp-arr)" />
+          <path class="dp-wire" d="M 610 270 L 640 270" marker-end="url(#dp-arr)" />
+
+          <!-- 10. Reg A to ALUSrcA Mux -->
+          <path class="dp-wire" d="M 675 230 L 700 230" marker-end="url(#dp-arr)" />
+
+          <!-- 11. ALUSrcA & ALUSrcB to ALU Inputs -->
+          <path class="dp-wire ${isInstrAluout ? 'critical' : ''}" d="M 725 220 L 760 220" marker-end="${isInstrAluout ? 'url(#dp-arr-crit)' : 'url(#dp-arr)'}" />
+          <path class="dp-wire ${isInstrAluout ? 'critical' : ''}" d="M 725 290 L 760 290" marker-end="${isInstrAluout ? 'url(#dp-arr-crit)' : 'url(#dp-arr)'}" />
+
+          <!-- 12. ALU to ALUOut Register -->
+          <path class="dp-wire ${isInstrAluout ? 'critical' : ''}" d="M 830 255 L 870 255" marker-end="${isInstrAluout ? 'url(#dp-arr-crit)' : 'url(#dp-arr)'}" />
+
+          <!-- 13. ALUOut feedback to ResultSrc Mux -->
+          <path class="dp-wire ${isAluoutInstr ? 'critical' : ''}" d="M 890 290 L 890 530 L 270 530 L 270 490" marker-end="${isAluoutInstr ? 'url(#dp-arr-crit)' : 'url(#dp-arr)'}" />
+
+          <!-- 14. ResultSrc Mux to AdrSrc Mux (WiSe 26 path) -->
+          <path class="dp-wire ${isAluoutInstr ? 'critical' : ''}" d="M 260 450 L 175 450 L 175 220" marker-end="${isAluoutInstr ? 'url(#dp-arr-crit)' : 'url(#dp-arr)'}" />
+
+          <!-- BLOCKS LAYER -->
+          <!-- PC Register -->
+          <g class="dp-block-group ${isPcInstr ? 'critical' : ''}">
+            <rect x="70" y="140" width="50" height="80" rx="4" class="dp-block ${isPcInstr ? 'critical' : ''}" />
+            <text x="95" y="185" class="dp-label">PC</text>
+          </g>
+
+          <!-- AdrSrc Mux -->
+          <g class="dp-block-group ${(isPcInstr || isAluoutInstr) ? 'critical' : ''}">
+            <polygon points="160,160 190,175 190,205 160,220" class="dp-block ${(isPcInstr || isAluoutInstr) ? 'critical' : ''}" />
+            <text x="175" y="194" class="dp-label" font-size="9">Mux</text>
+            <text x="175" y="150" class="dp-port">AdrSrc</text>
+          </g>
+
+          <!-- Unified Memory -->
+          <g class="dp-block-group ${(isPcInstr || isAluoutInstr) ? 'critical' : ''}">
+            <rect x="230" y="130" width="100" height="110" rx="6" class="dp-block ${(isPcInstr || isAluoutInstr) ? 'critical' : ''}" />
+            <text x="280" y="175" class="dp-label">Memory</text>
+            <text x="280" y="195" class="dp-port">Instr &amp; Data</text>
+            <text x="245" y="190" class="dp-port">Adr</text>
+            <text x="315" y="190" class="dp-port">RD</text>
+          </g>
+
+          <!-- Instruction Register (IR) -->
+          <g class="dp-block-group ${(isPcInstr || isAluoutInstr || isInstrAluout) ? 'critical' : ''}">
+            <rect x="375" y="150" width="50" height="70" rx="4" class="dp-block ${(isPcInstr || isAluoutInstr || isInstrAluout) ? 'critical' : ''}" />
+            <text x="400" y="190" class="dp-label">Instr</text>
+            <text x="400" y="205" class="dp-port">(IR)</text>
+          </g>
+
+          <!-- Data Register -->
+          <g class="dp-block-group">
+            <rect x="375" y="260" width="50" height="60" rx="4" class="dp-block" />
+            <text x="400" y="295" class="dp-label">Data</text>
+          </g>
+
+          <!-- Control Unit / Decoder -->
+          <g class="dp-block-group ${isInstrAluout ? 'critical' : ''}">
+            <rect x="510" y="30" width="120" height="70" rx="6" class="dp-block ${isInstrAluout ? 'critical' : ''}" />
+            <text x="570" y="65" class="dp-label">Control Unit</text>
+            <text x="570" y="82" class="dp-port">FSM &amp; Decoder</text>
+          </g>
+
+          <!-- Register File -->
+          <g class="dp-block-group">
+            <rect x="510" y="170" width="100" height="130" rx="6" class="dp-block" />
+            <text x="560" y="235" class="dp-label">Register File</text>
+          </g>
+
+          <!-- Imm Extender -->
+          <g class="dp-block-group ${isInstrAluout ? 'critical' : ''}">
+            <rect x="510" y="350" width="70" height="60" rx="5" class="dp-block ${isInstrAluout ? 'critical' : ''}" />
+            <text x="545" y="385" class="dp-label">Extend</text>
+          </g>
+
+          <!-- Reg A & B -->
+          <g class="dp-block-group">
+            <rect x="640" y="210" width="35" height="40" rx="3" class="dp-block" />
+            <text x="657" y="235" class="dp-label">A</text>
+            <rect x="640" y="260" width="35" height="40" rx="3" class="dp-block" />
+            <text x="657" y="285" class="dp-label">B</text>
+          </g>
+
+          <!-- ALUSrcA Mux -->
+          <polygon points="700,205 725,215 725,235 700,245" class="dp-block" />
+
+          <!-- ALUSrcB Mux -->
+          <polygon points="700,270 725,280 725,305 700,315" class="dp-block ${isInstrAluout ? 'critical' : ''}" />
+
+          <!-- ALU -->
+          <g class="dp-block-group ${isInstrAluout ? 'critical' : ''}">
+            <polygon points="760,200 830,235 830,275 760,310 760,265 775,255 760,245" class="dp-block ${isInstrAluout ? 'critical' : ''}" />
+            <text x="795" y="260" class="dp-label">ALU</text>
+          </g>
+
+          <!-- ALUOut Register -->
+          <g class="dp-block-group ${(isInstrAluout || isAluoutInstr) ? 'critical' : ''}">
+            <rect x="870" y="225" width="50" height="70" rx="4" class="dp-block ${(isInstrAluout || isAluoutInstr) ? 'critical' : ''}" />
+            <text x="895" y="265" class="dp-label">ALUOut</text>
+          </g>
+
+          <!-- ResultSrc Mux -->
+          <g class="dp-block-group ${isAluoutInstr ? 'critical' : ''}">
+            <polygon points="260,430 290,445 290,475 260,490" class="dp-block ${isAluoutInstr ? 'critical' : ''}" />
+            <text x="275" y="464" class="dp-label" font-size="9">Mux</text>
+            <text x="275" y="420" class="dp-port">ResultSrc</text>
+          </g>
+        </svg>
+      `;
+    }
+
+    // =========================================================================
+    // UI BUILDER: RIGHT INSPECTOR ACCORDING TO MODE
+    // =========================================================================
+    function updateInspector() {
+      const panel = document.getElementById("inspectorPanel");
+      if (state.mode === "fsm") {
+        renderFsmInspector(panel);
+      } else if (state.mode === "exam") {
+        renderExamInspector(panel);
+      } else if (state.mode === "timing") {
+        renderTimingInspector(panel);
+      } else if (state.mode === "theory") {
+        renderTheoryInspector(panel);
+      } else if (state.mode === "quiz") {
+        renderQuizInspector(panel);
+      }
+    }
+
+    function renderFsmInspector(panel) {
+      const currState = FSM_STATES[state.activeFsmStateId] || FSM_STATES.S0;
+      const inst = INSTRUCTIONS[state.currentInstIdx];
+      const sigs = currState.signals;
+
+      panel.innerHTML = `
+        <div class="panel-section">
+          <div class="panel-section-header">
+            <span>Aktiver Zustand (State)</span>
+            <span class="tag" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">Takt ${state.currentCycle + 1} von ${inst.cycles}</span>
+          </div>
+          <h2 style="font-size: 1.15rem; color: #fff; display: flex; align-items: center; gap: 8px;">
+            <span>${currState.name}</span>
+          </h2>
+          <p style="font-size: 0.76rem; color: #94a3b8; margin-top: 4px; line-height: 1.4;">
+            ${currState.desc}
+          </p>
+        </div>
+
+        <div class="panel-section">
+          <div class="panel-section-header">
+            <span>Aktionen im aktuellen Takt (Micro-Ops)</span>
+            <span class="tag" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">RTL Notation</span>
+          </div>
+          <div class="micro-ops-list">
+            ${currState.microOps.map(op => `
+              <div class="micro-op-item">
+                <code>${op.code}</code>
+                <span class="comment">${op.comment}</span>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="panel-section-header">
+            <span>Steuersignale (Control Signals)</span>
+            <span class="tag" style="background: rgba(168, 85, 247, 0.2); color: #c084fc;">FSM Outputs</span>
+          </div>
+          <div class="signal-grid">
+            <div class="signal-card" data-tip="AdrSrc: Wählt Speicheradresse (0=PC, 1=Result/ALUOut)">
+              <span class="signal-name">AdrSrc</span>
+              <span class="signal-val ${sigs.AdrSrc === '1' ? 'active-1' : ''}">${sigs.AdrSrc}</span>
+            </div>
+            <div class="signal-card" data-tip="IRWrite: Befehlsregister neu laden (nur in Fetch aktiv)">
+              <span class="signal-name">IRWrite</span>
+              <span class="signal-val ${sigs.IRWrite === '1' ? 'active-1' : ''}">${sigs.IRWrite}</span>
+            </div>
+            <div class="signal-card" data-tip="ALUSrcA: 00=PC, 01=OldPC, 10=Reg A">
+              <span class="signal-name">ALUSrcA</span>
+              <span class="signal-val active-blue">${sigs.ALUSrcA}</span>
+            </div>
+            <div class="signal-card" data-tip="ALUSrcB: 00=Reg B, 01=ImmExt, 10=Konstante 4">
+              <span class="signal-name">ALUSrcB</span>
+              <span class="signal-val active-blue">${sigs.ALUSrcB}</span>
+            </div>
+            <div class="signal-card" data-tip="ALUOp: 00=Add, 01=Sub (beq), 10=R/I-Typ Operation">
+              <span class="signal-name">ALUOp</span>
+              <span class="signal-val active-purple">${sigs.ALUOp}</span>
+            </div>
+            <div class="signal-card" data-tip="ResultSrc: 00=ALUOut, 01=Data, 10=ALUResult">
+              <span class="signal-name">ResultSrc</span>
+              <span class="signal-val active-yellow">${sigs.ResultSrc}</span>
+            </div>
+            <div class="signal-card" data-tip="RegWrite: Freigabe zum Schreiben ins Register File rd">
+              <span class="signal-name">RegWrite</span>
+              <span class="signal-val ${sigs.RegWrite === '1' ? 'active-1' : ''}">${sigs.RegWrite}</span>
+            </div>
+            <div class="signal-card" data-tip="MemWrite: Freigabe zum Schreiben in den Speicher (sw)">
+              <span class="signal-name">MemWrite</span>
+              <span class="signal-val ${sigs.MemWrite === '1' ? 'active-1' : ''}">${sigs.MemWrite}</span>
+            </div>
+            <div class="signal-card" data-tip="PCUpdate: Unbedingtes Schreiben des PC (Fetch, JAL, Jump)">
+              <span class="signal-name">PCUpdate</span>
+              <span class="signal-val ${sigs.PCUpdate === '1' ? 'active-1' : ''}">${sigs.PCUpdate}</span>
+            </div>
+            <div class="signal-card" data-tip="Branch: Bedingtes Schreiben des PC bei Zero-Flag (BEQ)">
+              <span class="signal-name">Branch</span>
+              <span class="signal-val ${sigs.Branch === '1' ? 'active-1' : ''}">${sigs.Branch}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-section" style="flex: 1;">
+          <div class="panel-section-header">
+            <span>Ablauf-Protokoll (Execution History)</span>
+            <span class="tag" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">Instruktion: ${inst.id.toUpperCase()}</span>
+          </div>
+          <div class="timeline-log">
+            ${inst.states.map((stId, idx) => {
+              const isPast = idx <= state.currentCycle;
+              const isCurrent = idx === state.currentCycle;
+              return `
+                <div class="log-entry ${isCurrent ? 'active' : ''}">
+                  <span class="log-cycle-badge">Takt ${idx + 1}</span>
+                  <span class="log-state-name">${FSM_STATES[stId].name}</span>
+                  <span style="color: #64748b; margin-left: auto; font-size: 0.7rem;">${isCurrent ? '⚡ JETZT AKTIV' : (isPast ? '✓ Abgeschlossen' : '⏳ Ausstehend')}</span>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderExamInspector(panel) {
+      const ch = EXAM_CHALLENGES[state.activeExamChallengeIdx];
+      
+      panel.innerHTML = `
+        <div class="panel-section">
+          <div class="panel-section-header">
+            <span>Prüfungsaufgabe 6a</span>
+            <span class="points-badge">${ch.points}</span>
+          </div>
+          <h2 style="font-size: 0.95rem; color: #fff; margin-bottom: 6px;">${ch.title}</h2>
+          <div style="font-size: 0.77rem; color: #94a3b8; line-height: 1.45;">
+            ${ch.description}
+          </div>
+        </div>
+
+        <div class="panel-section" style="flex: 1;">
+          <div class="panel-section-header">
+            <span>Signal-Konfiguration für neue Zustände</span>
+            <span class="tag" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">Auto-Grader</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 12px;" id="examBuilderContainer">
+            ${ch.states.map((st, stIdx) => `
+              <div class="exam-state-builder" data-state-idx="${stIdx}">
+                <div style="font-weight: 700; color: #38bdf8; font-size: 0.8rem; margin-bottom: 4px; display: flex; justify-content: space-between;">
+                  <span>${st.name}</span>
+                  <span style="color: #94a3b8; font-size: 0.72rem;">Zustand ${stIdx + 1}</span>
+                </div>
+                ${Object.keys(st.requiredSignals).map(sigKey => `
+                  <div class="signal-selector-row">
+                    <label for="sel_${stIdx}_${sigKey}">${sigKey}:</label>
+                    <select class="signal-select exam-sig-input" id="sel_${stIdx}_${sigKey}" data-state="${stIdx}" data-sig="${sigKey}">
+                      <option value="">-- wählen --</option>
+                      ${sigKey.includes("SrcA") || sigKey.includes("SrcB") || sigKey.includes("Result") || sigKey === "ALUOp" ? `
+                        <option value="00">00</option>
+                        <option value="01">01</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                      ` : `
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                      `}
+                    </select>
+                  </div>
+                `).join("")}
+              </div>
+            `).join("")}
+
+            <div style="display: flex; gap: 8px; margin-top: 6px;">
+              <button class="ctrl-btn success" id="btnCheckExam" style="flex: 1;">
+                <span>✅</span> Lösung prüfen (100% Check)
+              </button>
+              <button class="ctrl-btn" id="btnRevealExam" title="Musterlösung anzeigen">
+                <span>💡</span> Tipp / Lösung
+              </button>
+            </div>
+
+            <div class="validation-feedback" id="examFeedbackBox"></div>
+          </div>
+        </div>
+      `;
+
+      // Event listener for Check
+      document.getElementById("btnCheckExam").addEventListener("click", () => {
+        checkExamSolution(ch);
+      });
+      document.getElementById("btnRevealExam").addEventListener("click", () => {
+        revealExamSolution(ch);
+      });
+    }
+
+    function checkExamSolution(ch) {
+      let allCorrect = true;
+      let score = 0;
+      let totalSignals = 0;
+      let errorMessages = [];
+
+      ch.states.forEach((st, stIdx) => {
+        Object.entries(st.requiredSignals).forEach(([sigKey, expectedVal]) => {
+          totalSignals++;
+          const selectElem = document.getElementById(`sel_${stIdx}_${sigKey}`);
+          const userVal = selectElem ? selectElem.value : "";
+          if (userVal === expectedVal) {
+            score++;
+            if (selectElem) selectElem.style.borderColor = "#10b981";
+          } else {
+            allCorrect = false;
+            if (selectElem) selectElem.style.borderColor = "#ef4444";
+            errorMessages.push(`<b>${st.name} [${sigKey}]:</b> Erwartet <code>${expectedVal}</code>, gewählt <code>${userVal || 'nichts'}</code>.`);
+          }
+        });
+      });
+
+      const feedback = document.getElementById("examFeedbackBox");
+      if (allCorrect) {
+        sound.playSuccess();
+        state.customExtensionActive = true;
+        renderMainSvg();
+        feedback.className = "validation-feedback success";
+        feedback.innerHTML = `
+          <h4 style="font-weight: 800; font-size: 0.85rem; margin-bottom: 4px;">🎉 100% PERFECT! (${ch.points})</h4>
+          <p>Exzellent! Alle Signale stimmen exakt mit der offiziellen TU Darmstadt Musterlösung überein. Der Zustand wurde live in den FSM-Graphen injiziert!</p>
+        `;
+      } else {
+        sound.playError();
+        feedback.className = "validation-feedback error";
+        feedback.innerHTML = `
+          <h4 style="font-weight: 800; font-size: 0.85rem; margin-bottom: 4px;">⚠️ Noch nicht ganz (${score} von ${totalSignals} Signalen korrekt)</h4>
+          <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px;">
+            ${errorMessages.slice(0, 3).map(err => `<li>${err}</li>`).join("")}
+          </ul>
+        `;
+      }
+    }
+
+    function revealExamSolution(ch) {
+      ch.states.forEach((st, stIdx) => {
+        Object.entries(st.requiredSignals).forEach(([sigKey, expectedVal]) => {
+          const selectElem = document.getElementById(`sel_${stIdx}_${sigKey}`);
+          if (selectElem) {
+            selectElem.value = expectedVal;
+            selectElem.style.borderColor = "#38bdf8";
+          }
+        });
+      });
+      const feedback = document.getElementById("examFeedbackBox");
+      feedback.className = "validation-feedback success";
+      feedback.innerHTML = `
+        <h4 style="font-weight: 800; font-size: 0.85rem; margin-bottom: 4px;">💡 Offizielle Musterlösung:</h4>
+        <p>${ch.solutionText}</p>
+      `;
+    }
+
+    function renderTimingInspector(panel) {
+      const p = DELAY_PRESETS[state.timingPresetKey];
+
+      panel.innerHTML = `
+        <div class="panel-section">
+          <div class="panel-section-header">
+            <span>Aufgabe 6b: Timing-Analyse</span>
+            <span class="tag" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">${p.examTag}</span>
+          </div>
+          <h2 style="font-size: 1.05rem; color: #fff;">${p.title}</h2>
+          <p style="font-size: 0.76rem; color: #94a3b8; margin-top: 4px; line-height: 1.4;">
+            ${p.tip}
+          </p>
+        </div>
+
+        <div class="panel-section">
+          <div class="panel-section-header">
+            <span>Kritische Pfad-Formel</span>
+            <span class="tag" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">T_C Gleichung</span>
+          </div>
+          <div class="formula-display">
+            ${p.formula}
+          </div>
+
+          <table class="delay-table">
+            <thead>
+              <tr>
+                <th>Komponente</th>
+                <th>Bedeutung</th>
+                <th style="text-align: right;">Verzögerung</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${p.components.map(c => `
+                <tr>
+                  <td style="font-family: ui-monospace, monospace; font-weight: 700; color: #cbd5e1;">${c.name}</td>
+                  <td>${c.desc}</td>
+                  <td class="val">${c.delay} ps</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel-section" style="flex: 1;">
+          <div class="panel-section-header">
+            <span>Berechne selbst &amp; validiere</span>
+            <span class="tag" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">Klausur-Training</span>
+          </div>
+
+          <div style="font-size: 0.77rem; color: #cbd5e1; margin-bottom: 8px;">
+            Trage die berechnete Taktperiode $T_C$ (in Picosekunden) und maximale Taktfrequenz $f_{max}$ (in GHz) ein:
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <label style="font-size: 0.78rem; font-weight: 700; font-family: ui-monospace, monospace;">T_C (ps):</label>
+              <input type="number" id="inputUserDelay" class="quiz-input" placeholder="z.B. ${p.totalDelay}" value="${state.timingUserDelay}">
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <label style="font-size: 0.78rem; font-weight: 700; font-family: ui-monospace, monospace;">f_max (GHz):</label>
+              <input type="number" step="0.01" id="inputUserFmax" class="quiz-input" placeholder="z.B. ${p.fmaxGhz}" value="${state.timingUserFmax}">
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-top: 6px;">
+              <button class="ctrl-btn success" id="btnValidateTiming" style="flex: 1;">
+                <span>🎯</span> Berechnungen prüfen
+              </button>
+              <button class="ctrl-btn" id="btnShowTimingSolution">
+                <span>💡</span> Lösung
+              </button>
+            </div>
+
+            <div class="validation-feedback" id="timingFeedbackBox"></div>
+          </div>
+        </div>
+      `;
+
+      // Event listeners for timing validation
+      document.getElementById("btnValidateTiming").addEventListener("click", () => {
+        validateTimingCalc(p);
+      });
+      document.getElementById("btnShowTimingSolution").addEventListener("click", () => {
+        showTimingSolution(p);
+      });
+    }
+
+    function validateTimingCalc(p) {
+      const userDelay = parseFloat(document.getElementById("inputUserDelay").value);
+      const userFmax = parseFloat(document.getElementById("inputUserFmax").value);
+      const feedback = document.getElementById("timingFeedbackBox");
+
+      const delayInput = document.getElementById("inputUserDelay");
+      const fmaxInput = document.getElementById("inputUserFmax");
+
+      const isDelayOk = Math.abs(userDelay - p.totalDelay) <= 1;
+      const isFmaxOk = Math.abs(userFmax - p.fmaxGhz) <= 0.05;
+
+      if (isDelayOk) {
+        delayInput.className = "quiz-input correct";
+      } else {
+        delayInput.className = "quiz-input incorrect";
+      }
+
+      if (isFmaxOk) {
+        fmaxInput.className = "quiz-input correct";
+      } else {
+        fmaxInput.className = "quiz-input incorrect";
+      }
+
+      if (isDelayOk && isFmaxOk) {
+        sound.playSuccess();
+        feedback.className = "validation-feedback success";
+        feedback.innerHTML = `
+          <h4 style="font-weight: 800; font-size: 0.85rem; margin-bottom: 4px;">🎉 Perfekt berechnet!</h4>
+          <p>T_C = ${p.totalDelay} ps &rArr; f_max = 1 / (${p.totalDelay} &times; 10<sup>-12</sup> s) &approx; ${p.fmaxGhz} GHz.</p>
+        `;
+      } else {
+        sound.playError();
+        feedback.className = "validation-feedback error";
+        feedback.innerHTML = `
+          <h4 style="font-weight: 800; font-size: 0.85rem; margin-bottom: 4px;">⚠️ Berechnung überprüfen</h4>
+          <p>Korrektes T_C = Summe aller Verzögerungen entlang des Pfades.<br>
+          f_max = 1 / T_C (Einheiten beachten: ps = 10<sup>-12</sup> s, 1000 / ps = GHz).</p>
+        `;
+      }
+    }
+
+    function showTimingSolution(p) {
+      document.getElementById("inputUserDelay").value = p.totalDelay;
+      document.getElementById("inputUserFmax").value = p.fmaxGhz;
+      document.getElementById("inputUserDelay").className = "quiz-input correct";
+      document.getElementById("inputUserFmax").className = "quiz-input correct";
+
+      const feedback = document.getElementById("timingFeedbackBox");
+      feedback.className = "validation-feedback success";
+      feedback.innerHTML = `
+        <h4 style="font-weight: 800; font-size: 0.85rem; margin-bottom: 4px;">💡 Lösung:</h4>
+        <p><b>${p.formula}</b><br>
+        = ${p.components.map(c => c.delay).join(" + ")} = <b>${p.totalDelay} ps</b>.<br>
+        f_max = 1 / (${p.totalDelay} ps) = <b>${p.fmaxGhz} GHz</b>.</p>
+      `;
+    }
+
+    function renderTheoryInspector(panel) {
+      panel.innerHTML = `
+        <div class="panel-section">
+          <div class="panel-section-header">
+            <span>Theorie-Vergleich (Klausur Aufgabe 1 &amp; 6)</span>
+            <span class="tag" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">TU Darmstadt RO</span>
+          </div>
+          <h2 style="font-size: 1.05rem; color: #fff; margin-bottom: 6px;">Eintakt vs. Mehrtakt vs. Pipeline</h2>
+          <p style="font-size: 0.76rem; color: #94a3b8; line-height: 1.4;">
+            Typische Zuordnungsfragen (E / M / P) aus Klausur SoSe 25 &amp; WiSe 26:
+          </p>
+        </div>
+
+        <div class="panel-section" style="flex: 1;">
+          <table class="delay-table" style="font-size: 0.73rem;">
+            <thead>
+              <tr>
+                <th>Eigenschaft</th>
+                <th style="text-align: center;">E</th>
+                <th style="text-align: center;">M</th>
+                <th style="text-align: center;">P</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Benötigt FSM für Ablaufsteuerung</td>
+                <td style="text-align: center; color: #ef4444;">Nein</td>
+                <td style="text-align: center; color: #10b981; font-weight: bold;">Ja</td>
+                <td style="text-align: center; color: #ef4444;">Nein</td>
+              </tr>
+              <tr>
+                <td>Keine Data Hazards (Datenkonflikte)</td>
+                <td style="text-align: center; color: #10b981; font-weight: bold;">Ja</td>
+                <td style="text-align: center; color: #10b981; font-weight: bold;">Ja</td>
+                <td style="text-align: center; color: #ef4444;">Nein</td>
+              </tr>
+              <tr>
+                <td>Instruktion benötigt mehrere Takte</td>
+                <td style="text-align: center; color: #ef4444;">Nein</td>
+                <td style="text-align: center; color: #10b981; font-weight: bold;">Ja</td>
+                <td style="text-align: center; color: #10b981; font-weight: bold;">Ja</td>
+              </tr>
+              <tr>
+                <td>CPI (Cycles Per Instruction)</td>
+                <td style="text-align: center; color: #38bdf8;">= 1</td>
+                <td style="text-align: center; color: #fbbf24;">3 bis 5</td>
+                <td style="text-align: center; color: #34d399;">&approx; 1</td>
+              </tr>
+              <tr>
+                <td>Hardware-Wiederverwendung (1 ALU + 1 RAM)</td>
+                <td style="text-align: center; color: #ef4444;">Nein</td>
+                <td style="text-align: center; color: #10b981; font-weight: bold;">Ja</td>
+                <td style="text-align: center; color: #ef4444;">Nein</td>
+              </tr>
+              <tr>
+                <td>Taktperiode T_clk</td>
+                <td style="text-align: center; color: #ef4444;">Lang (&approx;800ps)</td>
+                <td style="text-align: center; color: #34d399;">Kurz (&approx;250ps)</td>
+                <td style="text-align: center; color: #34d399;">Kurz (&approx;250ps)</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="background: #111827; border: 1px solid #1e293b; border-radius: 8px; padding: 12px; margin-top: 14px;">
+            <h4 style="color: #38bdf8; font-size: 0.8rem; margin-bottom: 6px;">📊 CPI-Berechnung (Übungsblatt 8.4):</h4>
+            <p style="font-size: 0.75rem; color: #94a3b8; line-height: 1.45;">
+              <code>add, addi, sub, slli</code> = <b>4 Takte</b> (Fetch, Decode, Exec, ALUWB)<br>
+              <code>lw</code> = <b>5 Takte</b> (Fetch, Decode, MemAdr, MemRead, MemWB)<br>
+              <code>sw</code> = <b>4 Takte</b> (Fetch, Decode, MemAdr, MemWrite)<br>
+              <code>beq, blt</code> = <b>3 Takte</b> (unabhängig von Sprungentscheidung!)<br>
+              <code>jal</code> = <b>4 Takte</b> (Fetch, Decode, JAL, ALUWB)
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    function getSortedOptions(q) {
+      return q.options.slice().sort((a, b) => a.val.localeCompare(b.val));
+    }
+
+    function renderQuizInspector(panel) {
+      const q = QUIZ_QUESTIONS[state.quizIdx];
+      const isAnswered = state.quizAnswered;
+      const opts = getSortedOptions(q);
+
+      panel.innerHTML = `
+        <div class="panel-section">
+          <div class="panel-section-header">
+            <span>Signal Blitz-Trainer (Aufgabe 6a)</span>
+            <span class="tag" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">Flashcards</span>
+          </div>
+          <div class="quiz-stats-bar">
+            <div class="quiz-stat-pill" style="color: #38bdf8;">
+              <span>🏆 Punkte:</span> <span>${state.quizScore}</span>
+            </div>
+            <div class="quiz-stat-pill" style="color: #fbbf24;">
+              <span>🔥 Streak:</span> <span>${state.quizStreak}</span>
+            </div>
+            <div class="quiz-stat-pill" style="color: #94a3b8;">
+              <span>Frage:</span> <span>${state.quizIdx + 1} / ${QUIZ_QUESTIONS.length}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-section" style="flex: 1;">
+          <div class="quiz-question-box">
+            <div class="quiz-q-title">${q.q}</div>
+            <div class="quiz-q-sub">${q.sub}</div>
+
+            <div class="quiz-options-list">
+              ${opts.map((opt, optIdx) => {
+                let btnClass = "quiz-option-btn";
+                if (isAnswered) {
+                  if (opt.correct) btnClass += " correct";
+                  else if (state.quizSelected === optIdx) btnClass += " wrong";
+                }
+                return `
+                  <button class="${btnClass}" data-opt-idx="${optIdx}" ${isAnswered ? 'disabled' : ''}>
+                    <span>${opt.label}</span>
+                    <span>${isAnswered && opt.correct ? '✅' : (isAnswered && state.quizSelected === optIdx ? '❌' : '👉')}</span>
+                  </button>
+                `;
+              }).join("")}
+            </div>
+
+            ${isAnswered ? `
+              <div class="quiz-feedback-box ${opts[state.quizSelected]?.correct ? 'validation-feedback success' : 'validation-feedback error'}">
+                <p><b>${opts[state.quizSelected]?.correct ? '🎉 Richtig!' : '❌ Leider falsch!'}</b> ${q.expl}</p>
+                <button class="ctrl-btn primary" id="btnInlineNextQuiz" style="margin-top: 8px; width: 100%; justify-content: center;">
+                  <span>Nächste Frage ➡️</span>
+                </button>
+              </div>
+            ` : ''}
+          </div>
+
+          <details class="quiz-cheat-card" style="margin-top: 10px; cursor: pointer;">
+            <summary style="font-weight: 700; color: #38bdf8; outline: none;">💡 Spickzettel einblenden (falls nötig)</summary>
+            <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 3px;">
+              <div>• <b>ALUSrcA:</b> <code>00</code> = PC | <code>01</code> = OldPC | <code>10</code> = Register A (rs1)</div>
+              <div>• <b>ALUSrcB:</b> <code>00</code> = Register B (rs2) | <code>01</code> = ImmExt | <code>10</code> = 4</div>
+              <div>• <b>ResultSrc:</b> <code>00</code> = ALUOut | <code>01</code> = Data (RAM) | <code>10</code> = ALUResult</div>
+              <div>• <b>ALUOp:</b> <code>00</code> = Add | <code>01</code> = Sub (beq) | <code>10</code> = R-Type (funct)</div>
+            </div>
+          </details>
+        </div>
+      `;
+
+      if (!isAnswered) {
+        panel.querySelectorAll(".quiz-option-btn").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const optIdx = parseInt(btn.getAttribute("data-opt-idx"));
+            handleQuizAnswer(optIdx);
+          });
+        });
+      } else {
+        const nextBtn = document.getElementById("btnInlineNextQuiz");
+        if (nextBtn) {
+          nextBtn.addEventListener("click", nextQuizQuestion);
+        }
+      }
+    }
+
+    function handleQuizAnswer(optIdx) {
+      const q = QUIZ_QUESTIONS[state.quizIdx];
+      const opts = getSortedOptions(q);
+      const opt = opts[optIdx];
+      state.quizSelected = optIdx;
+      state.quizAnswered = true;
+
+      if (opt.correct) {
+        sound.playSuccess();
+        state.quizScore += 10;
+        state.quizStreak += 1;
+      } else {
+        sound.playError();
+        state.quizStreak = 0;
+      }
+
+      updateInspector();
+      updateToolbar();
+    }
+
+    function nextQuizQuestion() {
+      state.quizIdx = (state.quizIdx + 1) % QUIZ_QUESTIONS.length;
+      state.quizSelected = null;
+      state.quizAnswered = false;
+      updateInspector();
+      updateToolbar();
+    }
+
+    function resetQuiz() {
+      state.quizIdx = 0;
+      state.quizScore = 0;
+      state.quizStreak = 0;
+      state.quizSelected = null;
+      state.quizAnswered = false;
+      updateInspector();
+      updateToolbar();
+    }
+
+    function generateRandomExamChallenge() {
+      const ops = [
+        { name: "ADD", op: "00", sym: "+", rType: false },
+        { name: "SUB", op: "01", sym: "-", rType: false },
+        { name: "XOR", op: "10", sym: "^", rType: true },
+        { name: "OR", op: "10", sym: "|", rType: true }
+      ];
+      const srcAOptions = [
+        { name: "rs1", code: "10", desc: "Register A (rs1)" },
+        { name: "OldPC", code: "01", desc: "OldPC" }
+      ];
+      const srcBOptions = [
+        { name: "imm", code: "01", desc: "ImmExt (Konstante)" },
+        { name: "rs2", code: "00", desc: "Register B (rs2)" }
+      ];
+      const destOptions = [
+        { name: "PC", pcUpdate: "1", regWrite: "0", desc: "PC-Register" },
+        { name: "rd", pcUpdate: "0", regWrite: "1", desc: "Zielregister rd" }
+      ];
+
+      const op = ops[Math.floor(Math.random() * ops.length)];
+      const srcA = srcAOptions[Math.floor(Math.random() * srcAOptions.length)];
+      const srcB = srcBOptions[Math.floor(Math.random() * srcBOptions.length)];
+      const dest = destOptions[Math.floor(Math.random() * destOptions.length)];
+
+      const rndOpcode = "00" + Math.floor(10000 + Math.random() * 89999);
+      const title = `Zufall: ${dest.name} = ${srcA.name} ${op.sym} ${srcB.name}`;
+
+      const newCh = {
+        id: "random_" + Date.now(),
+        title: `🎲 ${title} (${op.name})`,
+        points: "5 Punkte",
+        semester: "Dynamisch generiert",
+        opcode: rndOpcode,
+        description: `Erweitern Sie die FSM um die dynamisch generierte Instruktion: <code>${dest.name} = ${srcA.name} ${op.sym} ${srcB.name}</code> (Opcode <code>${rndOpcode}</code>). Benötigt 1 Zustand (S10: CUSTOM_OP).`,
+        states: [
+          {
+            name: "S10: CUSTOM_OP",
+            requiredSignals: {
+              ALUSrcA: srcA.code,
+              ALUSrcB: srcB.code,
+              ALUOp: op.op,
+              ResultSrc: "00",
+              PCUpdate: dest.pcUpdate,
+              RegWrite: dest.regWrite,
+              MemWrite: "0"
+            }
+          }
+        ],
+        solutionText: `S10 (CUSTOM_OP): ALUSrcA=${srcA.code} (${srcA.desc}), ALUSrcB=${srcB.code} (${srcB.desc}), ALUOp=${op.op}, ResultSrc=00, PCUpdate=${dest.pcUpdate}, RegWrite=${dest.regWrite}. Transition zurück zu S0.`
+      };
+
+      EXAM_CHALLENGES.push(newCh);
+      state.activeExamChallengeIdx = EXAM_CHALLENGES.length - 1;
+      state.customExtensionActive = false;
+      updateView();
+      sound.playStep();
+    }
+
+    // =========================================================================
+    // TOOLBAR BUILDER ACCORDING TO MODE
+    // =========================================================================
+    function updateToolbar() {
+      const promptArea = document.getElementById("taskPromptArea");
+      const ctrlArea = document.getElementById("toolbarControls");
+
+      if (state.mode === "fsm") {
+        const inst = INSTRUCTIONS[state.currentInstIdx];
+        promptArea.innerHTML = `
+          <div class="task-prompt-title">
+            <span>Instruktion:</span>
+            <select class="custom-select" id="selInstruction">
+              ${INSTRUCTIONS.map((it, idx) => `
+                <option value="${idx}" ${idx === state.currentInstIdx ? 'selected' : ''}>${it.asm} (${it.type})</option>
+              `).join("")}
+            </select>
+          </div>
+          <div class="task-prompt-desc">
+            ${inst.desc}
+          </div>
+        `;
+
+        ctrlArea.innerHTML = `
+          <button class="ctrl-btn" id="btnPrevCycle" ${state.currentCycle === 0 ? 'disabled' : ''}>
+            <span>⏮️</span> Zurück
+          </button>
+          <button class="ctrl-btn primary" id="btnNextCycle">
+            <span>⚡</span> Nächster Takt [Space]
+          </button>
+          <button class="ctrl-btn" id="btnAutoPlay">
+            <span id="playIcon">${state.autoPlaying ? '⏸️' : '▶️'}</span> Auto
+          </button>
+          <button class="ctrl-btn" id="btnResetCycle">
+            <span>🔄</span> Reset
+          </button>
+        `;
+
+        // Bind events
+        document.getElementById("selInstruction").addEventListener("change", (e) => {
+          state.currentInstIdx = parseInt(e.target.value);
+          resetFsm();
+        });
+        document.getElementById("btnNextCycle").addEventListener("click", stepNextCycle);
+        document.getElementById("btnPrevCycle").addEventListener("click", stepPrevCycle);
+        document.getElementById("btnAutoPlay").addEventListener("click", toggleAutoPlay);
+        document.getElementById("btnResetCycle").addEventListener("click", resetFsm);
+
+      } else if (state.mode === "exam") {
+        promptArea.innerHTML = `
+          <div class="task-prompt-title">
+            <span>Klausur-Szenario:</span>
+            <select class="custom-select" id="selExamChallenge">
+              ${EXAM_CHALLENGES.map((ch, idx) => `
+                <option value="${idx}" ${idx === state.activeExamChallengeIdx ? 'selected' : ''}>${ch.title} (${ch.points})</option>
+              `).join("")}
+            </select>
+          </div>
+          <div class="task-prompt-desc">
+            Erweitere das FSM-Zustandsdiagramm um die geforderte Instruktion und konfiguriere die Steuersignale.
+          </div>
+        `;
+
+        ctrlArea.innerHTML = `
+          <button class="ctrl-btn primary" id="btnRandomExam">
+            <span>🎲</span> Zufalls-Aufgabe
+          </button>
+          <button class="ctrl-btn" id="btnResetExam">
+            <span>🔄</span> Zurücksetzen
+          </button>
+        `;
+
+        document.getElementById("btnRandomExam").addEventListener("click", () => {
+          generateRandomExamChallenge();
+        });
+
+        document.getElementById("selExamChallenge").addEventListener("change", (e) => {
+          state.activeExamChallengeIdx = parseInt(e.target.value);
+          state.customExtensionActive = false;
+          updateView();
+        });
+        document.getElementById("btnResetExam").addEventListener("click", () => {
+          state.customExtensionActive = false;
+          updateView();
+        });
+
+      } else if (state.mode === "timing") {
+        promptArea.innerHTML = `
+          <div class="task-prompt-title">
+            <span>Kritischer Pfad Preset:</span>
+            <select class="custom-select" id="selTimingPreset">
+              ${Object.entries(DELAY_PRESETS).map(([k, p]) => `
+                <option value="${k}" ${k === state.timingPresetKey ? 'selected' : ''}>${p.title}</option>
+              `).join("")}
+            </select>
+          </div>
+          <div class="task-prompt-desc">
+            Wähle einen Pfad, analysiere die Formel T_C und ermittle die maximale Taktfrequenz f_max.
+          </div>
+        `;
+
+        ctrlArea.innerHTML = `
+          <button class="ctrl-btn" id="btnTimingReset">
+            <span>🔄</span> Formular leeren
+          </button>
+        `;
+
+        document.getElementById("selTimingPreset").addEventListener("change", (e) => {
+          state.timingPresetKey = e.target.value;
+          state.timingUserDelay = "";
+          state.timingUserFmax = "";
+          updateView();
+        });
+        document.getElementById("btnTimingReset").addEventListener("click", () => {
+          state.timingUserDelay = "";
+          state.timingUserFmax = "";
+          updateView();
+        });
+
+      } else if (state.mode === "theory") {
+        promptArea.innerHTML = `
+          <div class="task-prompt-title">
+            <span>Prozessor-Architektur Vergleich</span>
+          </div>
+          <div class="task-prompt-desc">
+            Gegenüberstellung von Eintakt-, Mehrtakt- und Pipeline-Prozessor für Klausurfragen.
+          </div>
+        `;
+        ctrlArea.innerHTML = ``;
+      } else if (state.mode === "quiz") {
+        promptArea.innerHTML = `
+          <div class="task-prompt-title">
+            <span>⚡ Signal Blitz-Quiz:</span>
+            <span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc;">Frage ${state.quizIdx + 1} von ${QUIZ_QUESTIONS.length}</span>
+          </div>
+          <div class="task-prompt-desc">
+            Trainiere dein Muskelgedächtnis für alle Multiplexer- und Steuersignale des RISC-V Mehrtakt-Prozessors!
+          </div>
+        `;
+
+        ctrlArea.innerHTML = `
+          <button class="ctrl-btn primary" id="btnNextQuizQ">
+            <span>➡️</span> Nächste Frage
+          </button>
+          <button class="ctrl-btn" id="btnResetQuiz">
+            <span>🔄</span> Reset
+          </button>
+        `;
+
+        document.getElementById("btnNextQuizQ").addEventListener("click", nextQuizQuestion);
+        document.getElementById("btnResetQuiz").addEventListener("click", resetQuiz);
+      }
+    }
+
+    // =========================================================================
+    // CONTROLLER & STEPPER ACTIONS
+    // =========================================================================
+    function stepNextCycle() {
+      const inst = INSTRUCTIONS[state.currentInstIdx];
+      if (state.currentCycle < inst.cycles - 1) {
+        state.currentCycle++;
+        state.activeFsmStateId = inst.states[state.currentCycle];
+        sound.playStep();
+      } else {
+        // Loop back to S0
+        state.currentCycle = 0;
+        state.activeFsmStateId = inst.states[0];
+        sound.playSuccess();
+      }
+      renderMainSvg();
+      updateInspector();
+      updateToolbar();
+    }
+
+    function stepPrevCycle() {
+      const inst = INSTRUCTIONS[state.currentInstIdx];
+      if (state.currentCycle > 0) {
+        state.currentCycle--;
+        state.activeFsmStateId = inst.states[state.currentCycle];
+        sound.playStep();
+        renderMainSvg();
+        updateInspector();
+        updateToolbar();
+      }
+    }
+
+    function resetFsm() {
+      state.currentCycle = 0;
+      state.activeFsmStateId = INSTRUCTIONS[state.currentInstIdx].states[0];
+      if (state.autoPlaying) toggleAutoPlay();
+      renderMainSvg();
+      updateInspector();
+      updateToolbar();
+    }
+
+    function toggleAutoPlay() {
+      state.autoPlaying = !state.autoPlaying;
+      const playIcon = document.getElementById("playIcon");
+      if (state.autoPlaying) {
+        if (playIcon) playIcon.textContent = "⏸️";
+        state.autoPlayTimer = setInterval(stepNextCycle, state.autoSpeed);
+      } else {
+        if (playIcon) playIcon.textContent = "▶️";
+        clearInterval(state.autoPlayTimer);
+      }
+    }
+
+    // =========================================================================
+    // MAIN VIEW DISPATCHER
+    // =========================================================================
+    function renderMainSvg() {
+      const viewport = document.getElementById("svgViewport");
+      if (state.mode === "fsm" || state.mode === "exam") {
+        viewport.innerHTML = renderFsmSvg();
+        attachSvgNodeListeners();
+      } else if (state.mode === "timing" || state.mode === "quiz") {
+        viewport.innerHTML = renderDatapathSvg();
+      } else if (state.mode === "theory") {
+        viewport.innerHTML = renderFsmSvg();
+      }
+    }
+
+    function attachSvgNodeListeners() {
+      const nodes = document.querySelectorAll(".fsm-node");
+      nodes.forEach(node => {
+        node.addEventListener("click", () => {
+          const stId = node.getAttribute("data-state");
+          if (FSM_STATES[stId]) {
+            state.activeFsmStateId = stId;
+            sound.playStep();
+            renderMainSvg();
+            updateInspector();
+          }
+        });
+      });
+    }
+
+    function updateView() {
+      renderMainSvg();
+      updateToolbar();
+      updateInspector();
+    }
+
+    // =========================================================================
+    // INITIALIZATION & EVENT BINDINGS
+    // =========================================================================
+    window.addEventListener("DOMContentLoaded", () => {
+      // Tab Switching
+      document.querySelectorAll(".mode-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          state.mode = btn.getAttribute("data-mode");
+          if (state.autoPlaying) toggleAutoPlay();
+          updateView();
+        });
+      });
+
+      // Audio Toggle
+      const audioBtn = document.getElementById("btnAudioToggle");
+      const audioDot = document.getElementById("audioDot");
+      audioBtn.addEventListener("click", () => {
+        sound.enabled = !sound.enabled;
+        audioDot.className = sound.enabled ? "status-dot active" : "status-dot";
+      });
+
+      // Help Modal
+      const modal = document.getElementById("helpModal");
+      document.getElementById("btnHelpModal").addEventListener("click", () => {
+        modal.classList.add("show");
+      });
+      document.getElementById("btnCloseHelp").addEventListener("click", () => {
+        modal.classList.remove("show");
+      });
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) modal.classList.remove("show");
+      });
+
+      // Global Keyboard Shortcuts
+      window.addEventListener("keydown", (e) => {
+        if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+        if (e.code === "Space") {
+          e.preventDefault();
+          if (state.mode === "fsm") stepNextCycle();
+        } else if (e.key === "r" || e.key === "R") {
+          if (state.mode === "fsm") resetFsm();
+        } else if (e.key === "1") {
+          document.getElementById("tabModeFsm").click();
+        } else if (e.key === "2") {
+          document.getElementById("tabModeExam").click();
+        } else if (e.key === "3") {
+          document.getElementById("tabModeTiming").click();
+        } else if (e.key === "4") {
+          document.getElementById("tabModeTheory").click();
+        } else if (e.key === "5") {
+          document.getElementById("tabModeQuiz").click();
+        } else if (e.key === "h" || e.key === "H") {
+          modal.classList.toggle("show");
+        }
+      });
+
+      // Resizer
+      initResizer();
+
+      // Tooltips
+      initTooltips();
+
+      // Initial Render
+      updateView();
+    });
+
+    // =========================================================================
+    // RESIZER LOGIC
+    // =========================================================================
+    function initResizer() {
+      const resizer = document.getElementById("dragResizer");
+      const main = document.getElementById("mainLayout");
+      let isDragging = false;
+
+      resizer.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        resizer.classList.add("dragging");
+        document.body.style.cursor = "col-resize";
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        const containerRect = main.getBoundingClientRect();
+        const newRightWidth = Math.max(300, Math.min(650, containerRect.right - e.clientX));
+        main.style.gridTemplateColumns = `1fr 6px ${newRightWidth}px`;
+      });
+
+      window.addEventListener("mouseup", () => {
+        if (isDragging) {
+          isDragging = false;
+          resizer.classList.remove("dragging");
+          document.body.style.cursor = "";
+        }
+      });
+    }
+
+    // =========================================================================
+    // FLOATING TOOLTIP
+    // =========================================================================
+    function initTooltips() {
+      const tip = document.getElementById("globalTooltip");
+
+      document.body.addEventListener("mouseover", (e) => {
+        const target = e.target.closest("[data-tip]");
+        if (target) {
+          tip.textContent = target.getAttribute("data-tip");
+          tip.style.display = "block";
+        }
+      });
+
+      document.body.addEventListener("mousemove", (e) => {
+        if (tip.style.display === "block") {
+          tip.style.left = `${Math.min(window.innerWidth - 340, e.clientX + 14)}px`;
+          tip.style.top = `${Math.min(window.innerHeight - 100, e.clientY + 14)}px`;
+        }
+      });
+
+      document.body.addEventListener("mouseout", (e) => {
+        const target = e.target.closest("[data-tip]");
+        if (target) {
+          tip.style.display = "none";
+        }
+      });
+    }
+  </script>
+</body>
+</html>

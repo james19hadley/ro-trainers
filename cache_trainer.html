@@ -1,0 +1,2676 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cache Memory, 3C-Misses & AMAT Trainer | TU Darmstadt RO (Aufgabe 8)</title>
+  <style>
+    :root {
+      --bg-main: #090d16;
+      --bg-card: #111827;
+      --bg-card-hover: #1e293b;
+      --border-color: #243044;
+      --border-focus: #38bdf8;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --accent-cyan: #06b6d4;
+      --accent-cyan-glow: #22d3ee;
+      --accent-blue: #3b82f6;
+      --accent-purple: #a855f7;
+      --accent-purple-glow: #c084fc;
+      --accent-amber: #f59e0b;
+      --accent-amber-glow: #fbbf24;
+      --accent-green: #10b981;
+      --accent-green-glow: #34d399;
+      --accent-red: #ef4444;
+      --accent-red-glow: #f87171;
+      
+      --color-tag: #38bdf8;
+      --color-set: #c084fc;
+      --color-offset: #fbbf24;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    /* Top Header */
+    header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      padding: 6px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 50px;
+      flex-shrink: 0;
+      z-index: 30;
+    }
+
+    .title-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-area h1 {
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--accent-cyan-glow);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 9999px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-exam {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-green-glow);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-points {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-amber-glow);
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    /* Speedrun & Exam Practice Timer Widget */
+    .timer-widget {
+      display: flex;
+      align-items: center;
+      background: #0b0f19;
+      border: 1px solid var(--border-color);
+      border-radius: 7px;
+      padding: 3px 8px;
+      gap: 7px;
+    }
+
+    .timer-display {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.88rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: var(--accent-cyan-glow);
+      min-width: 48px;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .timer-display.running {
+      color: #34d399;
+      text-shadow: 0 0 8px rgba(52, 211, 153, 0.45);
+    }
+
+    .timer-display.warning {
+      color: #f87171;
+      animation: pulseWarning 1s infinite;
+    }
+
+    @keyframes pulseWarning {
+      0%, 100% { opacity: 1; text-shadow: 0 0 10px rgba(248, 113, 113, 0.8); }
+      50% { opacity: 0.4; text-shadow: none; }
+    }
+
+    .timer-ctrl-btn {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #cbd5e1;
+      width: 24px;
+      height: 24px;
+      border-radius: 5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.12s ease;
+    }
+
+    .timer-ctrl-btn:hover {
+      background: #334155;
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    .timer-mode-select {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 0.7rem;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+      padding: 2px;
+    }
+
+    .timer-mode-select option {
+      background: #0f172a;
+      color: #fff;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mode-switch {
+      display: flex;
+      background: #0b0f19;
+      padding: 2px;
+      border-radius: 7px;
+      border: 1px solid var(--border-color);
+      gap: 2px;
+    }
+
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 5px 11px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      border-radius: 5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+
+    .mode-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .mode-btn.active {
+      background: #0284c7;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+    }
+
+    .btn-header {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #cbd5e1;
+      font-size: 0.76rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-header:hover {
+      background: #334155;
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    /* Sub-header Banner / Toolbar */
+    .task-banner {
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid var(--border-color);
+      padding: 7px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      min-height: 48px;
+      box-sizing: border-box;
+      flex-shrink: 0;
+      z-index: 20;
+    }
+
+    .task-prompt {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .preset-pills {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .preset-pill {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+
+    .preset-pill:hover {
+      background: #2d3d54;
+      color: #f1f5f9;
+      border-color: #38bdf8;
+    }
+
+    .preset-pill.active {
+      background: rgba(14, 165, 233, 0.2);
+      color: #38bdf8;
+      border-color: #0284c7;
+      box-shadow: 0 0 6px rgba(14, 165, 233, 0.3);
+    }
+
+    .toolbar-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .ctrl-btn {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #e2e8f0;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .ctrl-btn:hover {
+      background: #334155;
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    .ctrl-btn.primary {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(2, 132, 199, 0.4);
+    }
+
+    .ctrl-btn.primary:hover {
+      background: #0369a1;
+    }
+
+    .ctrl-btn.success {
+      background: #059669;
+      border-color: #34d399;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
+    }
+
+    .ctrl-btn.success:hover {
+      background: #047857;
+    }
+
+    .ctrl-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      border-color: var(--border-color);
+    }
+
+    /* Main Container with Resizer */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 6px 480px;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .viewport-card {
+      background: var(--bg-card);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      min-height: 0;
+      min-width: 320px;
+      position: relative;
+      padding: 12px 16px;
+      gap: 14px;
+    }
+
+    /* Splitter / Resizer */
+    .resizer {
+      background: #1e293b;
+      cursor: col-resize;
+      transition: background 0.15s ease;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .resizer::after {
+      content: "";
+      width: 2px;
+      height: 24px;
+      background: #475569;
+      border-radius: 2px;
+    }
+
+    .resizer:hover, .resizer.dragging {
+      background: var(--accent-cyan);
+    }
+
+    /* Right Panel */
+    .inspector-panel {
+      background: #0d121f;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      min-height: 0;
+      min-width: 320px;
+    }
+
+    .panel-section {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .panel-section-header {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Bit Slicer Box */
+    .slicer-card {
+      background: #0e1526;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    .slicer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .slicer-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .address-inputs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .addr-field {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      color: #f8fafc;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 5px;
+      outline: none;
+      width: 100px;
+      text-align: center;
+      transition: border 0.15s;
+    }
+
+    .addr-field:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    /* Bit Ruler & Blocks */
+    .bit-ruler-container {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .bit-bands {
+      display: flex;
+      height: 28px;
+      border-radius: 6px;
+      overflow: hidden;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-align: center;
+      line-height: 28px;
+    }
+
+    .band-tag {
+      background: rgba(6, 182, 212, 0.22);
+      color: var(--color-tag);
+      border-right: 1px solid #06b6d4;
+      transition: all 0.2s;
+    }
+
+    .band-set {
+      background: rgba(168, 85, 247, 0.22);
+      color: var(--color-set);
+      border-right: 1px solid #a855f7;
+      transition: all 0.2s;
+    }
+
+    .band-offset {
+      background: rgba(245, 158, 11, 0.22);
+      color: var(--color-offset);
+      transition: all 0.2s;
+    }
+
+    .bit-boxes {
+      display: flex;
+      gap: 2px;
+      justify-content: flex-end;
+    }
+
+    .bit-box {
+      width: 22px;
+      height: 28px;
+      background: #111827;
+      border: 1px solid #1f293d;
+      border-radius: 3px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+
+    .bit-box:hover {
+      border-color: #38bdf8;
+      background: #1e293b;
+    }
+
+    .bit-box.tag-bit {
+      border-bottom: 2px solid var(--color-tag);
+      color: var(--color-tag);
+    }
+
+    .bit-box.set-bit {
+      border-bottom: 2px solid var(--color-set);
+      color: var(--color-set);
+    }
+
+    .bit-box.offset-bit {
+      border-bottom: 2px solid var(--color-offset);
+      color: var(--color-offset);
+    }
+
+    .bit-box .bit-idx {
+      font-size: 0.52rem;
+      color: #64748b;
+      margin-top: -2px;
+    }
+
+    /* Math Formulas strip */
+    .formulas-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .formula-badge {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 0.72rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .formula-title {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .formula-val {
+      font-family: monospace;
+      font-weight: 700;
+      font-size: 0.78rem;
+    }
+
+    /* Access Event Card */
+    .access-event-card {
+      background: #0e1526;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .event-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .access-num-badge {
+      font-family: monospace;
+      font-weight: 700;
+      font-size: 0.78rem;
+      background: #1e293b;
+      padding: 3px 8px;
+      border-radius: 5px;
+      border: 1px solid #334155;
+    }
+
+    .event-details {
+      font-size: 0.78rem;
+      color: #cbd5e1;
+    }
+
+    .event-details code {
+      font-family: monospace;
+      color: #38bdf8;
+      font-weight: 700;
+    }
+
+    /* Result Pill */
+    .result-pill {
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      padding: 4px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .result-pill.hit {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--accent-green-glow);
+      border: 1px solid #10b981;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
+    }
+
+    .result-pill.compulsory {
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--accent-cyan-glow);
+      border: 1px solid #0284c7;
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+    }
+
+    .result-pill.conflict {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--accent-amber-glow);
+      border: 1px solid #d97706;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+    }
+
+    .result-pill.capacity {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--accent-red-glow);
+      border: 1px solid #dc2626;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+    }
+
+    /* Cache Grid */
+    .cache-grid-card {
+      background: #0e1526;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+      min-height: 240px;
+    }
+
+    .cache-grid-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cache-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.74rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .cache-table th {
+      background: #090d16;
+      color: #94a3b8;
+      text-align: left;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 700;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+    }
+
+    .cache-table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid rgba(36, 48, 68, 0.5);
+      color: #e2e8f0;
+      vertical-align: middle;
+    }
+
+    .cache-table tr.active-set {
+      background: rgba(168, 85, 247, 0.15) !important;
+    }
+
+    .cache-table tr.active-set td:first-child {
+      border-left: 3px solid var(--accent-purple-glow);
+    }
+
+    .way-slot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #111827;
+      border: 1px solid #1f293d;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-right: 6px;
+      transition: all 0.2s;
+    }
+
+    .way-slot.hit-highlight {
+      background: rgba(16, 185, 129, 0.25);
+      border-color: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+    }
+
+    .way-slot.victim-highlight {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #ef4444;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+    }
+
+    .valid-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #475569;
+      display: inline-block;
+    }
+
+    .valid-dot.valid {
+      background: #10b981;
+      box-shadow: 0 0 5px rgba(16, 185, 129, 0.8);
+    }
+
+    /* Quiz Table on Right Panel */
+    .exam-table-container {
+      overflow-x: auto;
+      margin-top: 6px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+    }
+
+    .exam-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.72rem;
+      background: #090d16;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      text-align: center;
+    }
+
+    .exam-table th {
+      background: #111827;
+      color: #94a3b8;
+      padding: 6px 8px;
+      border: 1px solid var(--border-color);
+      font-weight: 700;
+      font-size: 0.68rem;
+    }
+
+    .exam-table td {
+      padding: 4px 6px;
+      border: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    .exam-input {
+      background: #0e1526;
+      border: 1px solid #2d3d54;
+      color: #f1f5f9;
+      font-family: inherit;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 6px;
+      border-radius: 4px;
+      width: 68px;
+      text-align: center;
+      outline: none;
+      transition: all 0.15s;
+    }
+
+    .exam-input:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    .exam-select {
+      background: #0e1526;
+      border: 1px solid #2d3d54;
+      color: #f1f5f9;
+      font-family: inherit;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 4px;
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+      width: 110px;
+    }
+
+    .exam-input.correct, .exam-select.correct {
+      border-color: #10b981 !important;
+      background: rgba(16, 185, 129, 0.15) !important;
+      color: #34d399 !important;
+    }
+
+    .exam-input.incorrect, .exam-select.incorrect {
+      border-color: #ef4444 !important;
+      background: rgba(239, 68, 68, 0.15) !important;
+      color: #f87171 !important;
+    }
+
+    /* Score Badge Box */
+    .score-summary-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111827;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-top: 10px;
+    }
+
+    .score-points {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .score-grade {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .score-grade.perfect {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid #10b981;
+    }
+
+    .score-grade.bad {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border: 1px solid #ef4444;
+    }
+
+    /* AMAT Lab Widgets */
+    .amat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .amat-param-box {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .amat-label {
+      font-size: 0.68rem;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .amat-slider-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .amat-slider-row input[type="range"] {
+      flex: 1;
+      accent-color: #0284c7;
+      cursor: pointer;
+    }
+
+    .amat-val-badge {
+      font-family: monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #38bdf8;
+      min-width: 44px;
+      text-align: right;
+    }
+
+    .amat-math-box {
+      background: #0b1120;
+      border: 1px solid #1e293b;
+      border-left: 3px solid #0284c7;
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-top: 10px;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 0.78rem;
+      line-height: 1.5;
+    }
+
+    .amat-bar-container {
+      height: 16px;
+      background: #1e293b;
+      border-radius: 9999px;
+      overflow: hidden;
+      display: flex;
+      margin-top: 8px;
+    }
+
+    .amat-bar-segment {
+      height: 100%;
+      transition: width 0.2s;
+    }
+
+    /* 3C Flowchart Interactive Box */
+    .flowchart-svg-box {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 8px;
+      overflow-x: auto;
+    }
+
+    /* Generator Modal / Drawer */
+    .generator-panel {
+      background: #0b0f19;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .gen-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .gen-field {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .gen-field label {
+      font-size: 0.68rem;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .gen-select {
+      background: #111827;
+      border: 1px solid var(--border-color);
+      color: #f1f5f9;
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: absolute;
+      background: #0f172a;
+      border: 1px solid #38bdf8;
+      color: #e2e8f0;
+      padding: 6px 10px;
+      border-radius: 5px;
+      font-size: 0.72rem;
+      pointer-events: none;
+      z-index: 100;
+      max-width: 280px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      display: none;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="title-area">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+        <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+        <line x1="6" y1="6" x2="6.01" y2="6"></line>
+        <line x1="6" y1="18" x2="6.01" y2="18"></line>
+      </svg>
+      <h1>Cache Architecture & AMAT Trainer</h1>
+      <span class="badge badge-exam">TU Darmstadt RO</span>
+      <span class="badge badge-points">Aufgabe 8 (16–20 Pkt)</span>
+    </div>
+
+    <div class="top-actions">
+      <!-- Speedrun & Exam Practice Timer Widget -->
+      <div class="timer-widget" id="examTimerWidget" title="Klausur-Stoppuhr / Speedrun-Timer">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="timerIcon" style="color:#94a3b8;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="timer-display" id="timerDisplay">07:00</span>
+        <button class="timer-ctrl-btn" id="btnTimerToggle" onclick="toggleTimer()" title="Timer Start / Pause">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="timerPlayPauseIcon"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </button>
+        <button class="timer-ctrl-btn" onclick="resetTimer()" title="Timer zurücksetzen">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        </button>
+        <select class="timer-mode-select" id="timerModeSelect" onchange="onTimerModeChange(this.value)">
+          <option value="countdown_7" selected>⏳ 7 Min (Klausurziel)</option>
+          <option value="countdown_5">⏳ 5 Min (Speed)</option>
+          <option value="stopwatch">⏱️ Stoppuhr</option>
+        </select>
+      </div>
+
+      <div class="mode-switch">
+        <button class="mode-btn active" id="btnModeKlausur" onclick="setAppMode('klausur')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/></svg>
+          Altklausuren
+        </button>
+        <button class="mode-btn" id="btnModeGenerator" onclick="setAppMode('generator')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          Infinite Generator
+        </button>
+        <button class="mode-btn" id="btnModeAmat" onclick="setAppMode('amat')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          AMAT Lab
+        </button>
+        <button class="mode-btn" id="btnModeTheory" onclick="setAppMode('theory')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          3C Theory
+        </button>
+      </div>
+
+      <button class="btn-header" onclick="resetCurrentSimulation()" title="Simulation zurücksetzen (R)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        Reset
+      </button>
+    </div>
+  </header>
+
+  <!-- Sub-header Toolbar -->
+  <div class="task-banner">
+    <div class="task-prompt">
+      <span style="font-size:0.75rem; font-weight:700; color:#cbd5e1;" id="activeScenarioLabel">Szenario:</span>
+      <div class="preset-pills" id="presetPillsContainer">
+        <button class="preset-pill active" onclick="loadPreset('sose25_8b')">[SoSe25] 8b 2-Way Loop</button>
+        <button class="preset-pill" onclick="loadPreset('sose25_8c')">[SoSe25] 8c 3C Misses</button>
+        <button class="preset-pill" onclick="loadPreset('wise26_8b')">[WiSe26] 8b To Miss or Not</button>
+        <button class="preset-pill" onclick="loadPreset('wise26_8c')">[WiSe26] 8c 8-Byte Blocks</button>
+        <button class="preset-pill" onclick="loadPreset('moodle_testat3')">[Testat 3] Direct-Mapped 16S</button>
+      </div>
+    </div>
+
+    <div class="toolbar-controls">
+      <button class="ctrl-btn" id="btnPrevAccess" onclick="stepSimulation(-1)" title="Vorheriger Zugriff">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+        Prev
+      </button>
+      <button class="ctrl-btn primary" id="btnNextAccess" onclick="stepSimulation(1)" title="Nächster Zugriff (Leertaste)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+        Step Next Access
+      </button>
+      <button class="ctrl-btn" id="btnAutoPlay" onclick="toggleAutoPlay()" title="Automatisch abspielen">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="autoPlayIcon"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span id="autoPlayLabel">Auto</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Split Layout -->
+  <main id="mainContainer">
+    
+    <!-- Left Viewport: Bit-Slicer & Cache Hardware Grid -->
+    <div class="viewport-card" id="leftViewport">
+      
+      <!-- Interactive Bit Slicer -->
+      <div class="slicer-card">
+        <div class="slicer-header">
+          <div class="slicer-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
+            Address Bit-Slicer & Field Breakdown
+          </div>
+          <div class="address-inputs">
+            <span style="font-size:0.72rem; color:#94a3b8;">Adresse (HEX):</span>
+            <input type="text" id="hexAddressInput" class="addr-field" value="0x012B" onchange="onManualAddressInput(this.value)" spellcheck="false" autocomplete="off">
+            <span style="font-size:0.72rem; color:#94a3b8;">(DEC: <span id="decAddressDisplay" style="color:#fff; font-family:monospace;">299</span>)</span>
+          </div>
+        </div>
+
+        <!-- Visual Bit Bands (Tag | Set | Offset) -->
+        <div class="bit-ruler-container">
+          <div class="bit-bands" id="bitBandsBar">
+            <!-- Dynamic bands -->
+          </div>
+          <!-- 16 or 32 individual clickable bits -->
+          <div class="bit-boxes" id="bitBoxesContainer">
+            <!-- Dynamic bit boxes -->
+          </div>
+        </div>
+
+        <!-- Formulas & Bits Math -->
+        <div class="formulas-strip">
+          <div class="formula-badge" style="border-left: 2px solid var(--color-tag);">
+            <div class="formula-title" style="color:var(--color-tag);">Tag Field</div>
+            <div class="formula-val" id="tagCalcDisplay">t = 16 - 2 - 2 = 12 Bits</div>
+            <div style="font-size:0.68rem; color:#94a3b8;">Wert: <b id="tagValDisplay" style="color:#fff;">0x012 (18)</b></div>
+          </div>
+          <div class="formula-badge" style="border-left: 2px solid var(--color-set);">
+            <div class="formula-title" style="color:var(--color-set);">Set Index Field</div>
+            <div class="formula-val" id="setCalcDisplay">s = log₂(4) = 2 Bits</div>
+            <div style="font-size:0.68rem; color:#94a3b8;">Index: <b id="setValDisplay" style="color:#fff;">Set 2</b></div>
+          </div>
+          <div class="formula-badge" style="border-left: 2px solid var(--color-offset);">
+            <div class="formula-title" style="color:var(--color-offset);">Byte Offset Field</div>
+            <div class="formula-val" id="offsetCalcDisplay">b = log₂(4) = 2 Bits</div>
+            <div style="font-size:0.68rem; color:#94a3b8;">Offset: <b id="offsetValDisplay" style="color:#fff;">3 Bytes</b></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Access Step Banner -->
+      <div class="access-event-card" id="accessEventCard">
+        <div class="event-info">
+          <span class="access-num-badge" id="currentStepBadge">Zugriff #1 / 8</span>
+          <div class="event-details" id="currentStepDetails">
+            Lade Adresse <code id="evtAddr">0x0128</code> &rarr; Set: <b style="color:var(--color-set)" id="evtSet">2</b>, Tag: <b style="color:var(--color-tag)" id="evtTag">0x012</b>
+          </div>
+        </div>
+        <div id="currentResultPill" class="result-pill compulsory">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Compulsory Miss
+        </div>
+      </div>
+
+      <!-- Cache Grid Hardware Visualization -->
+      <div class="cache-grid-card">
+        <div class="cache-grid-header">
+          <div style="font-size:0.8rem; font-weight:700; color:#f1f5f9; display:flex; align-items:center; gap:6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+            Cache-Speicher SRAM Grid (Sets & Associativity Ways)
+          </div>
+          <div style="font-size:0.72rem; color:#94a3b8;" id="cacheGeometryText">
+            4 Sets &times; 2 Ways = 8 Blöcke &bull; Block: 4 Bytes (1 Word) &bull; LRU Replacement
+          </div>
+        </div>
+
+        <div style="overflow-x:auto; flex:1;">
+          <table class="cache-table">
+            <thead>
+              <tr id="cacheTableHeader">
+                <th style="width:70px;">Set Index</th>
+                <th>Way 0 (Valid, Tag, Data, LRU)</th>
+                <th>Way 1 (Valid, Tag, Data, LRU)</th>
+              </tr>
+            </thead>
+            <tbody id="cacheTableBody">
+              <!-- Dynamically populated sets & ways -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Draggable Resizer Column -->
+    <div class="resizer" id="dragResizer"></div>
+
+    <!-- Right Viewport: Quiz Table, AMAT Lab, 3C Decision Flowchart -->
+    <div class="inspector-panel" id="rightViewport">
+
+      <!-- View A: Altklausuren & Quiz Mode -->
+      <div id="quizViewContainer">
+        
+        <!-- Code / Task description snippet -->
+        <div class="panel-section" id="codeTaskSection">
+          <div class="panel-section-header">
+            <span>Aufgabenstellung & Code</span>
+            <span class="badge" id="examTagBadge">WiSe26 / SoSe25</span>
+          </div>
+          <div id="codeTaskContent" style="font-size:0.75rem; color:#cbd5e1; line-height:1.45;">
+            <!-- Rendered code or question prompt -->
+          </div>
+        </div>
+
+        <!-- Interactive Klausur Table -->
+        <div class="panel-section">
+          <div class="panel-section-header">
+            <span>Klausur-Tabelle (Interaktiv ausfüllen)</span>
+            <span style="font-size:0.68rem; color:#94a3b8;">Eingaben werden live bewertet</span>
+          </div>
+
+          <div class="exam-table-container">
+            <table class="exam-table" id="examQuizTable">
+              <!-- Dynamically generated rows: Access, Address, Tag, Set, Offset, Type -->
+            </table>
+          </div>
+
+          <div class="score-summary-bar">
+            <div>
+              <div class="score-points" id="scorePointsText">Punkte: 0 / 16 P</div>
+              <div style="font-size:0.68rem; color:#94a3b8;" id="scoreAccuracyText">0 / 32 Felder korrekt (0%)</div>
+              <div id="scoreSpeedrunBadge" style="font-size:0.72rem; font-weight:700; color:#38bdf8; margin-top:3px; display:none;"></div>
+            </div>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button class="ctrl-btn success" onclick="checkStudentAnswers()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                Check Answer
+              </button>
+              <button class="ctrl-btn" onclick="revealSolution()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                Reveal Solution
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statistics & 3C Breakdown -->
+        <div class="panel-section">
+          <div class="panel-section-header">
+            <span>Miss-Statistik & AMAT Vorschau</span>
+          </div>
+          <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:6px; text-align:center;">
+            <div style="background:#090d16; border:1px solid var(--border-color); border-radius:5px; padding:6px 4px;">
+              <div style="font-size:0.65rem; color:#10b981; font-weight:700;">HITS</div>
+              <div style="font-size:1.05rem; font-weight:800; font-family:monospace;" id="statHits">0</div>
+            </div>
+            <div style="background:#090d16; border:1px solid var(--border-color); border-radius:5px; padding:6px 4px;">
+              <div style="font-size:0.65rem; color:var(--accent-cyan); font-weight:700;">COMPULSORY</div>
+              <div style="font-size:1.05rem; font-weight:800; font-family:monospace;" id="statComp">0</div>
+            </div>
+            <div style="background:#090d16; border:1px solid var(--border-color); border-radius:5px; padding:6px 4px;">
+              <div style="font-size:0.65rem; color:var(--accent-amber); font-weight:700;">CONFLICT</div>
+              <div style="font-size:1.05rem; font-weight:800; font-family:monospace;" id="statConf">0</div>
+            </div>
+            <div style="background:#090d16; border:1px solid var(--border-color); border-radius:5px; padding:6px 4px;">
+              <div style="font-size:0.65rem; color:var(--accent-red); font-weight:700;">CAPACITY</div>
+              <div style="font-size:1.05rem; font-weight:800; font-family:monospace;" id="statCap">0</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- View B: Generator Mode Settings Panel -->
+      <div id="generatorViewContainer" style="display:none;" class="panel-section">
+        <div class="panel-section-header">
+          <span>Infinite Cache Generator Einstellungen</span>
+          <span class="badge">Zufällige Klausuraufgabe</span>
+        </div>
+        <div class="generator-panel">
+          <div class="gen-grid">
+            <div class="gen-field">
+              <label>Adressbreite (Bits):</label>
+              <select id="genAddrBits" class="gen-select" onchange="generateCustomProblem()">
+                <option value="16" selected>16-Bit Adresse</option>
+                <option value="32">32-Bit Adresse</option>
+              </select>
+            </div>
+            <div class="gen-field">
+              <label>Assoziativität (Ways):</label>
+              <select id="genWays" class="gen-select" onchange="generateCustomProblem()">
+                <option value="1">1-Way (Direct-Mapped)</option>
+                <option value="2" selected>2-Way Set-Associative</option>
+                <option value="4">4-Way Set-Associative</option>
+              </select>
+            </div>
+            <div class="gen-field">
+              <label>Anzahl Sets:</label>
+              <select id="genSets" class="gen-select" onchange="generateCustomProblem()">
+                <option value="2">2 Sets</option>
+                <option value="4" selected>4 Sets</option>
+                <option value="8">8 Sets</option>
+                <option value="16">16 Sets</option>
+              </select>
+            </div>
+            <div class="gen-field">
+              <label>Blockgröße:</label>
+              <select id="genBlockSize" class="gen-select" onchange="generateCustomProblem()">
+                <option value="4" selected>4 Bytes (1 Word)</option>
+                <option value="8">8 Bytes (2 Words)</option>
+                <option value="16">16 Bytes (4 Words)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="gen-field">
+            <label>Anzahl Zugriffe:</label>
+            <select id="genNumAccesses" class="gen-select" onchange="generateCustomProblem()">
+              <option value="8" selected>8 Zugriffe (wie SoSe25)</option>
+              <option value="10">10 Zugriffe</option>
+              <option value="12">12 Zugriffe (wie WiSe26)</option>
+            </select>
+          </div>
+
+          <button class="ctrl-btn primary" onclick="generateCustomProblem()" style="justify-content:center; padding:8px 0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            Neue Zufallsaufgabe Generieren &amp; Lösen
+          </button>
+        </div>
+      </div>
+
+      <!-- View C: AMAT Deep-Dive Lab -->
+      <div id="amatViewContainer" style="display:none;">
+        <div class="panel-section">
+          <div class="panel-section-header">
+            <span>Average Memory Access Time (AMAT) Rechner</span>
+            <span class="badge">Formel &amp; Zyklen</span>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="font-size:0.75rem; color:#cbd5e1;">
+              Parameter aus den Altklausuren (SoSe25 8a, Probeklausur 8a) interaktiv anpassen:
+            </div>
+            <label style="display:flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:700; color:var(--accent-purple-glow); cursor:pointer;">
+              <input type="checkbox" id="amatEnableL2" onchange="updateAmatCalculation()" checked>
+              Zweistufiger Cache (L2 aktiv)
+            </label>
+          </div>
+
+          <div class="amat-grid">
+            <div class="amat-param-box">
+              <div class="amat-label">L1 Hit Time ($T_{\text{Hit, L1}}$):</div>
+              <div class="amat-slider-row">
+                <input type="range" id="amatL1Hit" min="1" max="10" value="3" oninput="updateAmatCalculation()">
+                <span class="amat-val-badge" id="amatL1HitVal">3 Zyklen</span>
+              </div>
+            </div>
+
+            <div class="amat-param-box">
+              <div class="amat-label">L1 Miss Rate ($MR_{\text{L1}}$):</div>
+              <div class="amat-slider-row">
+                <input type="range" id="amatL1MissRate" min="0" max="100" value="30" oninput="updateAmatCalculation()">
+                <span class="amat-val-badge" id="amatL1MissRateVal">30 %</span>
+              </div>
+            </div>
+
+            <div class="amat-param-box" id="boxL2Hit">
+              <div class="amat-label">L2 Hit Time ($T_{\text{Hit, L2}}$):</div>
+              <div class="amat-slider-row">
+                <input type="range" id="amatL2Hit" min="1" max="30" value="15" oninput="updateAmatCalculation()">
+                <span class="amat-val-badge" id="amatL2HitVal">15 Zyklen</span>
+              </div>
+            </div>
+
+            <div class="amat-param-box" id="boxL2MissRate">
+              <div class="amat-label">L2 Miss Rate ($MR_{\text{L2}}$):</div>
+              <div class="amat-slider-row">
+                <input type="range" id="amatL2MissRate" min="0" max="100" value="25" oninput="updateAmatCalculation()">
+                <span class="amat-val-badge" id="amatL2MissRateVal">25 %</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="amat-param-box" style="margin-top:10px;">
+            <div class="amat-label">Hauptspeicher DRAM Zugriffszeit ($T_{\text{Speicher}}$):</div>
+            <div class="amat-slider-row">
+              <input type="range" id="amatRamTime" min="50" max="300" step="10" value="100" oninput="updateAmatCalculation()">
+              <span class="amat-val-badge" id="amatRamTimeVal">100 Zyklen</span>
+            </div>
+          </div>
+
+          <div class="amat-math-box" id="amatDerivationBox">
+            <!-- Rendered step-by-step formula derivation -->
+          </div>
+
+          <div style="margin-top:12px;">
+            <div style="font-size:0.7rem; color:#94a3b8; margin-bottom:4px; display:flex; justify-content:space-between;">
+              <span>Zyklen-Aufteilung:</span>
+              <span id="amatTotalResultBadge" style="color:#10b981; font-weight:700;">AMAT = 33.00 Zyklen</span>
+            </div>
+            <div class="amat-bar-container">
+              <div class="amat-bar-segment" id="amatBarL1" style="background:#0284c7; width:20%;" title="L1 Time"></div>
+              <div class="amat-bar-segment" id="amatBarL2" style="background:#a855f7; width:20%;" title="L2 Time"></div>
+              <div class="amat-bar-segment" id="amatBarRam" style="background:#ef4444; width:60%;" title="RAM Penalty"></div>
+            </div>
+          </div>
+
+          <!-- Preset AMAT buttons -->
+          <div style="display:flex; gap:6px; margin-top:14px; flex-wrap:wrap;">
+            <button class="preset-pill" onclick="setAmatPreset(3, 30, false, 15, 25, 100)">[SoSe25 8a]: 10 Zugriffe, 3 Misses</button>
+            <button class="preset-pill" onclick="setAmatPreset(2, 20, true, 15, 25, 200)">[Probeklausur 8a, Teil 1]: L1 + L2</button>
+            <button class="preset-pill" onclick="setAmatPreset(4, 10, true, 15, 25, 200)">[Probeklausur 8a, Teil 2]: Höhere Hit-Rate</button>
+            <button class="preset-pill" onclick="setAmatPreset(8, 40, false, 15, 25, 200)">[Testat 3]: L1 (60% Hit) + RAM</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- View D: 3C Decision Tree & Theory Guide -->
+      <div id="theoryViewContainer" style="display:none;" class="panel-section">
+        <div class="panel-section-header">
+          <span>Der Klausur-Entscheidungsbaum für 3C-Misses</span>
+          <span class="badge">Probeklausur Musterlösung</span>
+        </div>
+
+        <div style="font-size:0.75rem; color:#cbd5e1; margin-bottom:10px; line-height:1.45;">
+          Wende bei jedem Zugriff im Klausurteil <b>«To miss or not to miss»</b> folgenden 3-Stufen-Algorithmus an:
+        </div>
+
+        <div class="flowchart-svg-box">
+          <svg width="100%" height="220" viewBox="0 0 440 220" style="display:block; font-family:sans-serif;">
+            <!-- Start Node -->
+            <rect x="140" y="10" width="160" height="30" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+            <text x="220" y="29" fill="#f8fafc" font-size="11" font-weight="700" text-anchor="middle">Zugriff (Tag, Set)</text>
+
+            <line x1="220" y1="40" x2="220" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+            <!-- Decision 1: In Cache? -->
+            <polygon points="220,60 300,90 220,120 140,90" fill="#111827" stroke="#a855f7" stroke-width="1.5"/>
+            <text x="220" y="94" fill="#f8fafc" font-size="10" font-weight="700" text-anchor="middle">Im Cache vorhanden?</text>
+
+            <!-- Yes -> Hit -->
+            <line x1="300" y1="90" x2="360" y2="90" stroke="#10b981" stroke-width="1.5"/>
+            <rect x="360" y="75" width="65" height="30" rx="5" fill="rgba(16,185,129,0.2)" stroke="#10b981" stroke-width="1.5"/>
+            <text x="392" y="94" fill="#34d399" font-size="11" font-weight="800" text-anchor="middle">HIT</text>
+            <text x="325" y="84" fill="#10b981" font-size="9" font-weight="700">Ja</text>
+
+            <!-- No -> Check History -->
+            <line x1="220" y1="120" x2="220" y2="145" stroke="#ef4444" stroke-width="1.5"/>
+            <text x="226" y="135" fill="#ef4444" font-size="9" font-weight="700">Nein (Miss)</text>
+
+            <!-- Decision 2: Visited before? -->
+            <polygon points="220,145 300,175 220,205 140,175" fill="#111827" stroke="#fbbf24" stroke-width="1.5"/>
+            <text x="220" y="179" fill="#f8fafc" font-size="9" font-weight="700" text-anchor="middle">Früher schon besucht?</text>
+
+            <!-- No -> Compulsory -->
+            <line x1="140" y1="175" x2="80" y2="175" stroke="#38bdf8" stroke-width="1.5"/>
+            <rect x="10" y="160" width="70" height="30" rx="5" fill="rgba(6,182,212,0.2)" stroke="#0284c7" stroke-width="1.5"/>
+            <text x="45" y="179" fill="#38bdf8" font-size="9.5" font-weight="800" text-anchor="middle">Compulsory</text>
+            <text x="105" y="169" fill="#38bdf8" font-size="9" font-weight="700">Nein</text>
+
+            <!-- Yes -> Conflict / Capacity -->
+            <line x1="300" y1="175" x2="350" y2="175" stroke="#f59e0b" stroke-width="1.5"/>
+            <rect x="350" y="160" width="80" height="30" rx="5" fill="rgba(245,158,11,0.2)" stroke="#d97706" stroke-width="1.5"/>
+            <text x="390" y="179" fill="#fbbf24" font-size="9.5" font-weight="800" text-anchor="middle">Conflict Miss*</text>
+            <text x="320" y="169" fill="#fbbf24" font-size="9" font-weight="700">Ja</text>
+          </svg>
+        </div>
+
+        <div style="font-size:0.72rem; color:#94a3b8; margin-top:10px; line-height:1.45;">
+          * <b>Capacity Miss vs Conflict Miss:</b> Ein Miss ist genau dann ein <i>Capacity Miss</i>, wenn der Block selbst bei einem idealen <i>Fully-Associative Cache gleicher Gesamtkapazität</i> verdrängt worden wäre (weil zwischenzeitlich mehr als $B$ eindeutige Blöcke geladen wurden). Gibt es im Gesamtspeicher noch freie Plätze, ist es ein <i>Conflict Miss</i>!
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Floating Tooltip -->
+  <div class="tooltip" id="globalTooltip"></div>
+
+  <script>
+    /* =========================================================================
+       EXAM DATA & PRESETS DEFINITIONS (WiSe26, SoSe25, Testat 3)
+       ========================================================================= */
+    
+    const PRESETS = {
+      // 1. SoSe25 Aufgabe 8b: RISC-V Loop, 2-Way Cache, 4 Sets, 1 Word Block, 16-Bit Addr
+      sose25_8b: {
+        id: "sose25_8b",
+        title: "[SoSe25] Aufgabe 8b: RISC-V Loop (2-Way, 4 Sets)",
+        examBadge: "Klausur SoSe25 (8 Pkt)",
+        addrBits: 16,
+        blockSize: 4, // 1 word = 4 bytes -> b = 2
+        numSets: 4,    // 4 sets -> s = 2
+        ways: 2,       // 2-way -> 8 blocks total
+        codeSnippet: `<b>RISC-V Schleifencode (4 Iterationen):</b>
+<pre style="background:#090d16; padding:6px 10px; border-radius:4px; font-family:monospace; margin:4px 0; border:1px solid #1e293b;">
+    li t0, 0x120
+    li t1, 0x300
+    li t2, 4
+loop:
+    lb t4, 0x8(t0)    # Zugriff 1: t0+8
+    lw t5, 0x0(t1)    # Zugriff 2: t1+0
+    addi t0, t0, 3    # t0 += 3
+    addi t1, t1, 8    # t1 += 8
+    addi t2, t2, -1
+    bne t2, zero, loop
+</pre>
+Berechne für alle 8 Speicherzugriffe: <b>Adresse, Tag, Set-Index, Byte-Offset</b> und bestimme den Status.`,
+        accesses: [
+          { num: 1, addr: 0x0128, tag: 0x012, set: 2, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf Block 0x0128..0x012B -> Cold Miss." },
+          { num: 2, addr: 0x0300, tag: 0x030, set: 0, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf Block 0x0300..0x0303 -> Cold Miss." },
+          { num: 3, addr: 0x012B, tag: 0x012, set: 2, offset: 3, type: "Hit", why: "Tag 0x012 liegt bereits in Set 2 (aus Zugriff #1)!" },
+          { num: 4, addr: 0x0308, tag: 0x030, set: 2, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf Block 0x0308..0x030B. Set 2 hat freien Platz in Way 1." },
+          { num: 5, addr: 0x012E, tag: 0x012, set: 3, offset: 2, type: "Compulsory Miss", why: "Erster Zugriff auf Block 0x012C..0x012F." },
+          { num: 6, addr: 0x0310, tag: 0x031, set: 0, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf Block 0x0310..0x0313." },
+          { num: 7, addr: 0x0131, tag: 0x013, set: 0, offset: 1, type: "Compulsory Miss", why: "Erster Zugriff auf Block 0x0130..0x0133." },
+          { num: 8, addr: 0x0318, tag: 0x031, set: 2, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf Block 0x0318..0x031B." }
+        ]
+      },
+
+      // 2. SoSe25 Aufgabe 8c: Direct-Mapped 8 Blocks, 10 Accesses
+      sose25_8c: {
+        id: "sose25_8c",
+        title: "[SoSe25] Aufgabe 8c: Direct-Mapped 3C Misses (10 Zugriffe)",
+        examBadge: "Klausur SoSe25 (4 Pkt)",
+        addrBits: 16,
+        blockSize: 4,
+        numSets: 8,    // 8 sets = 8 blocks
+        ways: 1,       // Direct mapped
+        codeSnippet: `Direct-Mapped Cache mit 8 Blöcken (Blockgröße: 1 Wort). Tag und Set sind in der Klausur bereits vorgegeben. Bestimme für jeden Zugriff den genauen Typ (<b>Hit, Compulsory Miss, Conflict Miss</b>).`,
+        accesses: [
+          { num: 1, addr: 0x3FF0, tag: 0x0FFE, set: 4, offset: 0, type: "Compulsory Miss", why: "Block (Tag 0x0FFE, Set 4) wird zum allerersten Mal aufgerufen." },
+          { num: 2, addr: 0x0018, tag: 0x0004, set: 6, offset: 0, type: "Compulsory Miss", why: "Block (Tag 0x0004, Set 6) wird zum ersten Mal aufgerufen." },
+          { num: 3, addr: 0x3FF0, tag: 0x0FFE, set: 4, offset: 0, type: "Hit", why: "Block liegt unberührt in Set 4 -> HIT!" },
+          { num: 4, addr: 0x0028, tag: 0x0009, set: 6, offset: 0, type: "Compulsory Miss", why: "Neuer Block (Tag 0x0009) verdrängt Block 0x0004 aus Set 6." },
+          { num: 5, addr: 0x3FFC, tag: 0x0FFE, set: 7, offset: 0, type: "Compulsory Miss", why: "Block (Tag 0x0FFE, Set 7) wird zum ersten Mal geladen." },
+          { num: 6, addr: 0x0018, tag: 0x0004, set: 6, offset: 0, type: "Conflict Miss", why: "Wurde früher schon geladen (Zugriff #2), aber in Set 6 von 0x0009 verdrängt. Cache hat freie Sets!" },
+          { num: 7, addr: 0x0024, tag: 0x0009, set: 4, offset: 0, type: "Compulsory Miss", why: "Dieser spezifische Block (Tag 0x0009, Set 4) war noch nie im Cache." },
+          { num: 8, addr: 0x0028, tag: 0x0009, set: 6, offset: 0, type: "Conflict Miss", why: "Wurde früher schon geladen (Zugriff #4), aber in Set 6 von 0x0004 verdrängt." },
+          { num: 9, addr: 0x3FF0, tag: 0x0FFE, set: 4, offset: 0, type: "Conflict Miss", why: "Wurde bei Zugriff #7 von 0x0009 aus Set 4 verdrängt." },
+          { num: 10, addr: 0x3FFC, tag: 0x0FFE, set: 7, offset: 0, type: "Hit", why: "Liegt seit Zugriff #5 ununterbrochen in Set 7!" }
+        ]
+      },
+
+      // 3. WiSe26 / Probeklausur Aufgabe 8b: "To miss or not to miss"
+      wise26_8b: {
+        id: "wise26_8b",
+        title: "[WiSe26 / Probeklausur] Aufgabe 8b: To Miss or Not to Miss (12 Zugriffe)",
+        examBadge: "Klausur WiSe26 (6 Pkt)",
+        addrBits: 16,
+        blockSize: 4,
+        numSets: 8,
+        ways: 1,
+        codeSnippet: `Direct-Mapped Cache mit 8 Blöcken. Bestimme den Miss-Status anhand des standardisierten TU Darmstadt Entscheidungs-Algorithmus.`,
+        accesses: [
+          { num: 1, addr: 0x0444, tag: 0x0111, set: 1, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf Block (0x0111, Set 1)." },
+          { num: 2, addr: 0x088C, tag: 0x0222, set: 3, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf Block (0x0222, Set 3)." },
+          { num: 3, addr: 0x0CD4, tag: 0x0333, set: 5, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf Block (0x0333, Set 5)." },
+          { num: 4, addr: 0x1114, tag: 0x0444, set: 1, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf Tag 0x0444 in Set 1 (verdrängt 0x0111)." },
+          { num: 5, addr: 0x088C, tag: 0x0222, set: 3, offset: 0, type: "Hit", why: "Tag 0x0222 liegt noch intakt in Set 3!" },
+          { num: 6, addr: 0x0444, tag: 0x0111, set: 1, offset: 0, type: "Conflict Miss", why: "Wurde bei #4 durch 0x0444 verdrängt. Andere Sets sind frei." },
+          { num: 7, addr: 0x155C, tag: 0x0555, set: 5, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf 0x0555 in Set 5 (verdrängt 0x0333)." },
+          { num: 8, addr: 0x1114, tag: 0x0444, set: 1, offset: 0, type: "Conflict Miss", why: "Wurde bei #6 durch 0x0111 verdrängt." },
+          { num: 9, addr: 0x0CD4, tag: 0x0333, set: 5, offset: 0, type: "Conflict Miss", why: "Wurde bei #7 durch 0x0555 verdrängt." },
+          { num: 10, addr: 0x199C, tag: 0x0666, set: 3, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf 0x0666 in Set 3 (verdrängt 0x0222)." },
+          { num: 11, addr: 0x088C, tag: 0x0222, set: 3, offset: 0, type: "Conflict Miss", why: "Wurde bei #10 durch 0x0666 verdrängt." },
+          { num: 12, addr: 0x1114, tag: 0x0444, set: 1, offset: 0, type: "Hit", why: "Tag 0x0444 liegt seit Zugriff #8 ununterbrochen in Set 1!" }
+        ]
+      },
+
+      // 4. WiSe26 / Probeklausur Aufgabe 8c: 8-Byte Blockgröße (2 Wörter)
+      wise26_8c: {
+        id: "wise26_8c",
+        title: "[WiSe26 / Probeklausur] Aufgabe 8c: 8-Byte Blöcke & Offset",
+        examBadge: "Klausur WiSe26 (6 Pkt)",
+        addrBits: 16,
+        blockSize: 8, // 8 bytes -> b = log2(8) = 3 bits
+        numSets: 4,    // 4 sets -> s = log2(4) = 2 bits -> Tag = 16 - 3 - 2 = 11 bits
+        ways: 1,
+        codeSnippet: `Direct-Mapped Cache mit <b>4 Sets</b> und einer <b>Blockgröße von 8 Bytes (2 Wörter)</b>. Berechne Offset (0..7), Tag, Set und bestimme Hit/Miss.`,
+        accesses: [
+          { num: 1, addr: 0x0080, tag: 0x004, set: 0, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf Adresse 0x0080." },
+          { num: 2, addr: 0x0084, tag: 0x004, set: 0, offset: 4, type: "Hit", why: "Liegt im selben 8-Byte Block [0x0080..0x0087] wie Zugriff #1!" },
+          { num: 3, addr: 0x0100, tag: 0x008, set: 0, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf Tag 0x008 (verdrängt Block 0x004 aus Set 0)." },
+          { num: 4, addr: 0x0088, tag: 0x004, set: 1, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf Block [0x0088..0x008F] in Set 1." },
+          { num: 5, addr: 0x008C, tag: 0x004, set: 1, offset: 4, type: "Hit", why: "Liegt im selben Block wie Zugriff #4!" },
+          { num: 6, addr: 0x0104, tag: 0x008, set: 0, offset: 4, type: "Hit", why: "Liegt im selben Block wie Zugriff #3!" },
+          { num: 7, addr: 0x0090, tag: 0x004, set: 2, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf Set 2." },
+          { num: 8, addr: 0x0094, tag: 0x004, set: 2, offset: 4, type: "Hit", why: "Liegt im selben Block wie Zugriff #7!" },
+          { num: 9, addr: 0x0108, tag: 0x008, set: 1, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf Tag 0x008 in Set 1." },
+          { num: 10, addr: 0x0098, tag: 0x004, set: 3, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf Set 3." },
+          { num: 11, addr: 0x009C, tag: 0x004, set: 3, offset: 4, type: "Hit", why: "Liegt im selben Block wie Zugriff #10!" },
+          { num: 12, addr: 0x010C, tag: 0x008, set: 1, offset: 4, type: "Hit", why: "Liegt im selben Block wie Zugriff #9!" }
+        ]
+      },
+
+      // 5. Moodle Testat 3 Preset: Direct-Mapped, 16 Sets, 64-Byte Block
+      moodle_testat3: {
+        id: "moodle_testat3",
+        title: "[Moodle Testat 3] Direct-Mapped (16 Sets, 64-Byte Block)",
+        examBadge: "Testat 3 (4 Pkt)",
+        addrBits: 16,
+        blockSize: 64, // 64 bytes -> b = log2(64) = 6 bits
+        numSets: 16,   // 16 sets -> s = log2(16) = 4 bits -> Tag = 16 - 6 - 4 = 6 bits
+        ways: 1,
+        codeSnippet: `Gegeben sei ein direct-mapped Cache: Cachegröße = 1024 Byte, 16 Bit Adressgröße, 64 Byte Blockgröße, 16 Sets. Berechne Hits/Misses für die Testat-Zugriffe.`,
+        accesses: [
+          { num: 1, addr: 0x7E99, tag: 0x1F, set: 10, offset: 25, type: "Compulsory Miss", why: "Erster Zugriff auf diesen Block." },
+          { num: 2, addr: 0x7E86, tag: 0x1F, set: 10, offset: 6, type: "Hit", why: "Gleicher Block wie 0x7E99 (Offset 6 statt 25)!" },
+          { num: 3, addr: 0x7EC0, tag: 0x1F, set: 11, offset: 0, type: "Compulsory Miss", why: "Erster Zugriff auf Set 11." },
+          { num: 4, addr: 0x7EBC, tag: 0x1F, set: 10, offset: 60, type: "Hit", why: "Wieder Zugriff auf Set 10, Tag 0x1F (liegt noch im Cache)!" }
+        ]
+      }
+    };
+
+    /* =========================================================================
+       STATE MANAGEMENT & ARCHITECTURE ENGINE
+       ========================================================================= */
+
+    let currentPreset = PRESETS.sose25_8b;
+    let currentStep = 0; // 0 to accesses.length - 1
+    let autoPlayInterval = null;
+    let currentAppMode = 'klausur'; // 'klausur', 'generator', 'amat', 'theory'
+
+    // Live Cache Memory Hardware Model
+    let cacheState = {
+      sets: [] // array of sets, each set has array of ways
+    };
+
+    function initCacheHardware(numSets, ways) {
+      cacheState.sets = [];
+      for (let s = 0; s < numSets; s++) {
+        const waySlots = [];
+        for (let w = 0; w < ways; w++) {
+          waySlots.push({
+            valid: false,
+            tag: null,
+            blockAddr: null,
+            lruCounter: 0,
+            lastAccess: 0
+          });
+        }
+        cacheState.sets.push(waySlots);
+      }
+    }
+
+    // Mathematical bit extraction
+    function sliceAddress(addr, addrBits, blockSize, numSets) {
+      const b = Math.round(Math.log2(blockSize));
+      const s = Math.round(Math.log2(numSets));
+      const t = addrBits - s - b;
+
+      const offsetMask = (1 << b) - 1;
+      const setMask = (1 << s) - 1;
+
+      const offset = addr & offsetMask;
+      const setIndex = s === 0 ? 0 : (addr >> b) & setMask;
+      const tag = addr >> (b + s);
+      const blockAddr = addr - offset;
+
+      return { b, s, t, offset, setIndex, tag, blockAddr };
+    }
+
+    /* =========================================================================
+       BIT SLICER UI RENDERING & BIT INTERACTION
+       ========================================================================= */
+
+    function renderBitSlicer(addr, addrBits, blockSize, numSets) {
+      const { b, s, t, offset, setIndex, tag } = sliceAddress(addr, addrBits, blockSize, numSets);
+
+      // 1. Update text inputs and formulas
+      document.getElementById('hexAddressInput').value = "0x" + addr.toString(16).toUpperCase().padStart(addrBits === 16 ? 4 : 8, '0');
+      document.getElementById('decAddressDisplay').textContent = addr.toString();
+
+      document.getElementById('tagCalcDisplay').textContent = `t = ${addrBits} - ${s} - ${b} = ${t} Bits`;
+      document.getElementById('setCalcDisplay').textContent = `s = log₂(${numSets}) = ${s} Bits`;
+      document.getElementById('offsetCalcDisplay').textContent = `b = log₂(${blockSize}) = ${b} Bits`;
+
+      document.getElementById('tagValDisplay').textContent = `0x${tag.toString(16).toUpperCase()} (${tag})`;
+      document.getElementById('setValDisplay').textContent = `Set ${setIndex}`;
+      document.getElementById('offsetValDisplay').textContent = `${offset} Bytes`;
+
+      // 2. Render colored bands
+      const bandsBar = document.getElementById('bitBandsBar');
+      bandsBar.innerHTML = '';
+
+      const tagPercent = (t / addrBits) * 100;
+      const setPercent = (s / addrBits) * 100;
+      const offsetPercent = (b / addrBits) * 100;
+
+      bandsBar.innerHTML = `
+        <div class="band-tag" style="width: ${tagPercent}%;">Tag (${t}b)</div>
+        <div class="band-set" style="width: ${setPercent}%;">Set (${s}b)</div>
+        <div class="band-offset" style="width: ${offsetPercent}%;">Offset (${b}b)</div>
+      `;
+
+      // 3. Render individual clickable bit boxes
+      const boxesContainer = document.getElementById('bitBoxesContainer');
+      boxesContainer.innerHTML = '';
+
+      for (let bit = addrBits - 1; bit >= 0; bit--) {
+        const bitVal = (addr >> bit) & 1;
+        let roleClass = 'offset-bit';
+        let roleName = 'Offset';
+
+        if (bit >= b + s) {
+          roleClass = 'tag-bit';
+          roleName = 'Tag';
+        } else if (bit >= b) {
+          roleClass = 'set-bit';
+          roleName = 'Set Index';
+        }
+
+        const box = document.createElement('div');
+        box.className = `bit-box ${roleClass}`;
+        box.title = `Bit [${bit}]: ${bitVal} (${roleName})`;
+        box.innerHTML = `
+          <span>${bitVal}</span>
+          <span class="bit-idx">${bit}</span>
+        `;
+        box.onclick = () => toggleBit(bit);
+        boxesContainer.appendChild(box);
+      }
+    }
+
+    function toggleBit(bit) {
+      const currentAddr = currentPreset.accesses[currentStep].addr;
+      const newAddr = currentAddr ^ (1 << bit);
+      currentPreset.accesses[currentStep].addr = newAddr;
+      renderStep(currentStep);
+    }
+
+    function onManualAddressInput(hexStr) {
+      let cleaned = hexStr.trim();
+      if (!cleaned.startsWith('0x') && !cleaned.startsWith('0X')) {
+        cleaned = '0x' + cleaned;
+      }
+      const val = parseInt(cleaned, 16);
+      if (!isNaN(val)) {
+        currentPreset.accesses[currentStep].addr = val;
+        renderStep(currentStep);
+      }
+    }
+
+    /* =========================================================================
+       CACHE HARDWARE SIMULATION & EXECUTION
+       ========================================================================= */
+
+    function runSimulationUpTo(stepIndex) {
+      initCacheHardware(currentPreset.numSets, currentPreset.ways);
+
+      let hits = 0, comp = 0, conf = 0, cap = 0;
+      const historySet = new Set();
+
+      for (let i = 0; i <= stepIndex; i++) {
+        const item = currentPreset.accesses[i];
+        const { b, s, t, offset, setIndex, tag, blockAddr } = sliceAddress(
+          item.addr, currentPreset.addrBits, currentPreset.blockSize, currentPreset.numSets
+        );
+
+        const targetSet = cacheState.sets[setIndex];
+        let hitIndex = -1;
+
+        // Check for matching tag in target set
+        for (let w = 0; w < currentPreset.ways; w++) {
+          if (targetSet[w].valid && targetSet[w].tag === tag) {
+            hitIndex = w;
+            break;
+          }
+        }
+
+        if (hitIndex !== -1) {
+          hits++;
+          // Hit: update LRU
+          targetSet[hitIndex].lruCounter = i;
+          targetSet[hitIndex].lastAccess = i;
+        } else {
+          // Miss: Cold vs Conflict vs Capacity
+          const isFirstTime = !historySet.has(blockAddr);
+          historySet.add(blockAddr);
+
+          if (isFirstTime) {
+            comp++;
+          } else {
+            // Evaluated as conflict or capacity based on total cache capacity
+            const totalBlocks = currentPreset.numSets * currentPreset.ways;
+            if (historySet.size > totalBlocks) {
+              cap++;
+            } else {
+              conf++;
+            }
+          }
+
+          // Allocate / Replace into slot
+          let victimWay = -1;
+          for (let w = 0; w < currentPreset.ways; w++) {
+            if (!targetSet[w].valid) {
+              victimWay = w;
+              break;
+            }
+          }
+
+          if (victimWay === -1) {
+            // Find LRU slot (smallest lruCounter)
+            let minLru = Infinity;
+            for (let w = 0; w < currentPreset.ways; w++) {
+              if (targetSet[w].lruCounter < minLru) {
+                minLru = targetSet[w].lruCounter;
+                victimWay = w;
+              }
+            }
+          }
+
+          // Install block into victim slot
+          targetSet[victimWay].valid = true;
+          targetSet[victimWay].tag = tag;
+          targetSet[victimWay].blockAddr = blockAddr;
+          targetSet[victimWay].lruCounter = i;
+          targetSet[victimWay].lastAccess = i;
+        }
+      }
+
+      return { hits, comp, conf, cap };
+    }
+
+    /* =========================================================================
+       CACHE SRAM GRID RENDERING
+       ========================================================================= */
+
+    function renderCacheGrid(activeSetIndex, activeTag, isHit) {
+      const tbody = document.getElementById('cacheTableBody');
+      const thead = document.getElementById('cacheTableHeader');
+      tbody.innerHTML = '';
+
+      // Set headers for ways
+      let headerHTML = `<th style="width:70px;">Set Index</th>`;
+      for (let w = 0; w < currentPreset.ways; w++) {
+        headerHTML += `<th>Way ${w} (Valid, Tag, Data, LRU)</th>`;
+      }
+      thead.innerHTML = headerHTML;
+
+      // Render each set
+      for (let s = 0; s < currentPreset.numSets; s++) {
+        const tr = document.createElement('tr');
+        if (s === activeSetIndex) {
+          tr.className = 'active-set';
+        }
+
+        let rowHTML = `<td style="font-weight:700; color:${s === activeSetIndex ? 'var(--accent-purple-glow)' : '#94a3b8'};">Set ${s}</td>`;
+
+        for (let w = 0; w < currentPreset.ways; w++) {
+          const slot = cacheState.sets[s][w];
+          const isValid = slot.valid;
+          const isSlotMatch = (s === activeSetIndex && isValid && slot.tag === activeTag);
+
+          let slotClass = "way-slot";
+          if (isSlotMatch && isHit) {
+            slotClass += " hit-highlight";
+          }
+
+          const tagStr = isValid ? `0x${slot.tag.toString(16).toUpperCase()}` : "—";
+          const addrRange = isValid ? `[0x${slot.blockAddr.toString(16).toUpperCase()}]` : "Empty";
+          const lruBadge = isValid ? `<span style="font-size:0.6rem; color:#64748b; margin-left:4px;">#${slot.lruCounter}</span>` : "";
+
+          rowHTML += `
+            <td>
+              <div class="${slotClass}">
+                <span class="valid-dot ${isValid ? 'valid' : ''}" title="${isValid ? 'Valid: 1' : 'Valid: 0'}"></span>
+                <span style="color:${isValid ? 'var(--color-tag)' : '#64748b'}; font-weight:700;">${tagStr}</span>
+                <span style="font-size:0.65rem; color:#94a3b8;">${addrRange}</span>
+                ${lruBadge}
+              </div>
+            </td>
+          `;
+        }
+
+        tr.innerHTML = rowHTML;
+        tbody.appendChild(tr);
+      }
+
+      document.getElementById('cacheGeometryText').textContent = 
+        `${currentPreset.numSets} Sets × ${currentPreset.ways} Ways = ${currentPreset.numSets * currentPreset.ways} Blöcke • Block: ${currentPreset.blockSize} Bytes • LRU Policy`;
+    }
+
+    /* =========================================================================
+       STEP-BY-STEP SIMULATION RENDERER
+       ========================================================================= */
+
+    function renderStep(idx) {
+      currentStep = idx;
+      const item = currentPreset.accesses[idx];
+      const { b, s, t, offset, setIndex, tag } = sliceAddress(
+        item.addr, currentPreset.addrBits, currentPreset.blockSize, currentPreset.numSets
+      );
+
+      // 1. Bit Slicer
+      renderBitSlicer(item.addr, currentPreset.addrBits, currentPreset.blockSize, currentPreset.numSets);
+
+      // 2. Hardware state simulation
+      const stats = runSimulationUpTo(idx);
+
+      // Determine hit or miss for this exact step
+      const isHit = (item.type === "Hit");
+      renderCacheGrid(setIndex, tag, isHit);
+
+      // 3. Step banner
+      document.getElementById('currentStepBadge').textContent = `Zugriff #${item.num} / ${currentPreset.accesses.length}`;
+      document.getElementById('evtAddr').textContent = "0x" + item.addr.toString(16).toUpperCase().padStart(4, '0');
+      document.getElementById('evtSet').textContent = setIndex.toString();
+      document.getElementById('evtTag').textContent = "0x" + tag.toString(16).toUpperCase();
+
+      const pill = document.getElementById('currentResultPill');
+      let pillClass = "result-pill ";
+      if (item.type === "Hit") pillClass += "hit";
+      else if (item.type === "Compulsory Miss") pillClass += "compulsory";
+      else if (item.type === "Conflict Miss") pillClass += "conflict";
+      else pillClass += "capacity";
+      pill.className = pillClass;
+      pill.textContent = item.type;
+
+      // 4. Update stats
+      document.getElementById('statHits').textContent = stats.hits;
+      document.getElementById('statComp').textContent = stats.comp;
+      document.getElementById('statConf').textContent = stats.conf;
+      document.getElementById('statCap').textContent = stats.cap;
+
+      // Highlight active table column in quiz view
+      highlightQuizActiveColumn(idx);
+
+      // Controls state
+      document.getElementById('btnPrevAccess').disabled = (idx === 0);
+      document.getElementById('btnNextAccess').disabled = (idx === currentPreset.accesses.length - 1);
+    }
+
+    function stepSimulation(delta) {
+      const nextIdx = currentStep + delta;
+      if (nextIdx >= 0 && nextIdx < currentPreset.accesses.length) {
+        renderStep(nextIdx);
+      }
+    }
+
+    function resetCurrentSimulation() {
+      stopAutoPlay();
+      renderStep(0);
+    }
+
+    function toggleAutoPlay() {
+      if (autoPlayInterval) {
+        stopAutoPlay();
+      } else {
+        startAutoPlay();
+      }
+    }
+
+    function startAutoPlay() {
+      document.getElementById('autoPlayLabel').textContent = "Pause";
+      autoPlayInterval = setInterval(() => {
+        if (currentStep < currentPreset.accesses.length - 1) {
+          stepSimulation(1);
+        } else {
+          stopAutoPlay();
+        }
+      }, 1100);
+    }
+
+    function stopAutoPlay() {
+      if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+        document.getElementById('autoPlayLabel').textContent = "Auto";
+      }
+    }
+
+    /* =========================================================================
+       INTERACTIVE KLAUSUR QUIZ TABLE & GRADING ENGINE
+       ========================================================================= */
+
+    function buildQuizTable() {
+      const table = document.getElementById('examQuizTable');
+      table.innerHTML = '';
+
+      const accesses = currentPreset.accesses;
+
+      // Row 0: Header (Access numbers)
+      let rHeader = `<tr><th style="text-align:left; padding-left:10px;">Zugriff</th>`;
+      for (let i = 0; i < accesses.length; i++) {
+        rHeader += `<th id="thAccess_${i}">#${accesses[i].num}</th>`;
+      }
+      rHeader += `</tr>`;
+
+      // Row 1: Address (Hex)
+      let rAddr = `<tr><td style="text-align:left; font-weight:700; color:#94a3b8; padding-left:10px;">Adresse</td>`;
+      for (let i = 0; i < accesses.length; i++) {
+        const hex = "0x" + accesses[i].addr.toString(16).toUpperCase().padStart(4, '0');
+        rAddr += `<td style="color:#f8fafc; font-weight:700;">${hex}</td>`;
+      }
+      rAddr += `</tr>`;
+
+      // Row 2: Tag (Input field)
+      let rTag = `<tr><td style="text-align:left; font-weight:700; color:var(--color-tag); padding-left:10px;">Tag</td>`;
+      for (let i = 0; i < accesses.length; i++) {
+        rTag += `<td><input type="text" class="exam-input" id="inpTag_${i}" placeholder="0x..." autocomplete="off"></td>`;
+      }
+      rTag += `</tr>`;
+
+      // Row 3: Set Index (Input field)
+      let rSet = `<tr><td style="text-align:left; font-weight:700; color:var(--color-set); padding-left:10px;">Set</td>`;
+      for (let i = 0; i < accesses.length; i++) {
+        rSet += `<td><input type="text" class="exam-input" id="inpSet_${i}" placeholder="Set" autocomplete="off"></td>`;
+      }
+      rSet += `</tr>`;
+
+      // Row 4: Byte Offset (Input field)
+      let rOffset = `<tr><td style="text-align:left; font-weight:700; color:var(--color-offset); padding-left:10px;">Offset</td>`;
+      for (let i = 0; i < accesses.length; i++) {
+        rOffset += `<td><input type="text" class="exam-input" id="inpOffset_${i}" placeholder="Offset" autocomplete="off"></td>`;
+      }
+      rOffset += `</tr>`;
+
+      // Row 5: Type Dropdown
+      let rType = `<tr><td style="text-align:left; font-weight:700; color:#fff; padding-left:10px;">Status</td>`;
+      for (let i = 0; i < accesses.length; i++) {
+        rType += `
+          <td>
+            <select class="exam-select" id="selType_${i}">
+              <option value="">Auswählen...</option>
+              <option value="Hit">Hit</option>
+              <option value="Compulsory Miss">Compulsory</option>
+              <option value="Conflict Miss">Conflict</option>
+              <option value="Capacity Miss">Capacity</option>
+            </select>
+          </td>
+        `;
+      }
+      rType += `</tr>`;
+
+      table.innerHTML = rHeader + rAddr + rTag + rSet + rOffset + rType;
+
+      // Add input event listeners to check automatically and auto-start timer
+      for (let i = 0; i < accesses.length; i++) {
+        ['inpTag_', 'inpSet_', 'inpOffset_', 'selType_'].forEach(prefix => {
+          const el = document.getElementById(prefix + i);
+          if (el) {
+            el.addEventListener('focus', () => onUserInteractionAutoStartTimer());
+            el.addEventListener('input', () => onUserInteractionAutoStartTimer());
+            el.addEventListener('change', () => {
+              onUserInteractionAutoStartTimer();
+              evaluateScoresSilent();
+            });
+          }
+        });
+      }
+
+      evaluateScoresSilent();
+    }
+
+    function highlightQuizActiveColumn(activeIdx) {
+      for (let i = 0; i < currentPreset.accesses.length; i++) {
+        const th = document.getElementById(`thAccess_${i}`);
+        if (th) {
+          if (i === activeIdx) {
+            th.style.background = '#0284c7';
+            th.style.color = '#fff';
+            th.style.boxShadow = '0 0 8px rgba(2, 132, 199, 0.6)';
+          } else {
+            th.style.background = '#111827';
+            th.style.color = '#94a3b8';
+            th.style.boxShadow = 'none';
+          }
+        }
+      }
+    }
+
+    function parseInputNumber(valStr) {
+      if (!valStr) return null;
+      let s = valStr.trim();
+      if (s.startsWith('0x') || s.startsWith('0X')) {
+        return parseInt(s, 16);
+      }
+      return parseInt(s, 10);
+    }
+
+    function checkStudentAnswers() {
+      const accesses = currentPreset.accesses;
+      let totalFields = accesses.length * 4; // Tag, Set, Offset, Status
+      let correctFields = 0;
+
+      for (let i = 0; i < accesses.length; i++) {
+        const item = accesses[i];
+        const { tag, setIndex, offset } = sliceAddress(
+          item.addr, currentPreset.addrBits, currentPreset.blockSize, currentPreset.numSets
+        );
+
+        // 1. Tag
+        const inpTag = document.getElementById(`inpTag_${i}`);
+        const userTag = parseInputNumber(inpTag.value);
+        if (userTag !== null && userTag === tag) {
+          inpTag.className = "exam-input correct";
+          correctFields++;
+        } else {
+          inpTag.className = "exam-input incorrect";
+        }
+
+        // 2. Set
+        const inpSet = document.getElementById(`inpSet_${i}`);
+        const userSet = parseInputNumber(inpSet.value);
+        if (userSet !== null && userSet === setIndex) {
+          inpSet.className = "exam-input correct";
+          correctFields++;
+        } else {
+          inpSet.className = "exam-input incorrect";
+        }
+
+        // 3. Offset
+        const inpOffset = document.getElementById(`inpOffset_${i}`);
+        const userOffset = parseInputNumber(inpOffset.value);
+        if (userOffset !== null && userOffset === offset) {
+          inpOffset.className = "exam-input correct";
+          correctFields++;
+        } else {
+          inpOffset.className = "exam-input incorrect";
+        }
+
+        // 4. Status
+        const selType = document.getElementById(`selType_${i}`);
+        if (selType.value === item.type) {
+          selType.className = "exam-select correct";
+          correctFields++;
+        } else {
+          selType.className = "exam-select incorrect";
+        }
+      }
+
+      updateScoreBadge(correctFields, totalFields);
+    }
+
+    function evaluateScoresSilent() {
+      const accesses = currentPreset.accesses;
+      let totalFields = accesses.length * 4;
+      let correctFields = 0;
+
+      for (let i = 0; i < accesses.length; i++) {
+        const item = accesses[i];
+        const { tag, setIndex, offset } = sliceAddress(
+          item.addr, currentPreset.addrBits, currentPreset.blockSize, currentPreset.numSets
+        );
+
+        const userTag = parseInputNumber(document.getElementById(`inpTag_${i}`)?.value);
+        if (userTag !== null && userTag === tag) correctFields++;
+
+        const userSet = parseInputNumber(document.getElementById(`inpSet_${i}`)?.value);
+        if (userSet !== null && userSet === setIndex) correctFields++;
+
+        const userOffset = parseInputNumber(document.getElementById(`inpOffset_${i}`)?.value);
+        if (userOffset !== null && userOffset === offset) correctFields++;
+
+        const userType = document.getElementById(`selType_${i}`)?.value;
+        if (userType === item.type) correctFields++;
+      }
+
+      updateScoreBadge(correctFields, totalFields);
+    }
+
+    function updateScoreBadge(correct, total) {
+      const percent = Math.round((correct / total) * 100);
+      const points = ((correct / total) * 16).toFixed(1);
+
+      const ptsText = document.getElementById('scorePointsText');
+      ptsText.textContent = `Punkte: ${points} / 16 P (${percent}%)`;
+
+      document.getElementById('scoreAccuracyText').textContent = `${correct} / ${total} Felder korrekt`;
+
+      const speedBadge = document.getElementById('scoreSpeedrunBadge');
+
+      if (percent === 100) {
+        ptsText.style.color = '#34d399';
+        // Auto-pause timer on 100% completion
+        pauseTimer();
+        if (speedBadge) {
+          speedBadge.style.display = 'block';
+          const timeFormatted = formatTime(timerState.elapsedSeconds);
+          if (timerState.elapsedSeconds <= 420) {
+            speedBadge.style.color = '#34d399';
+            speedBadge.textContent = `⏱️ Perfekt gelöst in ${timeFormatted}! Klausurziel (< 7 Min) erreicht! 🏆`;
+          } else {
+            speedBadge.style.color = '#fbbf24';
+            speedBadge.textContent = `⏱️ 100% gelöst in ${timeFormatted}. Für die Klausur: Zielzeit ist unter 7 Minuten.`;
+          }
+        }
+      } else {
+        ptsText.style.color = '#fff';
+      }
+    }
+
+    function revealSolution() {
+      const accesses = currentPreset.accesses;
+      for (let i = 0; i < accesses.length; i++) {
+        const item = accesses[i];
+        const { tag, setIndex, offset } = sliceAddress(
+          item.addr, currentPreset.addrBits, currentPreset.blockSize, currentPreset.numSets
+        );
+
+        const inpTag = document.getElementById(`inpTag_${i}`);
+        if (inpTag) {
+          inpTag.value = "0x" + tag.toString(16).toUpperCase();
+          inpTag.className = "exam-input correct";
+        }
+
+        const inpSet = document.getElementById(`inpSet_${i}`);
+        if (inpSet) {
+          inpSet.value = setIndex.toString();
+          inpSet.className = "exam-input correct";
+        }
+
+        const inpOffset = document.getElementById(`inpOffset_${i}`);
+        if (inpOffset) {
+          inpOffset.value = offset.toString();
+          inpOffset.className = "exam-input correct";
+        }
+
+        const selType = document.getElementById(`selType_${i}`);
+        if (selType) {
+          selType.value = item.type;
+          selType.className = "exam-select correct";
+        }
+      }
+
+      checkStudentAnswers();
+    }
+
+    /* =========================================================================
+       PRESET SWITCHING & MODE CONTROLLER
+       ========================================================================= */
+
+    function loadPreset(presetKey) {
+      stopAutoPlay();
+      if (typeof resetTimer === 'function') resetTimer();
+      currentPreset = PRESETS[presetKey];
+
+      // Update pills
+      document.querySelectorAll('.preset-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.includes(presetKey.replace('_', ' ')));
+      });
+
+      document.getElementById('examTagBadge').textContent = currentPreset.examBadge;
+      document.getElementById('codeTaskContent').innerHTML = currentPreset.codeSnippet;
+
+      buildQuizTable();
+      renderStep(0);
+    }
+
+    function setAppMode(mode) {
+      currentAppMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+
+      document.getElementById('btnModeKlausur').classList.toggle('active', mode === 'klausur');
+      document.getElementById('btnModeGenerator').classList.toggle('active', mode === 'generator');
+      document.getElementById('btnModeAmat').classList.toggle('active', mode === 'amat');
+      document.getElementById('btnModeTheory').classList.toggle('active', mode === 'theory');
+
+      document.getElementById('quizViewContainer').style.display = (mode === 'klausur') ? 'block' : 'none';
+      document.getElementById('generatorViewContainer').style.display = (mode === 'generator') ? 'block' : 'none';
+      document.getElementById('amatViewContainer').style.display = (mode === 'amat') ? 'block' : 'none';
+      document.getElementById('theoryViewContainer').style.display = (mode === 'theory') ? 'block' : 'none';
+
+      if (mode === 'generator') {
+        document.getElementById('quizViewContainer').style.display = 'block';
+      }
+    }
+
+    /* =========================================================================
+       INFINITE GENERATOR ALGORITHM
+       ========================================================================= */
+
+    function generateCustomProblem() {
+      const addrBits = parseInt(document.getElementById('genAddrBits').value, 10);
+      const ways = parseInt(document.getElementById('genWays').value, 10);
+      const numSets = parseInt(document.getElementById('genSets').value, 10);
+      const blockSize = parseInt(document.getElementById('genBlockSize').value, 10);
+      const numAccesses = parseInt(document.getElementById('genNumAccesses').value, 10);
+
+      // Generate realistic addresses with temporal & spatial locality
+      const poolOfTags = [0x012, 0x013, 0x030, 0x031, 0x044, 0x055];
+      const genAccesses = [];
+
+      const b = Math.round(Math.log2(blockSize));
+      const s = Math.round(Math.log2(numSets));
+
+      const historyBlocks = new Set();
+      const tempCache = [];
+      for (let si = 0; si < numSets; si++) {
+        tempCache.push([]);
+      }
+
+      for (let i = 1; i <= numAccesses; i++) {
+        let tag, setIdx, offset;
+
+        // 35% chance to hit existing block in cache
+        let tryHit = Math.random() < 0.35 && i > 2;
+        let createdAddr = null;
+
+        if (tryHit) {
+          // pick a valid block from tempCache
+          const filledSets = tempCache.filter(setArr => setArr.length > 0);
+          if (filledSets.length > 0) {
+            const chosenSet = filledSets[Math.floor(Math.random() * filledSets.length)];
+            const chosenBlock = chosenSet[Math.floor(Math.random() * chosenSet.length)];
+            offset = Math.floor(Math.random() * blockSize);
+            createdAddr = chosenBlock + offset;
+          }
+        }
+
+        if (createdAddr === null) {
+          tag = poolOfTags[Math.floor(Math.random() * poolOfTags.length)];
+          setIdx = Math.floor(Math.random() * numSets);
+          offset = Math.floor(Math.random() * blockSize);
+          createdAddr = (tag << (s + b)) | (setIdx << b) | offset;
+        }
+
+        const sliced = sliceAddress(createdAddr, addrBits, blockSize, numSets);
+        const targetSetArr = tempCache[sliced.setIndex];
+
+        let type = "Hit";
+        const inSet = targetSetArr.indexOf(sliced.blockAddr);
+
+        if (inSet !== -1) {
+          type = "Hit";
+          // move to front (LRU)
+          targetSetArr.splice(inSet, 1);
+          targetSetArr.push(sliced.blockAddr);
+        } else {
+          if (!historyBlocks.has(sliced.blockAddr)) {
+            type = "Compulsory Miss";
+          } else {
+            const totalBlocks = numSets * ways;
+            if (historyBlocks.size > totalBlocks) {
+              type = "Capacity Miss";
+            } else {
+              type = "Conflict Miss";
+            }
+          }
+          historyBlocks.add(sliced.blockAddr);
+
+          // Eviction in tempCache if full
+          if (targetSetArr.length >= ways) {
+            targetSetArr.shift(); // evict LRU
+          }
+          targetSetArr.push(sliced.blockAddr);
+        }
+
+        genAccesses.push({
+          num: i,
+          addr: createdAddr,
+          tag: sliced.tag,
+          set: sliced.setIndex,
+          offset: sliced.offset,
+          type: type,
+          why: `Automatisch generiert: ${type}`
+        });
+      }
+
+      currentPreset = {
+        id: "custom_gen",
+        title: `Generator: ${ways}-Way, ${numSets} Sets, ${blockSize}B Block`,
+        examBadge: "Zufalls-Challenge",
+        addrBits: addrBits,
+        blockSize: blockSize,
+        numSets: numSets,
+        ways: ways,
+        codeSnippet: `Generierte Aufgabe: <b>${addrBits}-Bit Adresse</b>, <b>${ways}-Way Assoziativität</b>, <b>${numSets} Sets</b>, <b>${blockSize} Bytes/Block</b>. Trage für alle ${numAccesses} Zugriffe Tag, Set, Offset und Status ein.`,
+        accesses: genAccesses
+      };
+
+      document.getElementById('examTagBadge').textContent = currentPreset.examBadge;
+      document.getElementById('codeTaskContent').innerHTML = currentPreset.codeSnippet;
+
+      if (typeof resetTimer === 'function') resetTimer();
+      buildQuizTable();
+      renderStep(0);
+    }
+
+    /* =========================================================================
+       AMAT INTERACTIVE CALCULATOR
+       ========================================================================= */
+
+    function updateAmatCalculation() {
+      const hasL2 = document.getElementById('amatEnableL2')?.checked ?? false;
+      const tL1 = parseFloat(document.getElementById('amatL1Hit').value);
+      const mrL1 = parseFloat(document.getElementById('amatL1MissRate').value) / 100.0;
+      const tL2 = parseFloat(document.getElementById('amatL2Hit').value);
+      const mrL2 = parseFloat(document.getElementById('amatL2MissRate').value) / 100.0;
+      const tRam = parseFloat(document.getElementById('amatRamTime').value);
+
+      document.getElementById('amatL1HitVal').textContent = `${tL1} Zyklen`;
+      document.getElementById('amatL1MissRateVal').textContent = `${Math.round(mrL1 * 100)} %`;
+      document.getElementById('amatL2HitVal').textContent = `${tL2} Zyklen`;
+      document.getElementById('amatL2MissRateVal').textContent = `${Math.round(mrL2 * 100)} %`;
+      document.getElementById('amatRamTimeVal').textContent = `${tRam} Zyklen`;
+
+      // Visual fade for L2 parameters when disabled
+      const boxHit = document.getElementById('boxL2Hit');
+      const boxMR = document.getElementById('boxL2MissRate');
+      if (boxHit) boxHit.style.opacity = hasL2 ? '1' : '0.35';
+      if (boxMR) boxMR.style.opacity = hasL2 ? '1' : '0.35';
+
+      let amat = 0;
+      let derivation = "";
+
+      if (!hasL2) {
+        // Single level (L1 + RAM) - e.g. SoSe25 8a
+        amat = tL1 + (mrL1 * tRam);
+        derivation = `
+          <div><b>Einstufiger Cache (SoSe25 8a / Moodle Testat 3):</b></div>
+          <div>AMAT = T<sub>Hit</sub> + (Miss Rate &times; T<sub>Speicher</sub>)</div>
+          <div>AMAT = ${tL1} + (${mrL1.toFixed(2)} &times; ${tRam})</div>
+          <div>AMAT = ${tL1} + ${(mrL1 * tRam).toFixed(1)}</div>
+          <div style="color:#34d399; font-weight:700; margin-top:4px;">= ${amat.toFixed(2)} Taktzyklen</div>
+        `;
+      } else {
+        // Multi-level L1 + L2 + RAM - e.g. WiSe26 Probeklausur 8a
+        const tPenaltyL1 = tL2 + (mrL2 * tRam);
+        amat = tL1 + (mrL1 * tPenaltyL1);
+        derivation = `
+          <div><b>Zweistufiger Cache (WiSe26 / Probeklausur 8a):</b></div>
+          <div>AMAT = T<sub>L1</sub> + MR<sub>L1</sub> &times; (T<sub>L2</sub> + MR<sub>L2</sub> &times; T<sub>Speicher</sub>)</div>
+          <div>AMAT = ${tL1} + ${mrL1.toFixed(2)} &times; (${tL2} + ${mrL2.toFixed(2)} &times; ${tRam})</div>
+          <div>AMAT = ${tL1} + ${mrL1.toFixed(2)} &times; (${tL2} + ${(mrL2 * tRam).toFixed(1)})</div>
+          <div>AMAT = ${tL1} + ${mrL1.toFixed(2)} &times; ${tPenaltyL1.toFixed(1)}</div>
+          <div style="color:#34d399; font-weight:700; margin-top:4px;">= ${amat.toFixed(2)} Taktzyklen</div>
+        `;
+      }
+
+      document.getElementById('amatDerivationBox').innerHTML = derivation;
+      document.getElementById('amatTotalResultBadge').textContent = `AMAT = ${amat.toFixed(2)} Zyklen`;
+
+      // Cycle bars
+      const l1Contrib = tL1;
+      const l2Contrib = hasL2 ? (mrL1 * tL2) : 0;
+      const ramContrib = hasL2 ? (mrL1 * mrL2 * tRam) : (mrL1 * tRam);
+      const totalTime = l1Contrib + l2Contrib + ramContrib;
+
+      const pL1 = Math.max(5, (l1Contrib / totalTime) * 100);
+      const pL2 = (hasL2 && mrL2 > 0) ? Math.max(5, (l2Contrib / totalTime) * 100) : 0;
+      const pRam = 100 - pL1 - pL2;
+
+      document.getElementById('amatBarL1').style.width = `${pL1}%`;
+      document.getElementById('amatBarL2').style.width = `${pL2}%`;
+      document.getElementById('amatBarRam').style.width = `${pRam}%`;
+    }
+
+    function setAmatPreset(t1, mr1, hasL2, t2, mr2, tram) {
+      if (typeof hasL2 === 'boolean') {
+        const chk = document.getElementById('amatEnableL2');
+        if (chk) chk.checked = hasL2;
+      }
+      document.getElementById('amatL1Hit').value = t1;
+      document.getElementById('amatL1MissRate').value = mr1;
+      if (t2 !== undefined && t2 !== null) document.getElementById('amatL2Hit').value = t2;
+      if (mr2 !== undefined && mr2 !== null) document.getElementById('amatL2MissRate').value = mr2;
+      document.getElementById('amatRamTime').value = tram;
+      updateAmatCalculation();
+    }
+
+    /* =========================================================================
+       SPEEDRUN & EXAM TARGET TIMER CONTROLLER
+       ========================================================================= */
+
+    const timerState = {
+      mode: 'countdown_7', // 'countdown_7', 'countdown_5', 'stopwatch'
+      initialSeconds: 420,  // 7 minutes default target
+      remainingSeconds: 420,
+      elapsedSeconds: 0,
+      isRunning: false,
+      intervalId: null
+    };
+
+    function formatTime(secs) {
+      const m = Math.floor(Math.abs(secs) / 60);
+      const s = Math.abs(secs) % 60;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function updateTimerDisplay() {
+      const displayEl = document.getElementById('timerDisplay');
+      const iconEl = document.getElementById('timerIcon');
+      const btnIcon = document.getElementById('timerPlayPauseIcon');
+      if (!displayEl) return;
+
+      let text = "00:00";
+      if (timerState.mode === 'stopwatch') {
+        text = formatTime(timerState.elapsedSeconds);
+      } else {
+        text = formatTime(timerState.remainingSeconds);
+      }
+      displayEl.textContent = text;
+
+      if (timerState.isRunning) {
+        displayEl.classList.add('running');
+        if (iconEl) iconEl.style.color = '#34d399';
+        if (btnIcon) btnIcon.innerHTML = '<rect x="6" y="4" width="3.5" height="16" fill="currentColor"/><rect x="14.5" y="4" width="3.5" height="16" fill="currentColor"/>';
+      } else {
+        displayEl.classList.remove('running');
+        if (iconEl) iconEl.style.color = '#94a3b8';
+        if (btnIcon) btnIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/>';
+      }
+
+      // Warning pulse when countdown is running low (< 60s)
+      if (timerState.mode !== 'stopwatch' && timerState.remainingSeconds <= 60 && timerState.remainingSeconds > 0) {
+        displayEl.classList.add('warning');
+      } else {
+        displayEl.classList.remove('warning');
+      }
+    }
+
+    function startTimer() {
+      if (timerState.isRunning) return;
+      timerState.isRunning = true;
+      updateTimerDisplay();
+
+      timerState.intervalId = setInterval(() => {
+        timerState.elapsedSeconds++;
+
+        if (timerState.mode !== 'stopwatch') {
+          timerState.remainingSeconds--;
+          if (timerState.remainingSeconds <= 0) {
+            timerState.remainingSeconds = 0;
+            pauseTimer();
+            alertTimerExpired();
+          }
+        }
+
+        updateTimerDisplay();
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      if (!timerState.isRunning) return;
+      timerState.isRunning = false;
+      if (timerState.intervalId) {
+        clearInterval(timerState.intervalId);
+        timerState.intervalId = null;
+      }
+      updateTimerDisplay();
+    }
+
+    function toggleTimer() {
+      if (timerState.isRunning) {
+        pauseTimer();
+      } else {
+        startTimer();
+      }
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      if (timerState.mode === 'countdown_7') {
+        timerState.initialSeconds = 420;
+        timerState.remainingSeconds = 420;
+      } else if (timerState.mode === 'countdown_5') {
+        timerState.initialSeconds = 300;
+        timerState.remainingSeconds = 300;
+      } else {
+        timerState.initialSeconds = 0;
+        timerState.remainingSeconds = 0;
+      }
+      timerState.elapsedSeconds = 0;
+      const speedBadge = document.getElementById('scoreSpeedrunBadge');
+      if (speedBadge) speedBadge.style.display = 'none';
+      updateTimerDisplay();
+    }
+
+    function onTimerModeChange(newMode) {
+      timerState.mode = newMode;
+      resetTimer();
+    }
+
+    function alertTimerExpired() {
+      const displayEl = document.getElementById('timerDisplay');
+      if (displayEl) {
+        displayEl.classList.add('warning');
+        displayEl.textContent = "00:00";
+      }
+      const badge = document.getElementById('scoreSpeedrunBadge');
+      if (badge) {
+        badge.style.display = 'block';
+        badge.style.color = '#f87171';
+        badge.textContent = '⏰ Zeit abgelaufen! In der Klausur sind maximal 7 Minuten vorgesehen.';
+      }
+    }
+
+    function onUserInteractionAutoStartTimer() {
+      if (!timerState.isRunning && (timerState.elapsedSeconds === 0)) {
+        startTimer();
+      }
+    }
+
+    const resizer = document.getElementById('dragResizer');
+    const mainContainer = document.getElementById('mainContainer');
+    let isDragging = false;
+
+    resizer.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      resizer.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const containerRect = mainContainer.getBoundingClientRect();
+      const rightWidth = containerRect.right - e.clientX;
+      if (rightWidth >= 300 && rightWidth <= containerRect.width - 320) {
+        mainContainer.style.gridTemplateColumns = `1fr 6px ${rightWidth}px`;
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        resizer.classList.remove('dragging');
+        document.body.style.cursor = 'default';
+      }
+    });
+
+    /* =========================================================================
+       KEYBOARD SHORTCUTS
+       ========================================================================= */
+
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        stepSimulation(1);
+      } else if (e.code === 'ArrowRight') {
+        stepSimulation(1);
+      } else if (e.code === 'ArrowLeft') {
+        stepSimulation(-1);
+      } else if (e.key === 'r' || e.key === 'R') {
+        resetCurrentSimulation();
+      }
+    });
+
+    /* =========================================================================
+       INITIALIZATION
+       ========================================================================= */
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadPreset('sose25_8b');
+      updateAmatCalculation();
+      resetTimer();
+    });
+  </script>
+</body>
+</html>
