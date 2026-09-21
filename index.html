@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TU Darmstadt RO Trainer Hub | Rechnerorganisation Interactive Simulators</title>
+  <title>TU Darmstadt RO Trainer Hub | Interactive RISC-V Exam Simulators</title>
   <style>
     :root {
       --bg-main: #090d16;
@@ -38,6 +38,19 @@
       display: flex;
       flex-direction: column;
       line-height: 1.5;
+    }
+
+    /* Inline Code Formatting */
+    code {
+      background: #060911;
+      color: #38bdf8;
+      font-family: var(--font-mono);
+      font-size: 0.84em;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      font-weight: 600;
+      white-space: nowrap;
     }
 
     /* Top Navigation Bar */
@@ -323,7 +336,7 @@
     .card-desc {
       font-size: 0.82rem;
       color: var(--text-muted);
-      line-height: 1.45;
+      line-height: 1.5;
       margin-bottom: 16px;
     }
 
@@ -398,7 +411,7 @@
     footer {
       background: var(--bg-card);
       border-top: 1px solid var(--border-color);
-      padding: 20px 24px;
+      padding: 24px;
       text-align: center;
       font-size: 0.8rem;
       color: var(--text-muted);
@@ -448,18 +461,18 @@
 
     <div class="header-badges">
       <span class="badge">🌐 Single-File Web Apps</span>
-      <span class="badge">⚡ Offline Ready</span>
-      <span class="badge badge-points">🏆 ~65+ Klausurpunkte</span>
+      <span class="badge">⚡ Offline-Ready</span>
+      <span class="badge badge-points">🏆 ~65+ Exam Points</span>
     </div>
   </header>
 
   <!-- Hero Section -->
   <section class="hero">
-    <div class="hero-tag">Vollständige Prüfungsvorbereitung</div>
-    <h2>Интерактивные тренажёры к экзамену <span>Rechnerorganisation</span></h2>
+    <div class="hero-tag">Complete Exam Preparation Suite</div>
+    <h2>Interactive Simulators for <span>Rechnerorganisation (RO)</span></h2>
     <p>
-      Коллекция полнофункциональных векторных веб-симуляторов по всем практическим задачам экзамена RO (TU Darmstadt: WiSe 26, SoSe 25, SoSe 24 и Probeklausur).
-      Каждый тренажёр работает прямо в браузере в один клик без сервера и без установки.
+      A suite of vector-graphic interactive training tools covering all practical exam tasks at TU Darmstadt
+      (WiSe 26, SoSe 25, SoSe 24, and Probeklausur). Each trainer runs 100% client-side in your browser with zero dependencies.
     </p>
   </section>
 
@@ -470,14 +483,14 @@
         <circle cx="11" cy="11" r="8" />
         <line x1="21" y1="21" x2="16.65" y2="16.65" />
       </svg>
-      <input type="text" id="searchInput" placeholder="Тренажёр, тема, команда или задача (z.B. FSM, Cache, Pipeline, lw)...">
+      <input type="text" id="searchInput" placeholder="Search trainers, topics, instructions, or exam tasks (e.g., FSM, Cache, Pipeline, lw)...">
     </div>
 
     <div class="filter-pills">
-      <button class="filter-pill active" data-filter="all">Alle (6)</button>
+      <button class="filter-pill active" data-filter="all">All (6)</button>
       <button class="filter-pill" data-filter="tier-1">Tier 1: High-Yield</button>
-      <button class="filter-pill" data-filter="tier-2">Tier 2: Cache</button>
-      <button class="filter-pill" data-filter="tier-3">Tier 3: Prozessoren</button>
+      <button class="filter-pill" data-filter="tier-2">Tier 2: Cache Memory</button>
+      <button class="filter-pill" data-filter="tier-3">Tier 3: Processor Arch</button>
     </div>
   </div>
 
@@ -491,12 +504,12 @@
           <span class="task-id-badge">Aufgabe 2</span>
           <span class="tier-badge tier-1">Tier 1 • High Yield</span>
         </div>
-        <h3 class="card-title">RISC-V Maschinencode &amp; Decoding</h3>
+        <h3 class="card-title">RISC-V Machine Code &amp; Decoding</h3>
         <div class="card-meta">
-          <span>⚡ Hex &harr; Binary &harr; Assembler</span>
+          <span>⚡ Hex &harr; Binary &harr; Assembly</span>
         </div>
         <p class="card-desc">
-          Интерактивный декодер и кодировщик инструкций всех форматов (R, I, S, B, U, J). Тренировка сборки 12-битных и 20-битных Immediate со знаковым расширением и сдвигом для бранчей и прыжков.
+          Interactive encoder and decoder for all RISC-V formats (R, I, S, B, U, J). Practice extracting fields, calculating branch offsets with sign extension, reconstructing immediate values, and mapping <code>funct3</code>/<code>funct7</code> opcodes.
         </p>
         <div class="topics-list">
           <span class="topic-tag">R-Type</span>
@@ -508,11 +521,11 @@
       </div>
       <div class="card-footer">
         <div class="points-info">
-          <span class="points-label">Gewicht in Klausur</span>
-          <span class="points-value">8 – 12 Punkte</span>
+          <span class="points-label">Exam Weight</span>
+          <span class="points-value">8 – 12 Points</span>
         </div>
         <a href="machine_code_trainer.html" class="launch-btn" target="_blank">
-          <span>Öffnen</span> &rarr;
+          <span>Launch Trainer</span> &rarr;
         </a>
       </div>
     </article>
@@ -526,10 +539,10 @@
         </div>
         <h3 class="card-title">Calling Conventions &amp; Stack Frames</h3>
         <div class="card-meta">
-          <span>📚 Caller vs. Callee-saved • Stack-Zeichner</span>
+          <span>📚 Caller vs. Callee-Saved • Visual Stack</span>
         </div>
         <p class="card-desc">
-          Визуальный симулятор стека памяти: генератор прологов и эпилогов функций (`addi sp, sp, -16`, сохранение `ra` и `s0`), интерактивная проверка регистров и расчёт смещений при вызове подпрограмм.
+          Interactive memory stack diagram generator: practice function prologues and epilogues (e.g. <code>addi sp, sp, -16</code>, preserving <code>ra</code> and <code>s0</code>–<code>s11</code>), verifying register preservation contracts, and computing byte offsets.
         </p>
         <div class="topics-list">
           <span class="topic-tag">ra &amp; sp</span>
@@ -540,11 +553,11 @@
       </div>
       <div class="card-footer">
         <div class="points-info">
-          <span class="points-label">Gewicht in Klausur</span>
-          <span class="points-value">10 – 14 Punkte</span>
+          <span class="points-label">Exam Weight</span>
+          <span class="points-value">10 – 14 Points</span>
         </div>
         <a href="calling_conventions_trainer.html" class="launch-btn" target="_blank">
-          <span>Öffnen</span> &rarr;
+          <span>Launch Trainer</span> &rarr;
         </a>
       </div>
     </article>
@@ -556,27 +569,27 @@
           <span class="task-id-badge">Aufgabe 4 / 8</span>
           <span class="tier-badge tier-2">Tier 2 • Core Memory</span>
         </div>
-        <h3 class="card-title">Cache-Speicher, 3C-Misses &amp; AMAT</h3>
+        <h3 class="card-title">Cache Memory, 3C-Misses &amp; AMAT</h3>
         <div class="card-meta">
           <span>💾 Tag / Index / Offset • Hit/Miss Sim</span>
         </div>
         <p class="card-desc">
-          Полноценный интерактивный симулятор кэша: расчет разрядности Tag/Index/Offset, трассировка обращений к памяти, классификация 3C-промахов (Compulsory, Capacity, Conflict) и калькулятор средней задержки AMAT.
+          Full cache memory simulator: calculate Tag, Set Index, and Byte Offset bit widths, trace memory accesses step-by-step, categorize 3C-Misses (Compulsory, Capacity, Conflict) via the official TU Darmstadt algorithm, and calculate AMAT latency.
         </p>
         <div class="topics-list">
           <span class="topic-tag">Direct Mapped</span>
           <span class="topic-tag">N-Way Set Assoc</span>
-          <span class="topic-tag">AMAT Formel</span>
+          <span class="topic-tag">AMAT Formula</span>
           <span class="topic-tag">3C-Misses</span>
         </div>
       </div>
       <div class="card-footer">
         <div class="points-info">
-          <span class="points-label">Gewicht in Klausur</span>
-          <span class="points-value">8 – 12 Punkte</span>
+          <span class="points-label">Exam Weight</span>
+          <span class="points-value">8 – 12 Points</span>
         </div>
         <a href="cache_trainer.html" class="launch-btn" target="_blank">
-          <span>Öffnen</span> &rarr;
+          <span>Launch Trainer</span> &rarr;
         </a>
       </div>
     </article>
@@ -586,14 +599,14 @@
       <div>
         <div class="card-top">
           <span class="task-id-badge">Aufgabe 5</span>
-          <span class="tier-badge tier-3">Tier 3 • Prozessor</span>
+          <span class="tier-badge tier-3">Tier 3 • Processor Arch</span>
         </div>
-        <h3 class="card-title">Eintakt-Prozessor (Single-Cycle)</h3>
+        <h3 class="card-title">Single-Cycle Processor Datapath</h3>
         <div class="card-meta">
-          <span>🔬 25+ Instruktionen • Real-Time Datapath</span>
+          <span>🔬 25+ Instructions • Live Wire Tracing</span>
         </div>
         <p class="card-desc">
-          Полная векторная схема однотактного процессора из лекций TU Darmstadt. Подсветка активных проводов и шин, матрица управляющих сигналов, экзаменационные задания (WiSe 26 `beq`, SoSe 25 `lw`, Probeklausur `slli`).
+          Interactive SVG schematic of the TU Darmstadt single-cycle processor. Highlight active data buses, inspect the control unit signal matrix (<code>RegWrite</code>, <code>ALUSrc</code>, <code>MemWrite</code>, <code>ResultSrc</code>), and solve past exam tasks (WiSe 26 <code>beq</code>, SoSe 25 <code>lw</code>, Probeklausur <code>slli</code>).
         </p>
         <div class="topics-list">
           <span class="topic-tag">Wire Tracing</span>
@@ -604,11 +617,11 @@
       </div>
       <div class="card-footer">
         <div class="points-info">
-          <span class="points-label">Gewicht in Klausur</span>
-          <span class="points-value">6 – 8 Punkte</span>
+          <span class="points-label">Exam Weight</span>
+          <span class="points-value">6 – 8 Points</span>
         </div>
         <a href="single_cycle_trainer.html" class="launch-btn" target="_blank">
-          <span>Öffnen</span> &rarr;
+          <span>Launch Trainer</span> &rarr;
         </a>
       </div>
     </article>
@@ -618,14 +631,14 @@
       <div>
         <div class="card-top">
           <span class="task-id-badge">Aufgabe 6</span>
-          <span class="tier-badge tier-3">Tier 3 • Prozessor</span>
+          <span class="tier-badge tier-3">Tier 3 • Processor Arch</span>
         </div>
-        <h3 class="card-title">Mehrtakt-Prozessor (FSM &amp; f<sub>max</sub>)</h3>
+        <h3 class="card-title">Multicycle Processor (FSM &amp; f<sub>max</sub>)</h3>
         <div class="card-meta">
-          <span>🔄 FSM Cycle Stepper • Kritischer Pfad</span>
+          <span>🔄 FSM Cycle Stepper • Critical Path</span>
         </div>
         <p class="card-desc">
-          Векторный граф автомата FSM (S0..S10) с пошаговой симуляцией тактов. Экзаменационный тренажёр добавления новых состояний (WiSe 26 `PC=ALU`, SoSe 25 `jalm`) и калькулятор критического пути $T_C$ и частоты $f_{max}$.
+          Vector state diagram of the Moore FSM (S0..S10) with cycle-by-cycle stepping. Practice adding new instruction states (WiSe 26 <code>PC = ALU(rs1, rs2)</code>, SoSe 25 <code>jalm</code>) and calculate critical path delay <code>T_C</code> and maximum clock frequency <code>f_max</code>.
         </p>
         <div class="topics-list">
           <span class="topic-tag">FSM Stepper</span>
@@ -636,11 +649,11 @@
       </div>
       <div class="card-footer">
         <div class="points-info">
-          <span class="points-label">Gewicht in Klausur</span>
-          <span class="points-value">8 – 10 Punkte</span>
+          <span class="points-label">Exam Weight</span>
+          <span class="points-value">8 – 10 Points</span>
         </div>
         <a href="multicycle_trainer.html" class="launch-btn" target="_blank">
-          <span>Öffnen</span> &rarr;
+          <span>Launch Trainer</span> &rarr;
         </a>
       </div>
     </article>
@@ -650,14 +663,14 @@
       <div>
         <div class="card-top">
           <span class="task-id-badge">Aufgabe 7</span>
-          <span class="tier-badge tier-3">Tier 3 • Schwergewicht</span>
+          <span class="tier-badge tier-3">Tier 3 • Heavyweight</span>
         </div>
         <h3 class="card-title">Pipeline Hazards &amp; Forwarding</h3>
         <div class="card-meta">
-          <span>🚀 5-Stufen Pipeline • Stalls &amp; Bypassing</span>
+          <span>🚀 5-Stage Pipeline • Stalls &amp; Bypassing</span>
         </div>
         <p class="card-desc">
-          Интерактивный симулятор 5-ступенчатого конвейера (F, D, E, M, W). Анализ конфликтов по данным (RAW), разрешение с помощью Forwarding-модуля, обнаружение Load-Use Hazards (аппаратный Stall) и сброс конвейера при Branch.
+          Interactive simulator for the classic 5-stage RISC-V pipeline (F, D, E, M, W). Analyze Read-After-Write (RAW) data hazards, configure forwarding multiplexers, handle Load-Use stalls, and simulate branch penalty flush cycles.
         </p>
         <div class="topics-list">
           <span class="topic-tag">Forwarding Unit</span>
@@ -668,11 +681,11 @@
       </div>
       <div class="card-footer">
         <div class="points-info">
-          <span class="points-label">Gewicht in Klausur</span>
-          <span class="points-value">12 – 15 Punkte</span>
+          <span class="points-label">Exam Weight</span>
+          <span class="points-value">12 – 15 Points</span>
         </div>
         <a href="pipeline_trainer.html" class="launch-btn" target="_blank">
-          <span>Öffnen</span> &rarr;
+          <span>Launch Trainer</span> &rarr;
         </a>
       </div>
     </article>
@@ -682,11 +695,11 @@
   <!-- Footer -->
   <footer>
     <p>
-      Разработано для студентов курса <b>Rechnerorganisation (RO)</b> в <b>TU Darmstadt</b>.
-      Все симуляторы работают автономно в любом современном браузере.
+      Designed for students preparing for the <b>Rechnerorganisation (RO)</b> examination at <b>TU Darmstadt</b>.
+      All simulators run completely client-side in any modern desktop or mobile browser.
     </p>
     <p style="margin-top: 6px; font-size: 0.75rem; color: var(--text-dim);">
-      RV32I Base Integer Instruction Set • Rechnerorganisation Klausur Training Suite
+      RV32I Base Integer Instruction Set • Rechnerorganisation Interactive Exam Suite
     </p>
   </footer>
 
