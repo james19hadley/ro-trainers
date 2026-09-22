@@ -1979,79 +1979,15 @@
         <div class="fields-legend-bar" id="fieldsLegendBar"></div>
       </div>
 
-      <!-- Step 1: Format Selector -->
-      <div class="step-box" id="step1Box">
-        <div class="step-header">
-          <span class="step-title">1. Instruktionsformat (Typ) wählen</span>
-          <div style="font-size:0.72rem; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
-            <span>Opcode [6:0]: <code id="opcodePreview" style="color:var(--color-opcode); font-weight:700;">1100011</code></span>
-            <span id="opcodeMatchRule" style="color:var(--accent-cyan); font-weight:600;">Branch Format</span>
-          </div>
-        </div>
-        <div class="format-btn-row">
-          <button class="fmt-btn" data-fmt="R">R-Typ</button>
-          <button class="fmt-btn" data-fmt="I">I-Typ</button>
-          <button class="fmt-btn" data-fmt="S">S-Typ</button>
-          <button class="fmt-btn" data-fmt="B">B-Typ</button>
-          <button class="fmt-btn" data-fmt="U">U-Typ</button>
-          <button class="fmt-btn" data-fmt="J">J-Typ</button>
-        </div>
-      </div>
-
-      <!-- Step 2: Extracted Fields -->
-      <div class="step-box" id="step2Box">
-        <div class="step-header">
-          <span class="step-title">2. Felder extrahieren (Bit-Slicing)</span>
-          <span style="font-size:0.7rem; color:var(--text-dim);">Felder passen sich automatisch dem gewählten Format an</span>
-        </div>
-
-        <div class="fields-input-grid" id="fieldsInputGrid">
-          <div class="field-input-group" id="grpOpcode">
-            <label class="field-label">opcode [6:0] <span class="hint">7 bit</span></label>
-            <input type="text" class="input-box" id="inOpcode" placeholder="z.B. 1100011" autocomplete="off">
-          </div>
-
-          <div class="field-input-group" id="grpFunct3">
-            <label class="field-label">funct3 [14:12] <span class="hint">3 bit</span></label>
-            <input type="text" class="input-box" id="inFunct3" placeholder="z.B. 001" autocomplete="off">
-          </div>
-
-          <div class="field-input-group" id="grpFunct7">
-            <label class="field-label">funct7 [31:25] <span class="hint">7 bit</span></label>
-            <input type="text" class="input-box" id="inFunct7" placeholder="z.B. 0000000" autocomplete="off">
-          </div>
-
-          <div class="field-input-group" id="grpRs1">
-            <label class="field-label">rs1 [19:15] <span class="hint">s0 / x8</span></label>
-            <input type="text" class="input-box" id="inRs1" placeholder="z.B. s0 / x8" autocomplete="off">
-          </div>
-
-          <div class="field-input-group" id="grpRs2">
-            <label class="field-label">rs2 [24:20] <span class="hint">s2 / x18</span></label>
-            <input type="text" class="input-box" id="inRs2" placeholder="z.B. s2 / x18" autocomplete="off">
-          </div>
-
-          <div class="field-input-group" id="grpRd">
-            <label class="field-label">rd [11:7] <span class="hint">s1 / x9</span></label>
-            <input type="text" class="input-box" id="inRd" placeholder="z.B. s1 / x9" autocomplete="off">
-          </div>
-
-          <div class="field-input-group" id="grpImm">
-            <label class="field-label">immediate (dezimal) <span class="hint">signed int</span></label>
-            <input type="text" class="input-box" id="inImm" placeholder="z.B. -32" autocomplete="off">
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 3: Final Assembly & Action Buttons -->
+      <!-- The Answer Input & Action Buttons -->
       <div class="step-box" id="step3Box">
         <div class="step-header">
-          <span class="step-title" id="step3Title">3. Finaler Assembler-Befehl</span>
-          <span style="font-size:0.7rem; color:var(--text-dim);" id="step3Hint">Akzeptiert ABI- &amp; x-Namen (z.B. bne s0, s2, -32)</span>
+          <span class="step-title" id="step3Title" style="font-size:0.85rem; font-weight:700; color:#fff;">Ihre Lösung (Assembler-Befehl):</span>
+          <span style="font-size:0.7rem; color:var(--text-dim);" id="step3Hint">ABI- &amp; x-Namen erlaubt (z.B. s0 oder x8) · Enter zum Prüfen</span>
         </div>
 
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-          <input type="text" class="asm-input" id="inAsm" placeholder="z.B. bne s0, s2, -32" style="flex:1; min-width:240px;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input type="text" class="asm-input" id="inAsm" placeholder="z.B. addi a0, a1, 10" style="flex:1; min-width:240px; font-size:1.05rem;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" autofocus>
           <div style="display:flex; gap:6px; flex-shrink:0;">
             <button class="btn-action" id="btnCheckAnswer">✓ Check Answer</button>
             <button class="btn-secondary" id="btnRevealSolution">💡 Lösung</button>
@@ -2065,17 +2001,17 @@
       <div class="eval-card" id="evalCard">
         <div class="eval-header">
           <div style="display:flex; align-items:center; gap:8px;">
-            <h3>Klausur-Bewertung</h3>
-            <span class="score-badge score-pass" id="scoreBadge" style="display:none;">9/9 Punkte (100%)</span>
+            <h3>Ergebnis</h3>
+            <span class="score-badge score-pass" id="scoreBadge" style="display:none;"></span>
           </div>
         </div>
         <div class="eval-feedback" id="evalFeedback">
-          Wählen Sie oben den Format-Typ, tragen Sie die extrahierten Felder ein und formulieren Sie den finalen Assembler-Befehl.
+          Geben Sie die dekodierte Assembler-Instruktion ein und drücken Sie <b>Enter</b> oder <b>Check Answer</b>.
         </div>
         <details class="details-explanation" id="solutionDetails" style="margin-top:6px; border-top:1px solid #1e293b; padding-top:6px;">
-          <summary style="cursor:pointer; font-size:0.74rem; font-weight:700; color:var(--accent-cyan);">📖 Architektonische Herleitung &amp; Klausur-Tipps</summary>
+          <summary style="cursor:pointer; font-size:0.74rem; font-weight:700; color:var(--accent-cyan);">📖 Herleitung &amp; Bit-Felder anzeigen</summary>
           <div class="explanation-body" id="explanationBody" style="font-size:0.78rem; color:#cbd5e1; line-height:1.45; margin-top:8px; display:flex; flex-direction:column; gap:6px;">
-            <span style="color:var(--text-dim);">Klicken Sie auf <b>Check Answer</b> oder <b>Lösung</b>, um die Schritt-für-Schritt-Herleitung anzuzeigen.</span>
+            <!-- Populated by JS -->
           </div>
         </details>
       </div>
@@ -2153,6 +2089,27 @@
   <button id="btnCloseBitTrap"></button>
   <div id="bitTrapModal"></div>
   <div id="taskSubText"></div>
+  <div id="step1Box">
+    <span id="opcodePreview"></span>
+    <span id="opcodeMatchRule"></span>
+    <button class="fmt-btn" data-fmt="R">R</button>
+    <button class="fmt-btn" data-fmt="I">I</button>
+    <button class="fmt-btn" data-fmt="S">S</button>
+    <button class="fmt-btn" data-fmt="B">B</button>
+    <button class="fmt-btn" data-fmt="U">U</button>
+    <button class="fmt-btn" data-fmt="J">J</button>
+  </div>
+  <div id="step2Box">
+    <div id="fieldsInputGrid">
+      <div id="grpOpcode"><input id="inOpcode" class="input-box"></div>
+      <div id="grpFunct3"><input id="inFunct3" class="input-box"></div>
+      <div id="grpFunct7"><input id="inFunct7" class="input-box"></div>
+      <div id="grpRs1"><input id="inRs1" class="input-box"></div>
+      <div id="grpRs2"><input id="inRs2" class="input-box"></div>
+      <div id="grpRd"><input id="inRd" class="input-box"></div>
+      <div id="grpImm"><input id="inImm" class="input-box"></div>
+    </div>
+  </div>
   <span id="step1Badge"></span>
   <span id="step2Badge"></span>
 </div>
@@ -3042,7 +2999,7 @@ function populateTaskPicker() {
   TASKS.forEach((t, i) => {
     const opt = document.createElement('option');
     opt.value = i;
-    opt.textContent = `[${t.exam}] ${t.taskNum} (${t.expectedAsmCanonical})`;
+    opt.textContent = `[${t.exam}] ${t.taskNum}`;
     taskSelect.appendChild(opt);
   });
 }
@@ -3065,17 +3022,17 @@ function loadTask(idx) {
     taskTitleText.innerHTML = `Kodieren Sie die Instruktion <code>${task.expectedAsmCanonical}</code> in 32-Bit Maschinencode (Hex / Binär).`;
     const s3Title = document.getElementById('step3Title');
     const s3Hint = document.getElementById('step3Hint');
-    if (s3Title) s3Title.textContent = '3. Finaler Maschinencode (Hex / Bin)';
-    if (s3Hint) s3Hint.textContent = 'Geben Sie die 32-Bit Hexadezimalzahl (z.B. 0xFE2410E3) oder Binärstring ein.';
-    inAsm.placeholder = `z.B. ${task.hex} oder 11111110...`;
+    if (s3Title) s3Title.textContent = 'Ihre Lösung (32-Bit Maschinencode):';
+    if (s3Hint) s3Hint.textContent = 'Hex (z.B. 0x00A00513) oder 32-Bit Binärstring · Enter zum Prüfen';
+    inAsm.placeholder = 'z.B. 0x00A00513 oder 00000000...';
   } else {
     if (taskModeTag) taskModeTag.textContent = 'Aufgabe 2: Dekodieren (Hex ➔ Assembler)';
     taskTitleText.innerHTML = `Dekodieren Sie das 32-Bit Wort <code>${task.hex}</code> in den entsprechenden RISC-V Assemblerbefehl.`;
     const s3Title = document.getElementById('step3Title');
     const s3Hint = document.getElementById('step3Hint');
-    if (s3Title) s3Title.textContent = '3. Finaler Assembler-Befehl';
-    if (s3Hint) s3Hint.textContent = 'Akzeptiert sowohl ABI-Namen (s0, a0, sp) als auch x-Namen (x8, x10, x2).';
-    inAsm.placeholder = 'z.B. bne s0, s2, -32';
+    if (s3Title) s3Title.textContent = 'Ihre Lösung (Assembler-Befehl):';
+    if (s3Hint) s3Hint.textContent = 'Akzeptiert sowohl ABI-Namen (s0, a0, sp) als auch x-Namen (x8, x10, x2) · Enter zum Prüfen';
+    inAsm.placeholder = 'z.B. addi a0, a1, 10';
   }
 
   customBin = hexTo32BitBin(task.hex);
@@ -3097,30 +3054,26 @@ function resetQuizInputs() {
   inRd.value = '';
   inImm.value = '';
   inAsm.value = '';
-
-  document.querySelectorAll('.input-box, .asm-input').forEach(el => {
-    el.classList.remove('input-correct', 'input-wrong');
-  });
+  inAsm.classList.remove('input-correct', 'input-wrong');
 
   scoreBadge.style.display = 'none';
   const task = TASKS[currentTaskIndex];
-  evalFeedback.innerHTML = `
-    <strong>Ziel:</strong> Dekodieren Sie <code>${task ? task.hex : '0x...'}</code>:<br>
-    <strong>1.</strong> Wählen Sie unten das Format (R, I, S, B, U, J) anhand des Opcodes.<br>
-    <strong>2.</strong> Tragen Sie die extrahierten Bitfelder ein.<br>
-    <strong>3.</strong> Formulieren Sie den finalen Assembler-Befehl und klicken Sie auf <b>Check Answer</b>!
-  `;
-  explanationBody.innerHTML = '<span style="color:var(--text-dim);">Klicken Sie auf <b>Check Answer</b> oder <b>Reveal Solution</b>, um die Schritt-für-Schritt-Herleitung anzuzeigen.</span>';
+  evalFeedback.innerHTML = currentMode === 'encode'
+    ? 'Geben Sie den 32-Bit Maschinencode ein und drücken Sie <b>Enter</b> oder <b>Check Answer</b>.'
+    : 'Geben Sie die dekodierte Assembler-Instruktion ein und drücken Sie <b>Enter</b> oder <b>Check Answer</b>.';
+  explanationBody.innerHTML = '<span style="color:var(--text-dim);">Klicken Sie auf <b>Check Answer</b> oder <b>Lösung</b>, um die Schritt-für-Schritt-Herleitung und Bit-Felder anzuzeigen.</span>';
+  const solDetails = document.getElementById('solutionDetails');
+  if (solDetails) solDetails.open = false;
+  setTimeout(() => inAsm.focus(), 50);
 }
 
 // --- 6. Visual Updates: Ruler, Slicer, Shuffler ---
 function updateVisuals() {
   const parsed = parseInstructionBits(customBin);
-  const showHints = (!isKlausurMode) || isRevealed;
-  const activeFmt = selectedFormat || (showHints ? parsed.fmt : null);
+  const showHints = isRevealed;
 
   // Update Code Displays
-  if (currentMode === 'encode' && isKlausurMode && !isRevealed) {
+  if (currentMode === 'encode' && !isRevealed) {
     hexDisplay.textContent = '0x????????';
     binDisplay.textContent = '???? ???? ???? ???? ???? ???? ???? ????';
   } else {
@@ -3133,37 +3086,34 @@ function updateVisuals() {
   }
 
   // Opcode preview in Step 1
-  opcodePreview.textContent = parsed.opcode;
-  if (showHints) {
-    opcodeMatchRule.textContent = getOpcodeDesc(parsed.opcode);
-  } else {
-    opcodeMatchRule.textContent = 'Typ im RISC-V Sheet nachschlagen';
+  if (opcodePreview) opcodePreview.textContent = parsed.opcode;
+  if (opcodeMatchRule) {
+    if (showHints) opcodeMatchRule.textContent = getOpcodeDesc(parsed.opcode);
+    else opcodeMatchRule.textContent = 'Typ im RISC-V Sheet nachschlagen';
   }
 
-  // Update 32-bit Bit Ruler
-  render32BitRuler(parsed, showHints ? (activeFmt || parsed.fmt) : null);
+  // Update 32-bit Bit Ruler (show colors ONLY if revealed!)
+  render32BitRuler(parsed, showHints ? parsed.fmt : null);
 
   // Update Field Legend Pills
-  renderFieldPills(parsed, showHints ? (activeFmt || parsed.fmt) : null);
+  renderFieldPills(parsed, showHints ? parsed.fmt : null);
 
   // Update Format Badge
-  if (selectedFormat) {
-    currentFormatBadge.textContent = `Gewählt: ${selectedFormat}-Typ`;
-    currentFormatBadge.className = `format-indicator-badge field-${selectedFormat.toLowerCase()}`;
-  } else if (showHints) {
-    const dispFmt = activeFmt || parsed.fmt;
-    currentFormatBadge.textContent = `Format: ${dispFmt}-Typ`;
-    currentFormatBadge.className = `format-indicator-badge field-${dispFmt.toLowerCase()}`;
-  } else {
-    currentFormatBadge.textContent = 'Format: ?';
-    currentFormatBadge.className = 'format-indicator-badge field-neutral';
+  if (currentFormatBadge) {
+    if (isRevealed) {
+      currentFormatBadge.style.display = 'inline-block';
+      currentFormatBadge.textContent = `Format: ${parsed.fmt}-Typ`;
+      currentFormatBadge.className = `format-indicator-badge field-${parsed.fmt.toLowerCase()}`;
+    } else {
+      currentFormatBadge.style.display = 'none';
+    }
   }
 
   // Update Immediate Shuffler
-  renderImmediateShuffler(parsed, showHints ? (activeFmt || parsed.fmt) : null);
+  renderImmediateShuffler(parsed, showHints ? parsed.fmt : null);
 
   // Adjust input fields visibility based on active format
-  adjustInputVisibility(activeFmt);
+  adjustInputVisibility(showHints ? parsed.fmt : null);
 
   // Update contextual opcode hint in quick lookup
   updateTaskOpcodeHint(parsed);
@@ -3184,8 +3134,7 @@ function getOpcodeDesc(op) {
 
 function render32BitRuler(parsed, fmt) {
   bitsRuler.innerHTML = '';
-  const showColors = (!isKlausurMode) || isRevealed || (selectedFormat !== null);
-  const activeFormat = fmt || selectedFormat || (showColors ? parsed.fmt : null);
+  const showColors = isRevealed;
 
   for (let bitIdx = 31; bitIdx >= 0; bitIdx--) {
     const bitVal = parsed.rawBin.charAt(31 - bitIdx);
@@ -3206,8 +3155,8 @@ function render32BitRuler(parsed, fmt) {
     cell.textContent = bitVal;
     cell.dataset.bit = bitIdx;
 
-    if (showColors && activeFormat) {
-      const fieldInfo = getFieldForBit(bitIdx, activeFormat);
+    if (showColors && fmt) {
+      const fieldInfo = getFieldForBit(bitIdx, fmt);
       cell.classList.add(fieldInfo.cssClass);
 
       cell.addEventListener('mouseenter', (e) => {
@@ -3286,11 +3235,11 @@ function getFieldForBit(bitIdx, fmt) {
 
 function renderFieldPills(parsed, fmt) {
   fieldsLegendBar.innerHTML = '';
-  const showDetails = (!isKlausurMode) || isRevealed;
-
-  if (!showDetails) {
+  if (!isRevealed) {
+    fieldsLegendBar.style.display = 'none';
     return;
   }
+  fieldsLegendBar.style.display = 'flex';
 
   const effectiveFmt = fmt || parsed.fmt;
   const makePill = (name, val, css, hint) => {
@@ -3673,114 +3622,49 @@ function renderUResult(parsed) {
 }
 
 // --- 8. Quiz Evaluation & Solution Reveal ---
+function normalizeAsm(str) {
+  if (!str) return '';
+  let s = str.trim().toLowerCase();
+  s = s.replace(/,/g, ' ');
+  s = s.replace(/\s*\(\s*/g, '(').replace(/\s*\)/g, ')');
+  const tokens = s.split(/\s+/).filter(Boolean);
+  const normTokens = tokens.map(tok => {
+    const matchMem = tok.match(/^(-?(?:0x[0-9a-f]+|\d+))?\(([^)]+)\)$/i);
+    if (matchMem) {
+      let offset = matchMem[1] !== undefined ? matchMem[1] : '0';
+      if (/^0x[0-9a-f]+$/i.test(offset)) offset = String(parseInt(offset, 16));
+      else if (/^-?\d+$/.test(offset)) offset = String(parseInt(offset, 10));
+      const baseReg = matchMem[2];
+      const rNum = regNameToNum(baseReg);
+      const regStr = rNum !== -1 ? `x${rNum}` : baseReg;
+      return `${offset}(${regStr})`;
+    }
+    if (/^0x[0-9a-f]+$/i.test(tok)) return String(parseInt(tok, 16));
+    const rNum = regNameToNum(tok);
+    if (rNum !== -1) return `x${rNum}`;
+    return tok;
+  });
+  return normTokens.join(' ');
+}
+
+function checkFuzzyAsm(userStr, task) {
+  if (!userStr) return false;
+  const uNorm = normalizeAsm(userStr);
+  const expNorm = normalizeAsm(task.expectedAsmCanonical);
+  if (uNorm === expNorm) return true;
+
+  for (const alt of (task.altAsm || [])) {
+    if (uNorm === normalizeAsm(alt)) return true;
+  }
+  return false;
+}
+
 function checkCurrentAnswer() {
   const task = TASKS[currentTaskIndex];
   const parsed = parseInstructionBits(customBin);
-  let points = 0;
-  let maxPoints = 9;
   let feedback = [];
+  let isCorrect = false;
 
-  // Step 1: Format check (1 Point)
-  const userFmt = selectedFormat;
-  const isFmtCorrect = userFmt === task.expectedType;
-  if (isFmtCorrect) {
-    points += 1;
-    feedback.push('✓ Format/Typ korrekt (+1P)');
-  } else {
-    feedback.push(`✗ Typ falsch: Erwartet ${task.expectedType}, gewählt ${userFmt || 'keiner'} (0P)`);
-  }
-
-  // Step 2: Extracted Fields (4 Points)
-  let fieldPoints = 0;
-  let fieldChecks = [];
-
-  // Opcode (1P)
-  const uOpcode = inOpcode.value.trim();
-  if (uOpcode === task.expectedOpcode) {
-    fieldPoints += 1;
-    markInput('inOpcode', true);
-  } else {
-    markInput('inOpcode', false);
-    fieldChecks.push(`Opcode: erwartet ${task.expectedOpcode}`);
-  }
-
-  // funct3 (if applicable) (1P)
-  if (task.expectedFunct3 !== null) {
-    const uF3 = inFunct3.value.trim();
-    if (uF3 === task.expectedFunct3) {
-      fieldPoints += 1;
-      markInput('inFunct3', true);
-    } else {
-      markInput('inFunct3', false);
-      fieldChecks.push(`funct3: erwartet ${task.expectedFunct3}`);
-    }
-  } else {
-    fieldPoints += 1; // Not required for this instruction
-  }
-
-  // Registers (1P)
-  let regsCorrect = true;
-  if (task.expectedRs1 !== null) {
-    const uRs1Num = regNameToNum(inRs1.value);
-    const expRs1Num = regNameToNum(task.expectedRs1);
-    if (uRs1Num === expRs1Num && expRs1Num !== -1) {
-      markInput('inRs1', true);
-    } else {
-      regsCorrect = false;
-      markInput('inRs1', false);
-    }
-  }
-  if (task.expectedRs2 !== null) {
-    const uRs2Num = regNameToNum(inRs2.value);
-    const expRs2Num = regNameToNum(task.expectedRs2);
-    if (uRs2Num === expRs2Num && expRs2Num !== -1) {
-      markInput('inRs2', true);
-    } else {
-      regsCorrect = false;
-      markInput('inRs2', false);
-    }
-  }
-  if (task.expectedRd !== null) {
-    const uRdNum = regNameToNum(inRd.value);
-    const expRdNum = regNameToNum(task.expectedRd);
-    if (uRdNum === expRdNum && expRdNum !== -1) {
-      markInput('inRd', true);
-    } else {
-      regsCorrect = false;
-      markInput('inRd', false);
-    }
-  }
-  if (regsCorrect) fieldPoints += 1;
-  else fieldChecks.push('Registerzuordnung unvollständig oder fehlerhaft');
-
-  // Immediate or funct7 (1P)
-  if (task.expectedType === 'R') {
-    const uF7 = inFunct7.value.trim();
-    if (uF7 === task.expectedFunct7) {
-      fieldPoints += 1;
-      markInput('inFunct7', true);
-    } else {
-      markInput('inFunct7', false);
-      fieldChecks.push(`funct7: erwartet ${task.expectedFunct7}`);
-    }
-  } else if (task.expectedImm !== null) {
-    const uImm = parseInt(inImm.value.trim(), 10);
-    if (!isNaN(uImm) && uImm === task.expectedImm) {
-      fieldPoints += 1;
-      markInput('inImm', true);
-    } else {
-      markInput('inImm', false);
-      fieldChecks.push(`Immediate: erwartet ${task.expectedImm}`);
-    }
-  } else {
-    fieldPoints += 1;
-  }
-
-  points += fieldPoints;
-  if (fieldPoints === 4) feedback.push('✓ Alle Felder exakt extrahiert (+4P)');
-  else feedback.push(`⚠ Felder teilweise abweichend (+${fieldPoints}P): ${fieldChecks.join(', ')}`);
-
-  // Step 3: Final Check (4 Points)
   if (currentMode === 'encode') {
     const rawVal = inAsm.value.trim().toLowerCase().replace(/^0x/, '').replace(/^0b/, '').replace(/\s+/g, '');
     const expHexClean = task.hex.toLowerCase().replace(/^0x/, '');
@@ -3792,33 +3676,30 @@ function checkCurrentAnswer() {
     }
 
     if (isCodeMatch) {
-      points += 4;
-      feedback.push(`✓ Maschinencode "${task.hex}" exakt kodiert! (+4P)`);
+      isCorrect = true;
+      feedback.push(`✓ <b>Richtig!</b> Maschinencode <code>${task.hex}</code> (${expBinClean}) exakt kodiert.`);
       markInput('inAsm', true);
     } else {
       markInput('inAsm', false);
-      feedback.push(`✗ Maschinencode fehlerhaft. Erwartet: <code>${task.hex}</code> (${expBinClean})`);
+      feedback.push(`✗ <b>Falsch.</b> Ihre Eingabe: "${inAsm.value.trim() || '(leer)'}". Erwartet: <code>${task.hex}</code> (${expBinClean})`);
     }
   } else {
     // Decoding mode
-    const userAsm = inAsm.value.trim().toLowerCase().replace(/\s+/g, ' ');
-    const normExp = task.expectedAsmCanonical.toLowerCase().replace(/\s+/g, ' ');
-    const alts = (task.altAsm || []).map(a => a.toLowerCase().replace(/\s+/g, ' '));
-
-    const isAsmMatch = (userAsm === normExp) || alts.includes(userAsm) || checkFuzzyAsm(userAsm, task);
+    const userVal = inAsm.value.trim();
+    const isAsmMatch = checkFuzzyAsm(userVal, task);
 
     if (isAsmMatch) {
-      points += 4;
-      feedback.push(`✓ Assembler-Instruktion "${task.expectedAsmCanonical}" perfekt formuliert! (+4P)`);
+      isCorrect = true;
+      feedback.push(`✓ <b>Richtig!</b> Assembler-Befehl <code>${task.expectedAsmCanonical}</code> korrekt angegeben.`);
       markInput('inAsm', true);
     } else {
       markInput('inAsm', false);
-      feedback.push(`✗ Assembler-Befehl fehlerhaft. Erwartet: <code>${task.expectedAsmCanonical}</code>`);
+      feedback.push(`✗ <b>Falsch.</b> Ihre Eingabe: "${userVal || '(leer)'}". Erwartet: <code>${task.expectedAsmCanonical}</code>`);
     }
   }
 
-  // Benchmark Speedrun Evaluation
-  if (points === maxPoints) {
+  // Speedrun Timer Evaluation
+  if (isCorrect) {
     pauseTimer();
     const timeSec = (timerElapsedTime / 1000).toFixed(1);
     const isFast = (timerElapsedTime / 1000) <= 90;
@@ -3828,40 +3709,44 @@ function checkCurrentAnswer() {
     let pbText = '';
     if (timerBestTime === null || timerElapsedTime < timerBestTime) {
       timerBestTime = timerElapsedTime;
-      pbText = ' 🏆 <b style="color:#fbbf24;">Neue Session-Bestzeit!</b>';
+      pbText = ' 🏆 <b style="color:#fbbf24;">Neue Bestzeit!</b>';
     }
-
-    feedback.push(`⏱️ <b>Benötigte Zeit:</b> ${timeSec}s ${isFast ? '⚡ <b>SPEED PASS!</b> (Unter dem 90-Sekunden-Ziel für 8–9 Klausurpunkte!)' : '🐢 (Tipp: Ziel für 8–9 Klausurpunkte ist &lt; 90 Sekunden)'}${pbText}`);
+    feedback.push(`⏱️ <b>Zeit:</b> ${timeSec}s ${isFast ? '⚡ <b>Klausur-Tempo!</b> (&lt; 90s)' : ''}${pbText}`);
   }
 
   // Update Score Badge & Summary
   scoreBadge.style.display = 'inline-block';
-  scoreBadge.textContent = `${points}/${maxPoints} Punkte (${Math.round((points/maxPoints)*100)}%)`;
-  scoreBadge.className = `score-badge ${points >= 7 ? 'score-pass' : 'score-fail'}`;
+  if (isCorrect) {
+    scoreBadge.textContent = '✓ Richtig (100%)';
+    scoreBadge.className = 'score-badge score-pass';
+  } else {
+    scoreBadge.textContent = '✗ Falsch';
+    scoreBadge.className = 'score-badge score-fail';
+  }
 
   evalFeedback.innerHTML = feedback.join('<br>');
 
-  // Unlock and reveal all highlights and immediate shuffler
+  // Unlock and reveal all highlights and fields
   isRevealed = true;
   updateVisuals();
 
+  // Populate hidden inputs in stubs for consistency
+  if (inOpcode) inOpcode.value = task.expectedOpcode;
+  if (inFunct3) inFunct3.value = task.expectedFunct3 || '';
+  if (inFunct7) inFunct7.value = task.expectedFunct7 || '';
+  if (inRs1) inRs1.value = task.expectedRs1 || '';
+  if (inRs2) inRs2.value = task.expectedRs2 || '';
+  if (inRd) inRd.value = task.expectedRd || '';
+  if (inImm) inImm.value = task.expectedImm !== null ? String(task.expectedImm) : '';
+
   // Show detailed architectural breakdown
   renderExplanation(task, parsed);
-}
 
-function checkFuzzyAsm(userStr, task) {
-  if (!userStr) return false;
-  // Strip commas and normalize spaces
-  const clean = s => s.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
-  const u = clean(userStr);
-  const exp = clean(task.expectedAsmCanonical);
-  if (u === exp) return true;
-
-  // Check aliases
-  for (const alt of (task.altAsm || [])) {
-    if (u === clean(alt)) return true;
+  // Auto open details if wrong to show derivation immediately
+  const solDetails = document.getElementById('solutionDetails');
+  if (solDetails) {
+    if (!isCorrect) solDetails.open = true;
   }
-  return false;
 }
 
 function markInput(id, isCorrect) {
@@ -3876,29 +3761,11 @@ function revealSolution() {
   const task = TASKS[currentTaskIndex];
   const parsed = parseInstructionBits(customBin);
 
-  // Set Format
-  selectedFormat = task.expectedType;
-  document.querySelectorAll('.fmt-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.fmt === selectedFormat);
-  });
-
-  // Set Inputs
-  inOpcode.value = task.expectedOpcode;
-  inFunct3.value = task.expectedFunct3 || '';
-  inFunct7.value = task.expectedFunct7 || '';
-  inRs1.value = task.expectedRs1 ? `${task.expectedRs1} (x${regNameToNum(task.expectedRs1)})` : '';
-  inRs2.value = task.expectedRs2 ? `${task.expectedRs2} (x${regNameToNum(task.expectedRs2)})` : '';
-  inRd.value = task.expectedRd ? `${task.expectedRd} (x${regNameToNum(task.expectedRd)})` : '';
-  inImm.value = task.expectedImm !== null ? task.expectedImm : '';
   inAsm.value = currentMode === 'encode' ? task.hex : task.expectedAsmCanonical;
-
-  document.querySelectorAll('.input-box, .asm-input').forEach(el => {
-    el.classList.remove('input-wrong');
-    el.classList.add('input-correct');
-  });
+  markInput('inAsm', true);
 
   scoreBadge.style.display = 'inline-block';
-  scoreBadge.textContent = 'Musterlösung aufgedeckt (9/9 Punkte)';
+  scoreBadge.textContent = 'Musterlösung';
   scoreBadge.className = 'score-badge score-pass';
 
   evalFeedback.innerHTML = `<strong>Offizielle Musterlösung für ${task.taskNum}:</strong><br>${currentMode === 'encode' ? `Maschinencode: <code>${task.hex}</code>` : `Befehl: <code>${task.expectedAsmCanonical}</code>`}`;
@@ -3906,6 +3773,9 @@ function revealSolution() {
   isRevealed = true;
   updateVisuals();
   renderExplanation(task, parsed);
+
+  const solDetails = document.getElementById('solutionDetails');
+  if (solDetails) solDetails.open = true;
 }
 
 function renderExplanation(task, parsed) {
@@ -4144,6 +4014,14 @@ function setupEventListeners() {
       loadTask(nextIdx);
     });
   }
+
+  // Enter key trigger on input field
+  inAsm.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      checkCurrentAnswer();
+    }
+  });
 
   // Copy Buttons
   document.getElementById('btnCopyHex').addEventListener('click', () => {
