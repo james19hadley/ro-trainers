@@ -1568,6 +1568,282 @@
         width: 28px;
         height: 2px;
       }
+    /* Pinned Side-by-Side Reference Drawer */
+    .drawer-overlay.pinned {
+      background: transparent !important;
+      backdrop-filter: none !important;
+      pointer-events: none !important;
+    }
+    .drawer-overlay.pinned .drawer-panel {
+      pointer-events: auto !important;
+      box-shadow: -8px 0 25px rgba(0, 0, 0, 0.75) !important;
+      border-left: 2px solid var(--accent-cyan) !important;
+      max-width: 560px;
+    }
+    .drawer-pin-btn {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+    .drawer-pin-btn:hover {
+      background: #334155;
+      color: #fff;
+    }
+    .drawer-pin-btn.pinned {
+      background: rgba(6, 182, 212, 0.2);
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan-glow);
+    }
+    .floating-cheat-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #0284c7 0%, #0f766e 100%);
+      color: #fff;
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      padding: 9px 15px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(2, 132, 199, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 90;
+      transition: all 0.2s ease;
+    }
+    .floating-cheat-btn:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 6px 24px rgba(2, 132, 199, 0.6);
+      border-color: #38bdf8;
+    }
+
+    /* Quick Code Lookup & Cheatsheet Card */
+    .quick-lookup-card {
+      background: #0f172a;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
+    .quick-lookup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .quick-lookup-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .quick-lookup-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .btn-lookup-sm {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #cbd5e1;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-lookup-sm:hover {
+      background: #334155;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    .quick-search-box {
+      display: flex;
+      position: relative;
+      align-items: center;
+    }
+    .quick-search-input {
+      width: 100%;
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      color: #f1f5f9;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      padding: 6px 28px 6px 10px;
+      border-radius: 6px;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .quick-search-input:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 1px var(--accent-cyan);
+    }
+    .quick-search-clear {
+      position: absolute;
+      right: 8px;
+      background: transparent;
+      border: none;
+      color: #64748b;
+      font-size: 0.75rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 4px;
+    }
+    .quick-search-clear:hover {
+      color: #f1f5f9;
+    }
+    .quick-search-results {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 8px 10px;
+      max-height: 240px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .lookup-result-item {
+      padding: 7px 9px;
+      border-radius: 5px;
+      background: #111827;
+      border: 1px solid #1e293b;
+      font-size: 0.73rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .lookup-result-item:hover {
+      border-color: rgba(56, 189, 248, 0.4);
+      background: #172033;
+    }
+    .lookup-item-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .lookup-inst-name {
+      font-weight: 800;
+      color: #38bdf8;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+    }
+    .lookup-type-pill {
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.65rem;
+    }
+    .lookup-codes-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: #94a3b8;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+    }
+    .lookup-codes-row code {
+      font-size: 0.72rem;
+    }
+    .lookup-desc {
+      color: #cbd5e1;
+      font-size: 0.71rem;
+      line-height: 1.35;
+    }
+    .lookup-layout {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: #64748b;
+      background: #020617;
+      padding: 3px 6px;
+      border-radius: 4px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .task-opcode-hint {
+      background: rgba(6, 182, 212, 0.08);
+      border: 1px solid rgba(6, 182, 212, 0.25);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 0.74rem;
+      color: #e2e8f0;
+      line-height: 1.45;
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+    }
+    .task-opcode-hint code {
+      color: var(--color-opcode);
+      font-weight: 700;
+    }
+    .opcode-table-wrap {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      overflow: hidden;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .opcode-mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.71rem;
+    }
+    .opcode-mini-table th {
+      background: #111827;
+      color: #94a3b8;
+      padding: 6px 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    .opcode-mini-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #1e293b;
+      color: #cbd5e1;
+    }
+    .opcode-mini-table tr.active-opcode-row {
+      background: rgba(6, 182, 212, 0.16) !important;
+      border-left: 3px solid var(--accent-cyan);
+    }
+    .opcode-mini-table tr:hover {
+      background: #1e293b;
+      cursor: pointer;
+    }
+    .btn-lookup-pill {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #38bdf8;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-lookup-pill:hover {
+      background: #0284c7;
+      color: #fff;
     }
   </style>
 </head>
@@ -1610,8 +1886,11 @@
     </div>
 
     <!-- Quick Utilities -->
-    <button class="btn-header" id="btnOpenReference" title="Open RISC-V Reference Drawer">
-      📖 Reference Sheet
+    <a href="./RISC-V_Reference.pdf" target="_blank" class="btn-header" style="text-decoration:none; display:inline-flex; align-items:center; gap:5px;" title="Offizielles 2-seitiges Prüfungs-Reference-Sheet (PDF) in neuem Tab / 2. Fenster öffnen">
+      📄 Exam PDF ↗
+    </a>
+    <button class="btn-header" id="btnOpenReference" title="Open RISC-V Reference Drawer (Cheat Sheet) [Hotkey: C]">
+      📖 Reference Sheet <span style="background:#0284c7; font-size:0.65rem; padding:1px 5px; border-radius:3px; margin-left:4px;">C</span>
     </button>
     <button class="btn-header" id="btnOpenBitTrap" title="Guide: The unencoded zero bit trap in B & J formats">
       💡 Bit-Trap Guide
@@ -1789,6 +2068,55 @@
         </div>
       </div>
 
+      <!-- Quick Code Lookup & Cheatsheet Card -->
+      <div class="quick-lookup-card" id="quickLookupCard">
+        <div class="quick-lookup-header">
+          <div class="quick-lookup-title">
+            <span>⚡ Quick Code Lookup &amp; Cheatsheet</span>
+            <span style="background:#1e293b; color:#38bdf8; font-size:0.65rem; padding:1px 5px; border-radius:3px; border:1px solid #38bdf8;">Taste: C</span>
+          </div>
+          <div class="quick-lookup-actions">
+            <button type="button" class="btn-lookup-sm" id="btnToggleOpcodeTable" title="Tabelle aller RV32I-Opcodes anzeigen/verstecken">📋 Opcode-Map</button>
+            <button type="button" class="btn-lookup-sm" id="btnSideSheet" title="Komplettes RISC-V Reference Sheet öffnen">📖 Full Sheet</button>
+            <a href="./RISC-V_Reference.pdf" target="_blank" class="btn-lookup-sm" style="text-decoration:none; color:#38bdf8;" title="Offizielles 2-seitiges Prüfungs-Reference-Sheet als PDF öffnen">📄 PDF ↗</a>
+          </div>
+        </div>
+
+        <!-- Instant Search Box -->
+        <div class="quick-search-box">
+          <input type="text" class="quick-search-input" id="quickSearchInput" placeholder="🔍 Befehl oder Opcode suchen (z.B. 'bne', '0110011', 'lw', 's0')..." autocomplete="off">
+          <button type="button" class="quick-search-clear" id="btnQuickSearchClear" style="display:none;" title="Suche leeren">✕</button>
+        </div>
+
+        <!-- Live Search Results Container -->
+        <div class="quick-search-results" id="quickSearchResults" style="display:none;"></div>
+
+        <!-- Collapsible Opcode Table -->
+        <div class="opcode-table-wrap" id="opcodeTableWrap" style="display:none;">
+          <table class="opcode-mini-table">
+            <thead>
+              <tr>
+                <th>Opcode</th>
+                <th>Typ</th>
+                <th>Kategorie</th>
+                <th>Befehle &amp; Codes</th>
+              </tr>
+            </thead>
+            <tbody id="opcodeTableBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Contextual Opcode Hint for Current Task -->
+        <div class="task-opcode-hint" id="taskOpcodeHint">
+          <span style="font-size:0.95rem;">💡</span>
+          <div id="taskOpcodeHintContent" style="flex:1;">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
       <!-- Step 1: Format Selector -->
       <div class="step-box" id="step1Box">
         <div class="step-header">
@@ -1803,8 +2131,11 @@
           <button class="fmt-btn" data-fmt="U">U</button>
           <button class="fmt-btn" data-fmt="J">J</button>
         </div>
-        <div style="font-size:0.72rem; color:var(--text-muted); display:flex; justify-content:space-between;">
-          <span>Opcode [6:0]: <code id="opcodePreview" style="color:var(--color-opcode);">1100011</code></span>
+        <div style="font-size:0.72rem; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span>Opcode [6:0]: <code id="opcodePreview" style="color:var(--color-opcode);">1100011</code></span>
+            <button type="button" class="btn-lookup-pill" id="btnLookupActiveOpcode" title="Befehle und Codes für diesen Opcode im Spickzettel anzeigen">🔍 Codes</button>
+          </div>
           <span id="opcodeMatchRule" style="color:var(--accent-cyan);">Branch Format</span>
         </div>
       </div>
@@ -1819,17 +2150,26 @@
         <div class="fields-input-grid" id="fieldsInputGrid">
           <!-- Dynamically displayed depending on selected type -->
           <div class="field-input-group" id="grpOpcode">
-            <label class="field-label">opcode [6:0] <span class="hint">7 bit</span></label>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <label class="field-label">opcode [6:0] <span class="hint">7 bit</span></label>
+              <button type="button" class="btn-lookup-pill" id="btnLookupOpcodeField" title="Opcode-Tabelle nachschlagen">🔍 Codes</button>
+            </div>
             <input type="text" class="input-box" id="inOpcode" placeholder="z.B. 1100011">
           </div>
 
           <div class="field-input-group" id="grpFunct3">
-            <label class="field-label">funct3 [14:12] <span class="hint">3 bit</span></label>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <label class="field-label">funct3 [14:12] <span class="hint">3 bit</span></label>
+              <button type="button" class="btn-lookup-pill" id="btnLookupFunct3Field" title="funct3-Werte für diesen Opcode nachschlagen">🔍 Codes</button>
+            </div>
             <input type="text" class="input-box" id="inFunct3" placeholder="z.B. 001">
           </div>
 
           <div class="field-input-group" id="grpFunct7">
-            <label class="field-label">funct7 [31:25] <span class="hint">7 bit</span></label>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <label class="field-label">funct7 [31:25] <span class="hint">7 bit</span></label>
+              <button type="button" class="btn-lookup-pill" id="btnLookupFunct7Field" title="funct7-Werte anzeigen">🔍 Codes</button>
+            </div>
             <input type="text" class="input-box" id="inFunct7" placeholder="z.B. 0000000">
           </div>
 
@@ -1884,9 +2224,13 @@
   <div class="drawer-panel">
     <div class="drawer-header">
       <div class="drawer-title">
-        <span>📖 RISC-V Official Reference Sheet (RV32I)</span>
+        <span>📖 RISC-V Official Reference Sheet (RV32I Hilfsmittel)</span>
       </div>
-      <button class="drawer-close" id="btnCloseDrawer">&times;</button>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <a href="./RISC-V_Reference.pdf" target="_blank" class="drawer-pin-btn" style="text-decoration:none; color:#38bdf8;" title="Offizielles 2-seitiges Prüfungs-Reference-Sheet als PDF öffnen">📄 PDF ↗</a>
+        <button class="drawer-pin-btn" id="btnPinDrawer" title="Pinnen: Sheet bleibt seitlich offen während Sie tippen!">📌 Nebenan pinnen</button>
+        <button class="drawer-close" id="btnCloseDrawer" title="Schließen (Esc)">&times;</button>
+      </div>
     </div>
 
     <div class="drawer-nav-tabs">
@@ -2028,6 +2372,12 @@
 <!-- Floating Tooltip -->
 <div id="globalTooltip"></div>
 
+<!-- Floating Quick Reference Sheet Trigger -->
+<button class="floating-cheat-btn" id="btnFloatingCheat" title="Offizielles RISC-V Reference Sheet (Spickzettel) öffnen [Taste: C]">
+  <span style="font-size:1.1rem;">📖</span>
+  <span>Cheat Sheet <kbd style="background:rgba(0,0,0,0.3); padding:1px 5px; border-radius:3px; font-size:0.7rem;">C</kbd></span>
+</button>
+
 <!-- JavaScript Logic -->
 <script>
 /**
@@ -2037,59 +2387,91 @@
 
 // --- 1. Instruction Set & Reference Database ---
 const RV32I_DB = [
-  // R-Type
-  { name: 'add', type: 'R', opcode: '0110011', funct3: '000', funct7: '0000000', desc: 'Add registers: rd = rs1 + rs2' },
-  { name: 'sub', type: 'R', opcode: '0110011', funct3: '000', funct7: '0100000', desc: 'Subtract: rd = rs1 - rs2' },
-  { name: 'sll', type: 'R', opcode: '0110011', funct3: '001', funct7: '0000000', desc: 'Shift left logical: rd = rs1 << rs2' },
-  { name: 'slt', type: 'R', opcode: '0110011', funct3: '010', funct7: '0000000', desc: 'Set less than (signed): rd = (rs1 < rs2)?1:0' },
-  { name: 'sltu', type: 'R', opcode: '0110011', funct3: '011', funct7: '0000000', desc: 'Set less than (unsigned): rd = (rs1 < rs2)?1:0' },
-  { name: 'xor', type: 'R', opcode: '0110011', funct3: '100', funct7: '0000000', desc: 'Bitwise XOR: rd = rs1 ^ rs2' },
-  { name: 'srl', type: 'R', opcode: '0110011', funct3: '101', funct7: '0000000', desc: 'Shift right logical: rd = rs1 >> rs2' },
-  { name: 'sra', type: 'R', opcode: '0110011', funct3: '101', funct7: '0100000', desc: 'Shift right arithmetic: rd = rs1 >>> rs2' },
-  { name: 'or', type: 'R', opcode: '0110011', funct3: '110', funct7: '0000000', desc: 'Bitwise OR: rd = rs1 | rs2' },
-  { name: 'and', type: 'R', opcode: '0110011', funct3: '111', funct7: '0000000', desc: 'Bitwise AND: rd = rs1 & rs2' },
+  // R-Type (Arithmetic & Logic)
+  { name: 'add', type: 'R', opcode: '0110011', funct3: '000', funct7: '0000000', syntax: 'add rd, rs1, rs2', desc: 'Add registers: rd = rs1 + rs2' },
+  { name: 'sub', type: 'R', opcode: '0110011', funct3: '000', funct7: '0100000', syntax: 'sub rd, rs1, rs2', desc: 'Subtract: rd = rs1 - rs2' },
+  { name: 'sll', type: 'R', opcode: '0110011', funct3: '001', funct7: '0000000', syntax: 'sll rd, rs1, rs2', desc: 'Shift left logical: rd = rs1 << rs2[4:0]' },
+  { name: 'slt', type: 'R', opcode: '0110011', funct3: '010', funct7: '0000000', syntax: 'slt rd, rs1, rs2', desc: 'Set less than (signed): rd = (rs1 < rs2)?1:0' },
+  { name: 'sltu', type: 'R', opcode: '0110011', funct3: '011', funct7: '0000000', syntax: 'sltu rd, rs1, rs2', desc: 'Set less than (unsigned): rd = (rs1 < rs2)?1:0' },
+  { name: 'xor', type: 'R', opcode: '0110011', funct3: '100', funct7: '0000000', syntax: 'xor rd, rs1, rs2', desc: 'Bitwise XOR: rd = rs1 ^ rs2' },
+  { name: 'srl', type: 'R', opcode: '0110011', funct3: '101', funct7: '0000000', syntax: 'srl rd, rs1, rs2', desc: 'Shift right logical: rd = rs1 >> rs2[4:0]' },
+  { name: 'sra', type: 'R', opcode: '0110011', funct3: '101', funct7: '0100000', syntax: 'sra rd, rs1, rs2', desc: 'Shift right arithmetic: rd = rs1 >>> rs2[4:0]' },
+  { name: 'or', type: 'R', opcode: '0110011', funct3: '110', funct7: '0000000', syntax: 'or rd, rs1, rs2', desc: 'Bitwise OR: rd = rs1 | rs2' },
+  { name: 'and', type: 'R', opcode: '0110011', funct3: '111', funct7: '0000000', syntax: 'and rd, rs1, rs2', desc: 'Bitwise AND: rd = rs1 & rs2' },
 
-  // I-Type (Arithmetic)
-  { name: 'addi', type: 'I', opcode: '0010011', funct3: '000', funct7: null, desc: 'Add immediate: rd = rs1 + SignExt(imm)' },
-  { name: 'slli', type: 'I', opcode: '0010011', funct3: '001', funct7: '0000000', desc: 'Shift left logical imm: rd = rs1 << shamt' },
-  { name: 'slti', type: 'I', opcode: '0010011', funct3: '010', funct7: null, desc: 'Set less than imm (signed): rd = (rs1 < imm)?1:0' },
-  { name: 'sltiu', type: 'I', opcode: '0010011', funct3: '011', funct7: null, desc: 'Set less than imm (unsigned): rd = (rs1 < imm)?1:0' },
-  { name: 'xori', type: 'I', opcode: '0010011', funct3: '100', funct7: null, desc: 'XOR immediate: rd = rs1 ^ SignExt(imm)' },
-  { name: 'srli', type: 'I', opcode: '0010011', funct3: '101', funct7: '0000000', desc: 'Shift right logical imm: rd = rs1 >> shamt' },
-  { name: 'srai', type: 'I', opcode: '0010011', funct3: '101', funct7: '0100000', desc: 'Shift right arithmetic imm: rd = rs1 >>> shamt' },
-  { name: 'ori', type: 'I', opcode: '0010011', funct3: '110', funct7: null, desc: 'OR immediate: rd = rs1 | SignExt(imm)' },
-  { name: 'andi', type: 'I', opcode: '0010011', funct3: '111', funct7: null, desc: 'AND immediate: rd = rs1 & SignExt(imm)' },
+  // I-Type (Arithmetic with Immediate)
+  { name: 'addi', type: 'I', opcode: '0010011', funct3: '000', funct7: null, syntax: 'addi rd, rs1, imm', desc: 'Add immediate: rd = rs1 + SignExt(imm)' },
+  { name: 'slli', type: 'I', opcode: '0010011', funct3: '001', funct7: '0000000', syntax: 'slli rd, rs1, shamt', desc: 'Shift left logical imm: rd = rs1 << shamt' },
+  { name: 'slti', type: 'I', opcode: '0010011', funct3: '010', funct7: null, syntax: 'slti rd, rs1, imm', desc: 'Set less than imm (signed): rd = (rs1 < imm)?1:0' },
+  { name: 'sltiu', type: 'I', opcode: '0010011', funct3: '011', funct7: null, syntax: 'sltiu rd, rs1, imm', desc: 'Set less than imm (unsigned): rd = (rs1 < imm)?1:0' },
+  { name: 'xori', type: 'I', opcode: '0010011', funct3: '100', funct7: null, syntax: 'xori rd, rs1, imm', desc: 'XOR immediate: rd = rs1 ^ SignExt(imm)' },
+  { name: 'srli', type: 'I', opcode: '0010011', funct3: '101', funct7: '0000000', syntax: 'srli rd, rs1, shamt', desc: 'Shift right logical imm: rd = rs1 >> shamt' },
+  { name: 'srai', type: 'I', opcode: '0010011', funct3: '101', funct7: '0100000', syntax: 'srai rd, rs1, shamt', desc: 'Shift right arithmetic imm: rd = rs1 >>> shamt' },
+  { name: 'ori', type: 'I', opcode: '0010011', funct3: '110', funct7: null, syntax: 'ori rd, rs1, imm', desc: 'OR immediate: rd = rs1 | SignExt(imm)' },
+  { name: 'andi', type: 'I', opcode: '0010011', funct3: '111', funct7: null, syntax: 'andi rd, rs1, imm', desc: 'AND immediate: rd = rs1 & SignExt(imm)' },
 
   // I-Type (Loads)
-  { name: 'lb', type: 'I', opcode: '0000011', funct3: '000', funct7: null, desc: 'Load byte: rd = SignExt([rs1 + imm][7:0])' },
-  { name: 'lh', type: 'I', opcode: '0000011', funct3: '001', funct7: null, desc: 'Load halfword: rd = SignExt([rs1 + imm][15:0])' },
-  { name: 'lw', type: 'I', opcode: '0000011', funct3: '010', funct7: null, desc: 'Load word: rd = [rs1 + imm][31:0]' },
-  { name: 'lbu', type: 'I', opcode: '0000011', funct3: '100', funct7: null, desc: 'Load byte unsigned: rd = ZeroExt([rs1 + imm][7:0])' },
-  { name: 'lhu', type: 'I', opcode: '0000011', funct3: '101', funct7: null, desc: 'Load halfword unsigned: rd = ZeroExt([rs1 + imm][15:0])' },
+  { name: 'lb', type: 'I', opcode: '0000011', funct3: '000', funct7: null, syntax: 'lb rd, imm(rs1)', desc: 'Load byte: rd = SignExt([rs1 + imm][7:0])' },
+  { name: 'lh', type: 'I', opcode: '0000011', funct3: '001', funct7: null, syntax: 'lh rd, imm(rs1)', desc: 'Load halfword: rd = SignExt([rs1 + imm][15:0])' },
+  { name: 'lw', type: 'I', opcode: '0000011', funct3: '010', funct7: null, syntax: 'lw rd, imm(rs1)', desc: 'Load word: rd = [rs1 + imm][31:0]' },
+  { name: 'lbu', type: 'I', opcode: '0000011', funct3: '100', funct7: null, syntax: 'lbu rd, imm(rs1)', desc: 'Load byte unsigned: rd = ZeroExt([rs1 + imm][7:0])' },
+  { name: 'lhu', type: 'I', opcode: '0000011', funct3: '101', funct7: null, syntax: 'lhu rd, imm(rs1)', desc: 'Load halfword unsigned: rd = ZeroExt([rs1 + imm][15:0])' },
 
   // I-Type (Jump Register)
-  { name: 'jalr', type: 'I', opcode: '1100111', funct3: '000', funct7: null, desc: 'Jump and link register: PC = (rs1 + imm) & ~1, rd = PC + 4' },
+  { name: 'jalr', type: 'I', opcode: '1100111', funct3: '000', funct7: null, syntax: 'jalr rd, rs1, imm', desc: 'Jump and link register: PC = (rs1 + imm) & ~1, rd = PC + 4' },
 
   // S-Type (Stores)
-  { name: 'sb', type: 'S', opcode: '0100011', funct3: '000', funct7: null, desc: 'Store byte: [rs1 + imm][7:0] = rs2[7:0]' },
-  { name: 'sh', type: 'S', opcode: '0100011', funct3: '001', funct7: null, desc: 'Store halfword: [rs1 + imm][15:0] = rs2[15:0]' },
-  { name: 'sw', type: 'S', opcode: '0100011', funct3: '010', funct7: null, desc: 'Store word: [rs1 + imm][31:0] = rs2[31:0]' },
+  { name: 'sb', type: 'S', opcode: '0100011', funct3: '000', funct7: null, syntax: 'sb rs2, imm(rs1)', desc: 'Store byte: [rs1 + imm][7:0] = rs2[7:0]' },
+  { name: 'sh', type: 'S', opcode: '0100011', funct3: '001', funct7: null, syntax: 'sh rs2, imm(rs1)', desc: 'Store halfword: [rs1 + imm][15:0] = rs2[15:0]' },
+  { name: 'sw', type: 'S', opcode: '0100011', funct3: '010', funct7: null, syntax: 'sw rs2, imm(rs1)', desc: 'Store word: [rs1 + imm][31:0] = rs2[31:0]' },
 
   // B-Type (Branches)
-  { name: 'beq', type: 'B', opcode: '1100011', funct3: '000', funct7: null, desc: 'Branch if equal: if (rs1 == rs2) PC += imm' },
-  { name: 'bne', type: 'B', opcode: '1100011', funct3: '001', funct7: null, desc: 'Branch if not equal: if (rs1 != rs2) PC += imm' },
-  { name: 'blt', type: 'B', opcode: '1100011', funct3: '100', funct7: null, desc: 'Branch if less than (signed): if (rs1 < rs2) PC += imm' },
-  { name: 'bge', type: 'B', opcode: '1100011', funct3: '101', funct7: null, desc: 'Branch if greater or equal: if (rs1 >= rs2) PC += imm' },
-  { name: 'bltu', type: 'B', opcode: '1100011', funct3: '110', funct7: null, desc: 'Branch if less than (unsigned): if (rs1 < rs2) PC += imm' },
-  { name: 'bgeu', type: 'B', opcode: '1100011', funct3: '111', funct7: null, desc: 'Branch if greater or equal (unsigned): if (rs1 >= rs2) PC += imm' },
+  { name: 'beq', type: 'B', opcode: '1100011', funct3: '000', funct7: null, syntax: 'beq rs1, rs2, label', desc: 'Branch if equal: if (rs1 == rs2) PC += imm' },
+  { name: 'bne', type: 'B', opcode: '1100011', funct3: '001', funct7: null, syntax: 'bne rs1, rs2, label', desc: 'Branch if not equal: if (rs1 != rs2) PC += imm' },
+  { name: 'blt', type: 'B', opcode: '1100011', funct3: '100', funct7: null, syntax: 'blt rs1, rs2, label', desc: 'Branch if less than (signed): if (rs1 < rs2) PC += imm' },
+  { name: 'bge', type: 'B', opcode: '1100011', funct3: '101', funct7: null, syntax: 'bge rs1, rs2, label', desc: 'Branch if greater or equal: if (rs1 >= rs2) PC += imm' },
+  { name: 'bltu', type: 'B', opcode: '1100011', funct3: '110', funct7: null, syntax: 'bltu rs1, rs2, label', desc: 'Branch if less than (unsigned): if (rs1 < rs2) PC += imm' },
+  { name: 'bgeu', type: 'B', opcode: '1100011', funct3: '111', funct7: null, syntax: 'bgeu rs1, rs2, label', desc: 'Branch if greater or equal (unsigned): if (rs1 >= rs2) PC += imm' },
 
   // U-Type
-  { name: 'lui', type: 'U', opcode: '0110111', funct3: null, funct7: null, desc: 'Load upper immediate: rd = imm << 12' },
-  { name: 'auipc', type: 'U', opcode: '0010111', funct3: null, funct7: null, desc: 'Add upper imm to PC: rd = PC + (imm << 12)' },
+  { name: 'lui', type: 'U', opcode: '0110111', funct3: null, funct7: null, syntax: 'lui rd, imm[31:12]', desc: 'Load upper immediate: rd = imm << 12' },
+  { name: 'auipc', type: 'U', opcode: '0010111', funct3: null, funct7: null, syntax: 'auipc rd, imm[31:12]', desc: 'Add upper imm to PC: rd = PC + (imm << 12)' },
 
   // J-Type
-  { name: 'jal', type: 'J', opcode: '1101111', funct3: null, funct7: null, desc: 'Jump and link: PC += imm, rd = PC + 4' }
+  { name: 'jal', type: 'J', opcode: '1101111', funct3: null, funct7: null, syntax: 'jal rd, label', desc: 'Jump and link: PC += imm, rd = PC + 4' },
+
+  // M Extension (Multiply & Divide)
+  { name: 'mul', type: 'R', opcode: '0110011', funct3: '000', funct7: '0000001', syntax: 'mul rd, rs1, rs2', desc: 'Multiply: rd = (rs1 * rs2)[31:0]' },
+  { name: 'mulh', type: 'R', opcode: '0110011', funct3: '001', funct7: '0000001', syntax: 'mulh rd, rs1, rs2', desc: 'Multiply high (signed * signed): rd = (rs1 * rs2)[63:32]' },
+  { name: 'mulhsu', type: 'R', opcode: '0110011', funct3: '010', funct7: '0000001', syntax: 'mulhsu rd, rs1, rs2', desc: 'Multiply high (signed * unsigned)' },
+  { name: 'mulhu', type: 'R', opcode: '0110011', funct3: '011', funct7: '0000001', syntax: 'mulhu rd, rs1, rs2', desc: 'Multiply high (unsigned * unsigned)' },
+  { name: 'div', type: 'R', opcode: '0110011', funct3: '100', funct7: '0000001', syntax: 'div rd, rs1, rs2', desc: 'Divide signed: rd = rs1 / rs2' },
+  { name: 'divu', type: 'R', opcode: '0110011', funct3: '101', funct7: '0000001', syntax: 'divu rd, rs1, rs2', desc: 'Divide unsigned: rd = rs1 / rs2' },
+  { name: 'rem', type: 'R', opcode: '0110011', funct3: '110', funct7: '0000001', syntax: 'rem rd, rs1, rs2', desc: 'Remainder signed: rd = rs1 % rs2' },
+  { name: 'remu', type: 'R', opcode: '0110011', funct3: '111', funct7: '0000001', syntax: 'remu rd, rs1, rs2', desc: 'Remainder unsigned: rd = rs1 % rs2' }
 ];
+
+// Opcode Families Map (Cheatsheet High-Level Taxonomy)
+const OPCODE_FAMILIES = [
+  { opcode: '0110011', type: 'R', title: 'R-Typ Arithmetik', desc: 'Register-Register Operationen', insts: ['add', 'sub', 'sll', 'slt', 'sltu', 'xor', 'srl', 'sra', 'or', 'and', 'mul', 'div', 'rem'] },
+  { opcode: '0010011', type: 'I', title: 'I-Typ ALU Imm', desc: 'Arithmetik mit 12-Bit Immediate', insts: ['addi', 'slli', 'slti', 'sltiu', 'xori', 'srli', 'srai', 'ori', 'andi'] },
+  { opcode: '0000011', type: 'I', title: 'I-Typ Ladebefehle', desc: 'Speicher lesen (Loads)', insts: ['lb', 'lh', 'lw', 'lbu', 'lhu'] },
+  { opcode: '1100111', type: 'I', title: 'I-Typ Sprung Reg', desc: 'Indirekter Sprung (jalr)', insts: ['jalr'] },
+  { opcode: '0100011', type: 'S', title: 'S-Typ Speicherbefehle', desc: 'Speicher schreiben (Stores)', insts: ['sb', 'sh', 'sw'] },
+  { opcode: '1100011', type: 'B', title: 'B-Typ Verzweigung', desc: 'Bedingte Sprünge (Branches)', insts: ['beq', 'bne', 'blt', 'bge', 'bltu', 'bgeu'] },
+  { opcode: '0110111', type: 'U', title: 'U-Typ LUI', desc: 'Upper Immediate laden', insts: ['lui'] },
+  { opcode: '0010111', type: 'U', title: 'U-Typ AUIPC', desc: 'Upper Immediate + PC', insts: ['auipc'] },
+  { opcode: '1101111', type: 'J', title: 'J-Typ JAL', desc: 'Unbedingter Sprung PC-relativ', insts: ['jal'] }
+];
+
+const FORMAT_LAYOUTS = {
+  R: '[31:25 funct7] [24:20 rs2] [19:15 rs1] [14:12 funct3] [11:7 rd] [6:0 opcode]',
+  I: '[31:20 imm[11:0]] [19:15 rs1] [14:12 funct3] [11:7 rd] [6:0 opcode]',
+  S: '[31:25 imm[11:5]] [24:20 rs2] [19:15 rs1] [14:12 funct3] [11:7 imm[4:0]] [6:0 opcode]',
+  B: '[31 imm[12]] [30:25 imm[10:5]] [24:20 rs2] [19:15 rs1] [14:12 funct3] [11:8 imm[4:1]] [7 imm[11]] [6:0 opcode]',
+  U: '[31:12 imm[31:12]] [11:7 rd] [6:0 opcode]',
+  J: '[31 imm[20]] [30:21 imm[10:1]] [20 imm[11]] [19:12 imm[19:12]] [11:7 rd] [6:0 opcode]'
+};
 
 // Register Mappings
 const REG_NAMES = [
@@ -2719,6 +3101,7 @@ function init() {
   populateTaskPicker();
   setupEventListeners();
   setupReferenceDrawer();
+  setupQuickCodeLookup();
   loadTask(0);
 }
 
@@ -2844,6 +3227,9 @@ function updateVisuals() {
 
   // Adjust input fields visibility based on active format
   adjustInputVisibility(activeFmt);
+
+  // Update contextual opcode hint in quick lookup
+  updateTaskOpcodeHint(parsed);
 }
 
 function getOpcodeDesc(op) {
@@ -3970,6 +4356,329 @@ function setupReferenceDrawer() {
       const text = row.textContent.toLowerCase();
       row.style.display = text.includes(q) ? '' : 'none';
     });
+  });
+}
+
+// --- 13. Quick Code Lookup & In-App Cheat Sheet Logic ---
+function setupQuickCodeLookup() {
+  renderOpcodeMiniTable();
+
+  const searchInput = document.getElementById('quickSearchInput');
+  const clearBtn = document.getElementById('btnQuickSearchClear');
+  const toggleTableBtn = document.getElementById('btnToggleOpcodeTable');
+  const sideSheetBtn = document.getElementById('btnSideSheet');
+  const tableWrap = document.getElementById('opcodeTableWrap');
+
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      const q = e.target.value.trim();
+      if (q.length > 0) {
+        if (clearBtn) clearBtn.style.display = 'block';
+        filterQuickCodeLookup(q);
+      } else {
+        if (clearBtn) clearBtn.style.display = 'none';
+        const res = document.getElementById('quickSearchResults');
+        if (res) res.style.display = 'none';
+      }
+    });
+  }
+
+  if (clearBtn && searchInput) {
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      clearBtn.style.display = 'none';
+      const res = document.getElementById('quickSearchResults');
+      if (res) res.style.display = 'none';
+    });
+  }
+
+  if (toggleTableBtn && tableWrap) {
+    toggleTableBtn.addEventListener('click', () => {
+      const isHidden = tableWrap.style.display === 'none' || tableWrap.style.display === '';
+      tableWrap.style.display = isHidden ? 'block' : 'none';
+      toggleTableBtn.textContent = isHidden ? '▲ Schließen' : '📋 Opcode-Map';
+    });
+  }
+
+  if (sideSheetBtn) {
+    sideSheetBtn.addEventListener('click', () => {
+      const drawer = document.getElementById('referenceDrawer');
+      if (drawer) drawer.classList.add('open');
+    });
+  }
+
+  // Buttons in Step 1 & 2
+  const btnLookupActive = document.getElementById('btnLookupActiveOpcode');
+  if (btnLookupActive && searchInput) {
+    btnLookupActive.addEventListener('click', () => {
+      const parsed = parseInstructionBits(customBin);
+      searchInput.value = parsed.opcode;
+      if (clearBtn) clearBtn.style.display = 'block';
+      filterQuickCodeLookup(parsed.opcode);
+    });
+  }
+
+  const btnLookupOp = document.getElementById('btnLookupOpcodeField');
+  if (btnLookupOp && searchInput) {
+    btnLookupOp.addEventListener('click', () => {
+      const parsed = parseInstructionBits(customBin);
+      searchInput.value = parsed.opcode;
+      if (clearBtn) clearBtn.style.display = 'block';
+      filterQuickCodeLookup(parsed.opcode);
+    });
+  }
+
+  const btnLookupF3 = document.getElementById('btnLookupFunct3Field');
+  if (btnLookupF3 && searchInput) {
+    btnLookupF3.addEventListener('click', () => {
+      const parsed = parseInstructionBits(customBin);
+      searchInput.value = parsed.opcode;
+      if (clearBtn) clearBtn.style.display = 'block';
+      filterQuickCodeLookup(parsed.opcode);
+    });
+  }
+
+  const btnLookupF7 = document.getElementById('btnLookupFunct7Field');
+  if (btnLookupF7 && searchInput) {
+    btnLookupF7.addEventListener('click', () => {
+      const parsed = parseInstructionBits(customBin);
+      searchInput.value = parsed.opcode;
+      if (clearBtn) clearBtn.style.display = 'block';
+      filterQuickCodeLookup(parsed.opcode);
+    });
+  }
+
+  // Pin button in Drawer
+  const btnPin = document.getElementById('btnPinDrawer');
+  const drawer = document.getElementById('referenceDrawer');
+  let isPinned = false;
+  if (btnPin && drawer) {
+    btnPin.addEventListener('click', () => {
+      isPinned = !isPinned;
+      if (isPinned) {
+        drawer.classList.add('open', 'pinned');
+        btnPin.classList.add('pinned');
+        btnPin.textContent = '📌 Lösen (Unpin)';
+        showNotice('📌 Sheet gepinnt: Sie können gleichzeitig im Trainer tippen!');
+      } else {
+        drawer.classList.remove('pinned');
+        btnPin.classList.remove('pinned');
+        btnPin.textContent = '📌 Nebenan pinnen';
+      }
+    });
+  }
+
+  // Floating Cheat Button
+  const btnFloat = document.getElementById('btnFloatingCheat');
+  if (btnFloat && drawer) {
+    btnFloat.addEventListener('click', () => {
+      if (drawer.classList.contains('open')) {
+        drawer.classList.remove('open', 'pinned');
+        isPinned = false;
+        if (btnPin) {
+          btnPin.classList.remove('pinned');
+          btnPin.textContent = '📌 Nebenan pinnen';
+        }
+      } else {
+        drawer.classList.add('open');
+      }
+    });
+  }
+
+  // Global Hotkey C and Esc
+  window.addEventListener('keydown', (e) => {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+      if (e.key === 'Escape') e.target.blur();
+      return;
+    }
+    if ((e.key === 'c' || e.key === 'C') && drawer) {
+      e.preventDefault();
+      if (drawer.classList.contains('open')) {
+        drawer.classList.remove('open', 'pinned');
+        isPinned = false;
+        if (btnPin) {
+          btnPin.classList.remove('pinned');
+          btnPin.textContent = '📌 Nebenan pinnen';
+        }
+      } else {
+        drawer.classList.add('open');
+      }
+    } else if (e.key === 'Escape') {
+      if (drawer) drawer.classList.remove('open', 'pinned');
+      const bModal = document.getElementById('bitTrapModal');
+      if (bModal) bModal.classList.remove('open');
+      isPinned = false;
+      if (btnPin) {
+        btnPin.classList.remove('pinned');
+        btnPin.textContent = '📌 Nebenan pinnen';
+      }
+    }
+  });
+}
+
+function renderOpcodeMiniTable() {
+  const tbody = document.getElementById('opcodeTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  OPCODE_FAMILIES.forEach(f => {
+    const tr = document.createElement('tr');
+    tr.dataset.opcode = f.opcode;
+    tr.innerHTML = `
+      <td><code style="color:var(--color-opcode); font-weight:700;">${f.opcode}</code></td>
+      <td><span class="exam-badge" style="background:#1e293b; color:#38bdf8; font-size:0.68rem;">${f.type}-Typ</span></td>
+      <td style="color:#cbd5e1; font-weight:600;">${f.title}</td>
+      <td style="color:#94a3b8; font-size:0.68rem;">${f.insts.join(', ')}</td>
+    `;
+    tr.addEventListener('click', () => {
+      const searchInput = document.getElementById('quickSearchInput');
+      const clearBtn = document.getElementById('btnQuickSearchClear');
+      if (searchInput) {
+        searchInput.value = f.opcode;
+        if (clearBtn) clearBtn.style.display = 'block';
+        filterQuickCodeLookup(f.opcode);
+      }
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function filterQuickCodeLookup(query) {
+  const q = query.toLowerCase().trim();
+  const resultsBox = document.getElementById('quickSearchResults');
+  if (!resultsBox) return;
+  if (!q) {
+    resultsBox.style.display = 'none';
+    return;
+  }
+
+  // Search instructions
+  const matchedInsts = RV32I_DB.filter(item => {
+    return item.name.toLowerCase() === q ||
+      item.name.toLowerCase().startsWith(q) ||
+      item.opcode.includes(q) ||
+      (item.funct3 && item.funct3.includes(q)) ||
+      (item.funct7 && item.funct7.includes(q)) ||
+      item.desc.toLowerCase().includes(q) ||
+      (item.type.toLowerCase() + '-type').includes(q) ||
+      (item.type.toLowerCase() + '-typ').includes(q);
+  });
+
+  // Search registers
+  const matchedRegs = REG_NAMES.filter(r => {
+    return r.abi.toLowerCase() === q ||
+      `x${r.num}`.toLowerCase() === q ||
+      r.desc.toLowerCase().includes(q);
+  });
+
+  // Search pseudo-ops
+  const matchedPseudo = PSEUDO_DB.filter(p => {
+    return p.pseudo.toLowerCase().includes(q) ||
+      p.base.toLowerCase().includes(q);
+  });
+
+  if (matchedInsts.length === 0 && matchedRegs.length === 0 && matchedPseudo.length === 0) {
+    resultsBox.innerHTML = `
+      <div style="color:#94a3b8; font-size:0.75rem; text-align:center; padding:8px;">
+        Keine Treffer für "<code>${query}</code>". Suchen Sie nach Befehl (z.B. <code>bne</code>, <code>lw</code>), Opcode (<code>1100011</code>) oder Register (<code>s0</code>).
+      </div>
+    `;
+    resultsBox.style.display = 'flex';
+    return;
+  }
+
+  let html = '';
+
+  // Render instructions
+  matchedInsts.slice(0, 10).forEach(inst => {
+    const layout = FORMAT_LAYOUTS[inst.type] || '';
+    html += `
+      <div class="lookup-result-item">
+        <div class="lookup-item-top">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="lookup-inst-name">${inst.name}</span>
+            <span class="lookup-type-pill" style="background:#1e293b; color:#38bdf8;">${inst.type}-Typ</span>
+          </div>
+          <code style="font-size:0.72rem; color:var(--text-muted);">${inst.syntax || inst.name}</code>
+        </div>
+        <div class="lookup-codes-row">
+          <span>Opcode: <code style="color:var(--color-opcode); font-weight:700;">${inst.opcode}</code></span>
+          <span>funct3: <code style="color:var(--color-funct3);">${inst.funct3 !== null ? inst.funct3 : '–'}</code></span>
+          <span>funct7: <code style="color:var(--color-funct7);">${inst.funct7 !== null ? inst.funct7 : '–'}</code></span>
+        </div>
+        <div class="lookup-desc">${inst.desc}</div>
+        <div class="lookup-layout">${layout}</div>
+      </div>
+    `;
+  });
+
+  // Render registers
+  matchedRegs.slice(0, 4).forEach(r => {
+    html += `
+      <div class="lookup-result-item" style="border-left:3px solid #10b981;">
+        <div class="lookup-item-top">
+          <div><code style="color:#34d399; font-weight:800; font-size:0.85rem;">${r.abi}</code> <span style="color:#94a3b8;">=</span> <code style="color:#fff;">x${r.num}</code></div>
+          <span class="lookup-type-pill" style="background:#064e3b; color:#34d399;">${r.saver} Saver</span>
+        </div>
+        <div class="lookup-desc">${r.desc}</div>
+      </div>
+    `;
+  });
+
+  // Render pseudo-ops
+  matchedPseudo.slice(0, 3).forEach(p => {
+    html += `
+      <div class="lookup-result-item" style="border-left:3px solid #f43f5e;">
+        <div class="lookup-item-top">
+          <span style="color:#fb7185; font-weight:800; font-family:var(--font-mono);">${p.pseudo}</span>
+          <span class="lookup-type-pill" style="background:#4c0519; color:#fda4af;">Pseudo-Op</span>
+        </div>
+        <div style="font-size:0.72rem; color:#e2e8f0;">Basis-Befehl: <code>${p.base}</code></div>
+        <div class="lookup-desc">${p.desc}</div>
+      </div>
+    `;
+  });
+
+  resultsBox.innerHTML = html;
+  resultsBox.style.display = 'flex';
+}
+
+function updateTaskOpcodeHint(parsed) {
+  const hintEl = document.getElementById('taskOpcodeHintContent');
+  if (!hintEl || !parsed) return;
+
+  const matchingInsts = RV32I_DB.filter(x => x.opcode === parsed.opcode);
+  const instNames = matchingInsts.map(i => {
+    let codeStr = i.name;
+    if (i.funct3) codeStr += ` (f3:${i.funct3})`;
+    return `<code>${codeStr}</code>`;
+  }).join(', ');
+
+  const family = OPCODE_FAMILIES.find(f => f.opcode === parsed.opcode);
+  const typeName = family ? family.title : `${parsed.fmt}-Typ`;
+
+  hintEl.innerHTML = `
+    <strong>Aktiver Opcode [6:0]: <code>${parsed.opcode}</code></strong> ➔ <span style="color:#38bdf8; font-weight:700;">${typeName}</span>.<br>
+    Befehle laut Spickzettel: ${instNames || 'Keine'}
+    <button type="button" class="btn-lookup-pill" id="btnApplyOpcodeSearch" style="margin-left:6px; vertical-align:middle;">Details 🔍</button>
+  `;
+
+  const btnApply = document.getElementById('btnApplyOpcodeSearch');
+  if (btnApply) {
+    btnApply.addEventListener('click', () => {
+      const searchInput = document.getElementById('quickSearchInput');
+      const clearBtn = document.getElementById('btnQuickSearchClear');
+      if (searchInput) {
+        searchInput.value = parsed.opcode;
+        if (clearBtn) clearBtn.style.display = 'block';
+        filterQuickCodeLookup(parsed.opcode);
+      }
+    });
+  }
+
+  // Highlight corresponding row in Opcode Map
+  document.querySelectorAll('#opcodeTableBody tr').forEach(tr => {
+    tr.classList.toggle('active-opcode-row', tr.dataset.opcode === parsed.opcode);
   });
 }
 
