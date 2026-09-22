@@ -1955,12 +1955,12 @@
           <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
             <div style="display:flex; align-items:center; gap:6px;">
               <span class="code-display-title">HEX:</span>
-              <span class="hex-val" id="hexDisplay" title="Click to edit or copy">0xFE2410E3</span>
+              <span class="hex-val" id="hexDisplay" title="Click to edit or copy">0xFF2410E3</span>
               <button class="copy-btn" id="btnCopyHex">Copy</button>
             </div>
             <div style="display:flex; align-items:center; gap:6px;" id="binDisplayWrap">
               <span class="code-display-title">BIN:</span>
-              <span class="bin-val-spaced" id="binDisplay">11111110 00100100 00010000 11100011</span>
+              <span class="bin-val-spaced" id="binDisplay">11111111 00100100 00010000 11100011</span>
               <button class="copy-btn" id="btnCopyBin">Copy</button>
             </div>
             <button type="button" class="copy-btn" id="btnToggleBin" style="color:#38bdf8;" title="Binär-Zeile &amp; Lineal verbergen (um Hex-Umwandlung selbst auf Papier zu üben)">👁️ Binär ausblenden</button>
@@ -2435,7 +2435,7 @@ const TASKS = [
     id: 'wise26_bne',
     exam: 'WiSe26',
     taskNum: 'Aufgabe 2b (Trap B-Type)',
-    hex: '0xFE2410E3',
+    hex: '0xFF2410E3',
     expectedType: 'B',
     expectedOpcode: '1100011',
     expectedFunct3: '001',
@@ -2445,8 +2445,8 @@ const TASKS = [
     expectedRd: null,
     expectedImm: -32,
     expectedAsmCanonical: 'bne s0, s2, -32',
-    altAsm: ['bne x8, x18, -32', 'bne s0,s2,-32', 'bne x8,x18,-32'],
-    prompt: 'WiSe26 Aufgabe 2: Dekodieren Sie 0xFE2410E3 in RISC-V Assembler.',
+    altAsm: ['bne x8, x18, -32', 'bne s0,s2,-32', 'bne x8,x18,-32', 'bne s0, sp, -32', 'bne x8, x2, -32'],
+    prompt: 'WiSe26 Aufgabe 2: Dekodieren Sie 0xFF2410E3 in RISC-V Assembler.',
     explanation: 'Opcode 1100011 -> B-Typ. funct3=001 -> bne. rs1=8 (s0), rs2=18 (s2). Immediate: imm[12]=1, imm[11]=1, imm[10:5]=111111, imm[4:1]=0000, imm[0]=0. Rohwert 0x1FE0 -> Vorzeichenerweiterung 13 Bit -> -32.'
   },
   {
@@ -2489,7 +2489,7 @@ const TASKS = [
     id: 'wise26_sb',
     exam: 'WiSe26',
     taskNum: 'Aufgabe 2b (Original)',
-    hex: '0x00BE1A23', // 00001011 11100001 00001010 00100011
+    hex: '0x0BE10A23', // 00001011 11100001 00001010 00100011
     expectedType: 'S',
     expectedOpcode: '0100011',
     expectedFunct3: '000',
@@ -2500,7 +2500,7 @@ const TASKS = [
     expectedImm: 180,
     expectedAsmCanonical: 'sb t5, 180(sp)',
     altAsm: ['sb x30, 180(x2)', 'sb t5,180(sp)', 'sb x30,180(x2)'],
-    prompt: 'WiSe26 Aufgabe 2b: Dekodieren Sie 00001011 11100001 00001010 00100011 (0x00BE1A23).',
+    prompt: 'WiSe26 Aufgabe 2b: Dekodieren Sie 00001011 11100001 00001010 00100011 (0x0BE10A23).',
     explanation: 'Opcode 0100011 -> S-Typ (Store). funct3=000 -> sb (Store Byte). rs1=2 (sp), rs2=30 (t5). imm[11:5]=0000101 (5), imm[4:0]=10100 (20). Zusammengesetzt: (5 << 5) | 20 = 160 + 20 = 180. Ergebnis: sb t5, 180(sp).'
   },
 
@@ -2619,7 +2619,7 @@ const TASKS = [
     id: 'probe_beq',
     exam: 'Probeklausur',
     taskNum: 'Aufgabe 2 (BEQ)',
-    hex: '0x00948663', // 00000000 10010100 00000110 01100011
+    hex: '0x00940663', // 00000000 10010100 00000110 01100011
     expectedType: 'B',
     expectedOpcode: '1100011',
     expectedFunct3: '000',
@@ -2630,7 +2630,7 @@ const TASKS = [
     expectedImm: 12,
     expectedAsmCanonical: 'beq s0, s1, 12',
     altAsm: ['beq x8, x9, 12', 'beq s0,s1,12', 'beq x8,x9,12'],
-    prompt: 'Probeklausur Aufgabe 2: Dekodieren Sie 00000000 10010100 00000110 01100011 (0x00948663).',
+    prompt: 'Probeklausur Aufgabe 2: Dekodieren Sie 00000000 10010100 00000110 01100011 (0x00940663).',
     explanation: 'Opcode 1100011 -> B-Typ. funct3=000 -> beq. rs1=8 (s0), rs2=9 (s1). Rekonstruktion imm: imm[12]=0, imm[11]=0, imm[10:5]=000000, imm[4:1]=0110 (6), imm[0]=0. Rohwert 6 << 1 = 12 -> beq s0, s1, 12.'
   },
   {
@@ -2799,7 +2799,11 @@ function parseInstructionBits(binStr) {
 
   // Immediate decoding per format
   let immI = parseInt(slice(31, 20), 2);
-  if (immI & 0x800) immI = immI - 0x1000; // 12-bit signed
+  if (opcode === '0010011' && (funct3 === '001' || funct3 === '101')) {
+    immI = parseInt(slice(24, 20), 2); // 5-bit shamt for slli, srli, srai
+  } else if (immI & 0x800) {
+    immI = immI - 0x1000; // 12-bit signed
+  }
 
   let immS = (parseInt(slice(31, 25), 2) << 5) | parseInt(slice(11, 7), 2);
   if (immS & 0x800) immS = immS - 0x1000;
@@ -3779,13 +3783,16 @@ function revealSolution() {
 }
 
 function renderExplanation(task, parsed) {
+  const rs1Abi = regNumToAbi(parsed.rs1);
+  const rs2Abi = regNumToAbi(parsed.rs2);
+  const rdAbi = regNumToAbi(parsed.rd);
   explanationBody.innerHTML = `
     <p><strong>1. Opcode-Analyse [6:0]:</strong> <code>${parsed.opcode}</code> entspricht laut RISC-V Reference Sheet dem <strong>${task.expectedType}-Typ</strong>.</p>
     ${task.expectedFunct3 !== null ? `<p><strong>2. funct3 [14:12]:</strong> <code>${parsed.funct3}</code> spezifiziert die genaue Operation (z.B. Vergleich oder Wortbreite).</p>` : ''}
     ${task.expectedFunct7 !== null ? `<p><strong>3. funct7 [31:25]:</strong> <code>${parsed.funct7}</code> unterscheidet z.B. <code>add</code> (0000000) von <code>sub</code> (0100000).</p>` : ''}
-    ${task.expectedRs1 !== null ? `<p><strong>4. Quellregister rs1 [19:15]:</strong> Binär <code>${parsed.rawBin.substring(12, 17)}</code> = Dezimal ${parsed.rs1} = <code>${task.expectedRs1}</code> (x${parsed.rs1}).</p>` : ''}
-    ${task.expectedRs2 !== null ? `<p><strong>5. Quellregister rs2 [24:20]:</strong> Binär <code>${parsed.rawBin.substring(7, 12)}</code> = Dezimal ${parsed.rs2} = <code>${task.expectedRs2}</code> (x${parsed.rs2}).</p>` : ''}
-    ${task.expectedRd !== null ? `<p><strong>6. Zielregister rd [11:7]:</strong> Binär <code>${parsed.rawBin.substring(20, 25)}</code> = Dezimal ${parsed.rd} = <code>${task.expectedRd}</code> (x${parsed.rd}).</p>` : ''}
+    ${task.expectedRs1 !== null ? `<p><strong>4. Quellregister rs1 [19:15]:</strong> Binär <code>${parsed.rawBin.substring(12, 17)}</code> = Dezimal ${parsed.rs1} = <code>${rs1Abi}</code> (x${parsed.rs1}).</p>` : ''}
+    ${task.expectedRs2 !== null ? `<p><strong>5. Quellregister rs2 [24:20]:</strong> Binär <code>${parsed.rawBin.substring(7, 12)}</code> = Dezimal ${parsed.rs2} = <code>${rs2Abi}</code> (x${parsed.rs2}).</p>` : ''}
+    ${task.expectedRd !== null ? `<p><strong>6. Zielregister rd [11:7]:</strong> Binär <code>${parsed.rawBin.substring(20, 25)}</code> = Dezimal ${parsed.rd} = <code>${rdAbi}</code> (x${parsed.rd}).</p>` : ''}
     ${task.expectedImm !== null ? `<p><strong>7. Immediate Rekonstruktion:</strong> Ergibt vorzeichenbehaftet <code>${task.expectedImm}</code>.</p>` : ''}
     <div class="exam-tip-box">
       <strong>Klausur-Erkenntnis:</strong> ${task.explanation}
