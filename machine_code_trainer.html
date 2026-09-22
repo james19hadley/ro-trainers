@@ -295,62 +295,52 @@
       box-shadow: 0 0 8px rgba(6, 182, 212, 0.35);
     }
 
-    /* Main Container with Resizer */
+    /* Main Container */
     main {
       flex: 1;
-      display: grid;
-      grid-template-columns: 1fr 6px 450px;
-      min-height: 0;
-      overflow: hidden;
-      position: relative;
-    }
-
-    /* Resizer bar */
-    .resizer {
-      background: #1e293b;
-      cursor: col-resize;
-      transition: background 0.15s ease;
-      z-index: 20;
       display: flex;
-      align-items: center;
       justify-content: center;
-    }
-
-    .resizer::after {
-      content: "";
-      width: 2px;
-      height: 28px;
-      background: #475569;
-      border-radius: 2px;
-    }
-
-    .resizer:hover, .resizer.dragging {
-      background: var(--accent-cyan);
-    }
-
-    .resizer:hover::after, .resizer.dragging::after {
-      background: #fff;
-    }
-
-    /* Left Pane */
-    .left-pane {
-      background: var(--bg-main);
-      display: flex;
-      flex-direction: column;
+      align-items: flex-start;
+      min-height: 0;
       overflow-y: auto;
       overflow-x: hidden;
-      min-height: 0;
+      padding: 12px 16px;
+      position: relative;
+      background: var(--bg-main);
+    }
+
+    .test-arena {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 0 auto;
+    }
+
+    /* Resizer bar (hidden stub compatibility) */
+    .resizer {
+      display: none;
+    }
+
+    /* Left Pane & Content */
+    .left-pane {
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
     /* Task Banner */
     .task-banner {
       background: #0f172a;
-      border-bottom: 2px solid var(--border-color);
-      padding: 12px 18px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
       flex-shrink: 0;
     }
 
@@ -1251,7 +1241,7 @@
     /* Field Inputs Grid */
     .fields-input-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
       gap: 8px;
     }
 
@@ -1603,17 +1593,16 @@
 
     /* Responsive adjustments */
     @media (max-width: 900px) {
-      main {
-        grid-template-columns: 1fr;
-        grid-template-rows: 1fr 6px 1fr;
+      .task-banner {
+        flex-direction: column;
+        align-items: flex-start;
       }
-      .resizer {
-        cursor: row-resize;
+      .task-nav-wrap {
+        width: 100%;
+        justify-content: flex-end;
       }
-      .resizer::after {
-        width: 28px;
-        height: 2px;
-      }
+    }
+
     /* Pinned Side-by-Side Reference Drawer */
     .drawer-overlay.pinned {
       background: transparent !important;
@@ -1898,11 +1887,19 @@
 <!-- Header -->
 <header>
   <div class="title-area">
+    <a href="./index.html" class="btn-header" style="text-decoration:none;" title="Zurück zum RO Hub">🏠 Hub</a>
     <h1>
       ⚡ RISC-V Machine Code Trainer
-      <span class="badge">TU Darmstadt RO</span>
       <span class="badge badge-weight">Aufgabe 2 · 8–9 Punkte</span>
     </h1>
+  </div>
+
+  <!-- Mode Switch -->
+  <div class="mode-switch" id="modeSwitch">
+    <button class="mode-btn active" data-mode="decode" id="btnModeDecode" title="Hex/Bin in Assembler dekodieren">🔍 Dekodieren</button>
+    <button class="mode-btn" data-mode="encode" id="btnModeEncode" title="Assembler in Hex/Bin kodieren">⚙️ Kodieren</button>
+    <button class="mode-btn" data-mode="match" id="btnModeMatch" title="Klausur-Zuordnungsaufgaben (WiSe26, SoSe25, Probeklausur)">🧩 Zuordnung (2a)</button>
+    <button class="mode-btn" data-mode="generator" id="btnModeGenerator" title="Zufällige Übungsaufgaben generieren">🎲 Zufalls-Test</button>
   </div>
 
   <div class="top-actions">
@@ -1914,40 +1911,18 @@
         <button class="btn-timer" id="btnToggleTimer" title="Start / Pause">▶</button>
         <button class="btn-timer" id="btnResetTimer" title="Zurücksetzen">↺</button>
       </div>
-      <span class="timer-target-badge target-klausur" id="timerTargetBadge">Ziel: &lt;90s (Klausur)</span>
     </div>
 
-    <!-- Klausur vs. Study Mode Switch -->
-    <div class="assist-switch" id="assistSwitch">
-      <button class="assist-btn active mode-klausur" id="btnModeKlausur" title="Klausurmodus (Auf Zeit): Neutrale Bits ohne Farbcodes, Shuffler gesperrt bis zur Abgabe — echte Prüfungsbedingungen">⏱️ Klausur (Auf Zeit)</button>
-      <button class="assist-btn" id="btnModeStudy" title="Lernmodus (Mit Hilfen): Live-Farbcodierung, Bit-Routing und Shuffler direkt aktiv">🎓 Lernen (Mit Hilfen)</button>
-    </div>
-
-    <!-- Mode Switch -->
-    <div class="mode-switch" id="modeSwitch">
-      <button class="mode-btn active" data-mode="decode" id="btnModeDecode" title="Hex/Bin to Assembly decoding">🔍 Dec: Hex ➔ Asm</button>
-      <button class="mode-btn" data-mode="encode" id="btnModeEncode" title="Assembly to Hex/Bin encoding">⚙️ Enc: Asm ➔ Hex</button>
-      <button class="mode-btn" data-mode="match" id="btnModeMatch" title="Exam matching tasks (WiSe26, SoSe25, Probeklausur)">🧩 Match: Zuordnung</button>
-      <button class="mode-btn" data-mode="generator" id="btnModeGenerator" title="Infinite random practice generator">🎲 Infinite Gen</button>
-    </div>
-
-    <!-- Quick Utilities -->
-    <a href="./RISC-V_Reference.pdf" target="_blank" class="btn-header" style="text-decoration:none; display:inline-flex; align-items:center; gap:5px;" title="Offizielles 2-seitiges Prüfungs-Reference-Sheet (PDF) in neuem Tab / 2. Fenster öffnen">
+    <!-- Official Exam PDF Link -->
+    <a href="./RISC-V_Reference.pdf" target="_blank" class="btn-header" style="text-decoration:none; color:#38bdf8; font-weight:700;" title="Offizielles 2-seitiges Prüfungs-Reference-Sheet (PDF) in neuem Tab / 2. Fenster öffnen">
       📄 Exam PDF ↗
     </a>
-    <button class="btn-header" id="btnOpenReference" title="Open RISC-V Reference Drawer (Cheat Sheet) [Hotkey: C]">
-      📖 Reference Sheet <span style="background:#0284c7; font-size:0.65rem; padding:1px 5px; border-radius:3px; margin-left:4px;">C</span>
-    </button>
-    <button class="btn-header" id="btnOpenBitTrap" title="Guide: The unencoded zero bit trap in B & J formats">
-      💡 Bit-Trap Guide
-    </button>
   </div>
 </header>
 
 <!-- Main Workspace -->
 <main id="mainContainer">
-  <!-- Left Column: Visual Slicer & Diagram -->
-  <div class="left-pane" id="leftPane">
+  <div class="test-arena">
     <!-- Task Banner -->
     <div class="task-banner">
       <div class="task-info">
@@ -1957,13 +1932,6 @@
         </div>
         <div class="task-prompt-text" id="taskTitleText">
           Dekodieren Sie das 32-Bit Wort in den entsprechenden RISC-V Assemblerbefehl.
-        </div>
-        <div class="task-checklist-banner">
-          <div class="task-checklist-step"><strong>1.</strong> Format wählen (R, I, S, B, U, J)</div>
-          <span class="task-checklist-arrow">➔</span>
-          <div class="task-checklist-step"><strong>2.</strong> Felder eintragen (Opcode, funct3, rs, rd, imm)</div>
-          <span class="task-checklist-arrow">➔</span>
-          <div class="task-checklist-step"><strong>3.</strong> Assembler-Befehl eingeben &amp; prüfen!</div>
         </div>
       </div>
 
@@ -1979,32 +1947,24 @@
       </div>
     </div>
 
-    <!-- Content for Decoding / Encoding / Generator -->
-    <div class="left-content" id="standardWorkArea">
-      <!-- Big Code Display Card -->
+    <!-- Decoding / Encoding / Generator Area -->
+    <div class="left-content" id="standardWorkArea" style="padding:0; gap:10px;">
+      <!-- Code Display Card & Ruler -->
       <div class="code-display-card">
         <div class="code-display-header">
-          <span class="code-display-title">Maschinencode (32-Bit Instruction Word)</span>
-          <div style="display:flex; gap:6px;">
-            <button class="copy-btn" id="btnCopyHex">Copy Hex</button>
-            <button class="copy-btn" id="btnCopyBin">Copy Bin</button>
+          <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span class="code-display-title">HEX:</span>
+              <span class="hex-val" id="hexDisplay" title="Click to edit or copy">0xFE2410E3</span>
+              <button class="copy-btn" id="btnCopyHex">Copy</button>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span class="code-display-title">BIN:</span>
+              <span class="bin-val-spaced" id="binDisplay">11111110 00100100 00010000 11100011</span>
+              <button class="copy-btn" id="btnCopyBin">Copy</button>
+            </div>
           </div>
-        </div>
-
-        <div class="code-value-row">
-          <div class="hex-val" id="hexDisplay" title="Click to edit or copy">0xFE2410E3</div>
-          <div class="bin-val-spaced" id="binDisplay">11111110 00100100 00010000 11100011</div>
-        </div>
-      </div>
-
-      <!-- 32-Bit Visual Slicer Card -->
-      <div class="slicer-card">
-        <div class="slicer-header">
-          <div class="slicer-title">
-            <span>🔬 32-Bit Visual Bit Slicer</span>
-            <span style="font-size:0.7rem; color:var(--text-dim);">(Bit 31 down to Bit 0)</span>
-          </div>
-          <div class="format-indicator-badge field-imm" id="currentFormatBadge">Format: B-Type</div>
+          <div class="format-indicator-badge field-neutral" id="currentFormatBadge">Format: ?</div>
         </div>
 
         <div class="bits-grid-container">
@@ -2015,77 +1975,120 @@
         </div>
 
         <!-- Field Legend / Breakdown below the bits -->
-        <div class="fields-legend-bar" id="fieldsLegendBar">
-          <!-- Populated by JS: funct7, rs2, rs1, funct3, rd, opcode, imm -->
+        <div class="fields-legend-bar" id="fieldsLegendBar"></div>
+      </div>
+
+      <!-- Step 1: Format Selector -->
+      <div class="step-box" id="step1Box">
+        <div class="step-header">
+          <span class="step-title">1. Instruktionsformat (Typ) wählen</span>
+          <div style="font-size:0.72rem; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
+            <span>Opcode [6:0]: <code id="opcodePreview" style="color:var(--color-opcode); font-weight:700;">1100011</code></span>
+            <span id="opcodeMatchRule" style="color:var(--accent-cyan); font-weight:600;">Branch Format</span>
+          </div>
+        </div>
+        <div class="format-btn-row">
+          <button class="fmt-btn" data-fmt="R">R-Typ</button>
+          <button class="fmt-btn" data-fmt="I">I-Typ</button>
+          <button class="fmt-btn" data-fmt="S">S-Typ</button>
+          <button class="fmt-btn" data-fmt="B">B-Typ</button>
+          <button class="fmt-btn" data-fmt="U">U-Typ</button>
+          <button class="fmt-btn" data-fmt="J">J-Typ</button>
         </div>
       </div>
 
-      <!-- Animated Immediate Shuffling & Sign-Extension Scheme -->
-      <div class="imm-shuffler-card" id="shufflerCard">
-        <div class="shuffler-header">
-          <div class="shuffler-title">
-            <span>🔄 Immediate Bit Shuffling & Reconstruction Scheme</span>
-          </div>
-          <span id="shufflerTypeLabel" style="font-size:0.72rem; color:var(--accent-cyan); font-weight:700;">B-Type Branch Offset</span>
+      <!-- Step 2: Extracted Fields -->
+      <div class="step-box" id="step2Box">
+        <div class="step-header">
+          <span class="step-title">2. Felder extrahieren (Bit-Slicing)</span>
+          <span style="font-size:0.7rem; color:var(--text-dim);">Felder passen sich automatisch dem gewählten Format an</span>
         </div>
 
-        <!-- Lock Overlay for Klausur mode -->
-        <div class="shuffler-lock-overlay" id="shufflerLockOverlay">
-          <div class="lock-icon-anim">🔒</div>
-          <div class="lock-title-text">Klausurmodus: Immediate-Herleitung gesperrt</div>
-          <div class="lock-desc-text">
-            In der Klausur müssen Sie das Immediate-Bit-Scrambling und Vorzeichen eigenständig bestimmen.<br>
-            Das interaktive Routing und die Rechenschritte werden nach <b>Check Answer</b> oder <b>Reveal Solution</b> aufgedeckt.
+        <div class="fields-input-grid" id="fieldsInputGrid">
+          <div class="field-input-group" id="grpOpcode">
+            <label class="field-label">opcode [6:0] <span class="hint">7 bit</span></label>
+            <input type="text" class="input-box" id="inOpcode" placeholder="z.B. 1100011" autocomplete="off">
           </div>
-          <div class="lock-sub-hint">
-            💡 Tipp: Wechseln Sie oben auf <b>🎓 Lernen (Mit Hilfen)</b>, wenn Sie die Schaltung schon vorab live sehen möchten.
+
+          <div class="field-input-group" id="grpFunct3">
+            <label class="field-label">funct3 [14:12] <span class="hint">3 bit</span></label>
+            <input type="text" class="input-box" id="inFunct3" placeholder="z.B. 001" autocomplete="off">
           </div>
+
+          <div class="field-input-group" id="grpFunct7">
+            <label class="field-label">funct7 [31:25] <span class="hint">7 bit</span></label>
+            <input type="text" class="input-box" id="inFunct7" placeholder="z.B. 0000000" autocomplete="off">
+          </div>
+
+          <div class="field-input-group" id="grpRs1">
+            <label class="field-label">rs1 [19:15] <span class="hint">s0 / x8</span></label>
+            <input type="text" class="input-box" id="inRs1" placeholder="z.B. s0 / x8" autocomplete="off">
+          </div>
+
+          <div class="field-input-group" id="grpRs2">
+            <label class="field-label">rs2 [24:20] <span class="hint">s2 / x18</span></label>
+            <input type="text" class="input-box" id="inRs2" placeholder="z.B. s2 / x18" autocomplete="off">
+          </div>
+
+          <div class="field-input-group" id="grpRd">
+            <label class="field-label">rd [11:7] <span class="hint">s1 / x9</span></label>
+            <input type="text" class="input-box" id="inRd" placeholder="z.B. s1 / x9" autocomplete="off">
+          </div>
+
+          <div class="field-input-group" id="grpImm">
+            <label class="field-label">immediate (dezimal) <span class="hint">signed int</span></label>
+            <input type="text" class="input-box" id="inImm" placeholder="z.B. -32" autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Final Assembly & Action Buttons -->
+      <div class="step-box" id="step3Box">
+        <div class="step-header">
+          <span class="step-title" id="step3Title">3. Finaler Assembler-Befehl</span>
+          <span style="font-size:0.7rem; color:var(--text-dim);" id="step3Hint">Akzeptiert ABI- &amp; x-Namen (z.B. bne s0, s2, -32)</span>
         </div>
 
-        <!-- Warning Trap for B and J Types -->
-        <div class="trap-warning-box" id="trapWarningBox">
-          <span style="font-size:1.1rem;">⚠️</span>
-          <div>
-            <strong>Klausur-Falle (Unstored Zero Bit):</strong>
-            In B- und J-Typen wird das Bit <code>imm[0]</code> <strong>NICHT</strong> im Befehl gespeichert, da alle RISC-V Sprungziele mindestens auf 2-Byte-Grenzen ausgerichtet sind! Beim Rekonstruieren MUSS rechts eine <code>0</code> angehängt werden (Links-Shift um 1 Bit).
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <input type="text" class="asm-input" id="inAsm" placeholder="z.B. bne s0, s2, -32" style="flex:1; min-width:240px;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <div style="display:flex; gap:6px; flex-shrink:0;">
+            <button class="btn-action" id="btnCheckAnswer">✓ Check Answer</button>
+            <button class="btn-secondary" id="btnRevealSolution">💡 Lösung</button>
+            <button class="btn-danger" id="btnResetInputs">↺ Reset</button>
+            <button class="btn-secondary" id="btnNextTaskAction" title="Nächste Aufgabe">▶ Nächste</button>
           </div>
         </div>
+      </div>
 
-        <!-- SVG Routing Diagram -->
-        <div class="shuffler-svg-wrap">
-          <svg class="routing-svg" id="routingSvg" viewBox="0 0 760 150">
-            <!-- Rendered dynamically by JS -->
-          </svg>
-        </div>
-
-        <!-- Immediate Reconstruction Calculation Result -->
-        <div class="imm-result-box" id="immResultBox">
-          <div class="imm-calc-row">
-            <span style="color:var(--text-muted);">Reconstructed Binary:</span>
-            <div class="imm-bits-display" id="immBinaryReconstruction">
-              <!-- Rendered by JS -->
-            </div>
-          </div>
-          <div class="imm-calc-row" style="border-top:1px solid #1e293b; padding-top:6px;">
-            <span style="color:var(--text-muted);">Sign-Extended 32-Bit Decimal:</span>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span id="immSignExtFormula" style="font-family:ui-monospace, monospace; color:#94a3b8; font-size:0.75rem;"></span>
-              <span class="imm-val-tag" id="immDecimalDisplay">-32</span>
-            </div>
+      <!-- Evaluation & Score Card with collapsible Derivation -->
+      <div class="eval-card" id="evalCard">
+        <div class="eval-header">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <h3>Klausur-Bewertung</h3>
+            <span class="score-badge score-pass" id="scoreBadge" style="display:none;">9/9 Punkte (100%)</span>
           </div>
         </div>
+        <div class="eval-feedback" id="evalFeedback">
+          Wählen Sie oben den Format-Typ, tragen Sie die extrahierten Felder ein und formulieren Sie den finalen Assembler-Befehl.
+        </div>
+        <details class="details-explanation" id="solutionDetails" style="margin-top:6px; border-top:1px solid #1e293b; padding-top:6px;">
+          <summary style="cursor:pointer; font-size:0.74rem; font-weight:700; color:var(--accent-cyan);">📖 Architektonische Herleitung &amp; Klausur-Tipps</summary>
+          <div class="explanation-body" id="explanationBody" style="font-size:0.78rem; color:#cbd5e1; line-height:1.45; margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+            <span style="color:var(--text-dim);">Klicken Sie auf <b>Check Answer</b> oder <b>Lösung</b>, um die Schritt-für-Schritt-Herleitung anzuzeigen.</span>
+          </div>
+        </details>
       </div>
     </div>
 
     <!-- Content for Matching Mode (Zuordnung) -->
-    <div class="left-content matching-arena" id="matchingWorkArea" style="display:none;">
+    <div class="left-content matching-arena" id="matchingWorkArea" style="display:none; padding:0; gap:10px;">
       <div class="code-display-card">
         <div class="code-display-header">
           <span class="code-display-title">Zuordnungsaufgabe (Klausur-Aufgabe 2a)</span>
           <span class="exam-badge badge-wise26" id="matchExamBadge">WiSe26 Aufgabe 2a</span>
         </div>
         <p style="font-size:0.8rem; color:#cbd5e1; line-height:1.4;">
-          Ordnen Sie die Assembler-Instruktionen den richtigen Binärdarstellungen zu. Klicken Sie zuerst auf eine Assembler-Karte und dann auf den passenden Binärcode. Beachten Sie: Ein Assembler-Befehl kann ggf. mehreren Codes entsprechen (z.B. Pseudo-Instruktion <code>li</code>), und manche Codes können Distraktoren sein!
+          Ordnen Sie die Assembler-Instruktionen den richtigen Binärdarstellungen zu. Klicken Sie zuerst auf einen Assembler-Befehl und dann auf den passenden Binärcode.
         </p>
       </div>
 
@@ -2101,181 +2104,57 @@
       </div>
     </div>
   </div>
+</main>
 
-  <!-- Draggable Resizer -->
-  <div class="resizer" id="dragResizer" title="Spaltenbreite anpassen"></div>
-
-  <!-- Right Column: Quiz Steps, Solver & Architecture Breakdown -->
-  <div class="right-pane" id="rightPane">
-    <!-- Top Action Buttons -->
-    <div class="sidebar-actions">
-      <button class="btn-action" id="btnCheckAnswer">✓ Check Answer</button>
-      <button class="btn-secondary" id="btnRevealSolution">💡 Reveal Solution</button>
-      <button class="btn-danger" id="btnResetInputs">↺ Reset</button>
+<!-- Hidden Stubs Container: Keeps all legacy and unused elements alive so existing JS continues working without null errors -->
+<div id="legacyHiddenStubs" style="display:none !important;" aria-hidden="true">
+  <div id="shufflerCard">
+    <div id="shufflerLockOverlay"></div>
+    <div id="trapWarningBox"></div>
+    <div id="shufflerTypeLabel"></div>
+    <div class="shuffler-svg-wrap">
+      <svg id="routingSvg"></svg>
     </div>
-
-    <div class="sidebar-content">
-      <!-- Evaluation & Score Card -->
-      <div class="eval-card" id="evalCard">
-        <div class="eval-header">
-          <h3>Klausur-Bewertung</h3>
-          <span class="score-badge score-pass" id="scoreBadge" style="display:none;">9/9 Punkte (100%)</span>
-        </div>
-        <div class="eval-feedback" id="evalFeedback">
-          Wählen Sie den Instruktions-Typ, tragen Sie die extrahierten Felder ein und formulieren Sie den finalen Assembler-Befehl. Klicken Sie dann auf <b>Check Answer</b>.
-        </div>
-      </div>
-
-      <!-- Quick Code Lookup & Cheatsheet Card -->
-      <div class="quick-lookup-card" id="quickLookupCard">
-        <div class="quick-lookup-header">
-          <div class="quick-lookup-title">
-            <span>⚡ Quick Code Lookup &amp; Cheatsheet</span>
-            <span style="background:#1e293b; color:#38bdf8; font-size:0.65rem; padding:1px 5px; border-radius:3px; border:1px solid #38bdf8;">Taste: C</span>
-          </div>
-          <div class="quick-lookup-actions">
-            <button type="button" class="btn-lookup-sm" id="btnToggleOpcodeTable" title="Tabelle aller RV32I-Opcodes anzeigen/verstecken">📋 Opcode-Map</button>
-            <button type="button" class="btn-lookup-sm" id="btnSideSheet" title="Komplettes RISC-V Reference Sheet öffnen">📖 Full Sheet</button>
-            <a href="./RISC-V_Reference.pdf" target="_blank" class="btn-lookup-sm" style="text-decoration:none; color:#38bdf8;" title="Offizielles 2-seitiges Prüfungs-Reference-Sheet als PDF öffnen">📄 PDF ↗</a>
-          </div>
-        </div>
-
-        <!-- Instant Search Box -->
-        <div class="quick-search-box">
-          <input type="text" class="quick-search-input" id="quickSearchInput" placeholder="🔍 Befehl oder Opcode suchen (z.B. 'bne', '0110011', 'lw', 's0')..." autocomplete="off">
-          <button type="button" class="quick-search-clear" id="btnQuickSearchClear" style="display:none;" title="Suche leeren">✕</button>
-        </div>
-
-        <!-- Live Search Results Container -->
-        <div class="quick-search-results" id="quickSearchResults" style="display:none;"></div>
-
-        <!-- Collapsible Opcode Table -->
-        <div class="opcode-table-wrap" id="opcodeTableWrap" style="display:none;">
-          <table class="opcode-mini-table">
-            <thead>
-              <tr>
-                <th>Opcode</th>
-                <th>Typ</th>
-                <th>Kategorie</th>
-                <th>Befehle &amp; Codes</th>
-              </tr>
-            </thead>
-            <tbody id="opcodeTableBody">
-              <!-- Populated by JS -->
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Contextual Opcode Hint for Current Task -->
-        <div class="task-opcode-hint" id="taskOpcodeHint">
-          <span style="font-size:0.95rem;">💡</span>
-          <div id="taskOpcodeHintContent" style="flex:1;">
-            <!-- Rendered by JS -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 1: Format Selector -->
-      <div class="step-box" id="step1Box">
-        <div class="step-header">
-          <span class="step-title">1. Instruktionsformat (Typ)</span>
-          <span class="step-badge" id="step1Badge">1 Punkt</span>
-        </div>
-        <div class="format-btn-row">
-          <button class="fmt-btn" data-fmt="R">R</button>
-          <button class="fmt-btn" data-fmt="I">I</button>
-          <button class="fmt-btn" data-fmt="S">S</button>
-          <button class="fmt-btn" data-fmt="B">B</button>
-          <button class="fmt-btn" data-fmt="U">U</button>
-          <button class="fmt-btn" data-fmt="J">J</button>
-        </div>
-        <div style="font-size:0.72rem; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span>Opcode [6:0]: <code id="opcodePreview" style="color:var(--color-opcode);">1100011</code></span>
-            <button type="button" class="btn-lookup-pill" id="btnLookupActiveOpcode" title="Befehle und Codes für diesen Opcode im Spickzettel anzeigen">🔍 Codes</button>
-          </div>
-          <span id="opcodeMatchRule" style="color:var(--accent-cyan);">Branch Format</span>
-        </div>
-      </div>
-
-      <!-- Step 2: Extracted Fields -->
-      <div class="step-box" id="step2Box">
-        <div class="step-header">
-          <span class="step-title">2. Felder extrahieren (Bit-Slicing)</span>
-          <span class="step-badge" id="step2Badge">4 Punkte</span>
-        </div>
-
-        <div class="fields-input-grid" id="fieldsInputGrid">
-          <!-- Dynamically displayed depending on selected type -->
-          <div class="field-input-group" id="grpOpcode">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <label class="field-label">opcode [6:0] <span class="hint">7 bit</span></label>
-              <button type="button" class="btn-lookup-pill" id="btnLookupOpcodeField" title="Opcode-Tabelle nachschlagen">🔍 Codes</button>
-            </div>
-            <input type="text" class="input-box" id="inOpcode" placeholder="z.B. 1100011">
-          </div>
-
-          <div class="field-input-group" id="grpFunct3">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <label class="field-label">funct3 [14:12] <span class="hint">3 bit</span></label>
-              <button type="button" class="btn-lookup-pill" id="btnLookupFunct3Field" title="funct3-Werte für diesen Opcode nachschlagen">🔍 Codes</button>
-            </div>
-            <input type="text" class="input-box" id="inFunct3" placeholder="z.B. 001">
-          </div>
-
-          <div class="field-input-group" id="grpFunct7">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <label class="field-label">funct7 [31:25] <span class="hint">7 bit</span></label>
-              <button type="button" class="btn-lookup-pill" id="btnLookupFunct7Field" title="funct7-Werte anzeigen">🔍 Codes</button>
-            </div>
-            <input type="text" class="input-box" id="inFunct7" placeholder="z.B. 0000000">
-          </div>
-
-          <div class="field-input-group" id="grpRs1">
-            <label class="field-label">rs1 [19:15] <span class="hint">Register (s0 / x8)</span></label>
-            <input type="text" class="input-box" id="inRs1" placeholder="z.B. s0 oder x8">
-          </div>
-
-          <div class="field-input-group" id="grpRs2">
-            <label class="field-label">rs2 [24:20] <span class="hint">Register (s2 / x18)</span></label>
-            <input type="text" class="input-box" id="inRs2" placeholder="z.B. s2 oder x18">
-          </div>
-
-          <div class="field-input-group" id="grpRd">
-            <label class="field-label">rd [11:7] <span class="hint">Register (s1 / x9)</span></label>
-            <input type="text" class="input-box" id="inRd" placeholder="z.B. s1 oder x9">
-          </div>
-
-          <div class="field-input-group" id="grpImm" style="grid-column: span 2;">
-            <label class="field-label">immediate (dezimal vorzeichenbehaftet) <span class="hint">Signed int</span></label>
-            <input type="text" class="input-box" id="inImm" placeholder="z.B. -32 oder 8 oder 180">
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 3: Final Assembly Instruction / Machine Code -->
-      <div class="step-box" id="step3Box">
-        <div class="step-header">
-          <span class="step-title" id="step3Title">3. Finaler Assembler-Befehl</span>
-          <span class="step-badge" id="step3Badge">3–4 Punkte</span>
-        </div>
-
-        <div class="asm-input-wrap">
-          <input type="text" class="asm-input" id="inAsm" placeholder="z.B. bne s0, s2, -32">
-          <span style="font-size:0.7rem; color:var(--text-dim);" id="step3Hint">Akzeptiert sowohl ABI-Namen (s0, a0, sp) als auch x-Namen (x8, x10, x2).</span>
-        </div>
-      </div>
-
-      <!-- Architectural Explanation & Solution Card -->
-      <div class="explanation-card" id="explanationCard">
-        <div class="explanation-header">Architektonische Herleitung & Klausur-Tipps</div>
-        <div class="explanation-body" id="explanationBody">
-          <!-- Populated by JS -->
-        </div>
-      </div>
+    <div class="imm-result-box" id="immResultBox">
+      <div id="immBinaryReconstruction"></div>
+      <div id="immSignExtFormula"></div>
+      <div id="immDecimalDisplay"></div>
     </div>
   </div>
-</main>
+  <div id="quickLookupCard">
+    <input type="text" id="quickSearchInput">
+    <button id="btnQuickSearchClear"></button>
+    <button id="btnToggleOpcodeTable"></button>
+    <button id="btnSideSheet"></button>
+    <div id="opcodeTableWrap">
+      <tbody id="opcodeTableBody"></tbody>
+    </div>
+    <div id="quickSearchResults"></div>
+    <div id="taskOpcodeHint">
+      <div id="taskOpcodeHintContent"></div>
+    </div>
+    <button id="btnLookupActiveOpcode"></button>
+    <button id="btnLookupOpcodeField"></button>
+    <button id="btnLookupFunct3Field"></button>
+    <button id="btnLookupFunct7Field"></button>
+  </div>
+  <div id="dragResizer"></div>
+  <div id="leftPane"></div>
+  <div id="rightPane"></div>
+  <div id="assistSwitch">
+    <button id="btnModeKlausur"></button>
+    <button id="btnModeStudy"></button>
+  </div>
+  <span id="timerTargetBadge"></span>
+  <button id="btnFloatingCheat"></button>
+  <button id="btnOpenReference"></button>
+  <button id="btnOpenBitTrap"></button>
+  <button id="btnCloseBitTrap"></button>
+  <div id="bitTrapModal"></div>
+  <div id="taskSubText"></div>
+  <span id="step1Badge"></span>
+  <span id="step2Badge"></span>
+</div>
 
 <!-- In-App RISC-V Reference Drawer -->
 <div class="drawer-overlay" id="referenceDrawer">
@@ -2429,12 +2308,6 @@
 
 <!-- Floating Tooltip -->
 <div id="globalTooltip"></div>
-
-<!-- Floating Quick Reference Sheet Trigger -->
-<button class="floating-cheat-btn" id="btnFloatingCheat" title="Offizielles RISC-V Reference Sheet (Spickzettel) öffnen [Taste: C]">
-  <span style="font-size:1.1rem;">📖</span>
-  <span>Cheat Sheet <kbd style="background:rgba(0,0,0,0.3); padding:1px 5px; border-radius:3px; font-size:0.7rem;">C</kbd></span>
-</button>
 
 <!-- JavaScript Logic -->
 <script>
@@ -3273,18 +3146,16 @@ function updateVisuals() {
   renderFieldPills(parsed, showHints ? (activeFmt || parsed.fmt) : null);
 
   // Update Format Badge
-  if (showHints) {
+  if (selectedFormat) {
+    currentFormatBadge.textContent = `Gewählt: ${selectedFormat}-Typ`;
+    currentFormatBadge.className = `format-indicator-badge field-${selectedFormat.toLowerCase()}`;
+  } else if (showHints) {
     const dispFmt = activeFmt || parsed.fmt;
-    currentFormatBadge.textContent = `Format: ${dispFmt}-Type`;
+    currentFormatBadge.textContent = `Format: ${dispFmt}-Typ`;
     currentFormatBadge.className = `format-indicator-badge field-${dispFmt.toLowerCase()}`;
   } else {
-    if (selectedFormat) {
-      currentFormatBadge.textContent = `Gewählt: ${selectedFormat}-Type`;
-      currentFormatBadge.className = 'format-indicator-badge field-neutral';
-    } else {
-      currentFormatBadge.textContent = 'Format: ? (Klausurmodus)';
-      currentFormatBadge.className = 'format-indicator-badge field-neutral';
-    }
+    currentFormatBadge.textContent = 'Format: ?';
+    currentFormatBadge.className = 'format-indicator-badge field-neutral';
   }
 
   // Update Immediate Shuffler
@@ -3312,7 +3183,8 @@ function getOpcodeDesc(op) {
 
 function render32BitRuler(parsed, fmt) {
   bitsRuler.innerHTML = '';
-  const showColors = (!isKlausurMode) || isRevealed;
+  const showColors = (!isKlausurMode) || isRevealed || (selectedFormat !== null);
+  const activeFormat = fmt || selectedFormat || (showColors ? parsed.fmt : null);
 
   for (let bitIdx = 31; bitIdx >= 0; bitIdx--) {
     const bitVal = parsed.rawBin.charAt(31 - bitIdx);
@@ -3333,8 +3205,8 @@ function render32BitRuler(parsed, fmt) {
     cell.textContent = bitVal;
     cell.dataset.bit = bitIdx;
 
-    if (showColors) {
-      const fieldInfo = getFieldForBit(bitIdx, fmt || parsed.fmt);
+    if (showColors && activeFormat) {
+      const fieldInfo = getFieldForBit(bitIdx, activeFormat);
       cell.classList.add(fieldInfo.cssClass);
 
       cell.addEventListener('mouseenter', (e) => {
@@ -3344,7 +3216,7 @@ function render32BitRuler(parsed, fmt) {
       cell.classList.add('neutral-bit');
 
       cell.addEventListener('mouseenter', (e) => {
-        showTooltip(e, `<strong>Bit [${bitIdx}] = ${bitVal}</strong><br><span style="color:var(--text-dim);">Klausurmodus: Feldzuordnung selbst bestimmen</span>`);
+        showTooltip(e, `<strong>Bit [${bitIdx}] = ${bitVal}</strong><br><span style="color:var(--text-dim);">Bit-Position im 32-Bit Wort</span>`);
       });
     }
     cell.addEventListener('mouseleave', hideTooltip);
@@ -3416,10 +3288,6 @@ function renderFieldPills(parsed, fmt) {
   const showDetails = (!isKlausurMode) || isRevealed;
 
   if (!showDetails) {
-    const p = document.createElement('div');
-    p.className = 'klausur-lock-pill';
-    p.innerHTML = '<span>🔒</span> <span>Klausurmodus: Feld-Werte verborgen (wird bei <b>Check Answer</b> aufgedeckt)</span>';
-    fieldsLegendBar.appendChild(p);
     return;
   }
 
@@ -4268,6 +4136,13 @@ function setupEventListeners() {
   document.getElementById('btnCheckAnswer').addEventListener('click', checkCurrentAnswer);
   document.getElementById('btnRevealSolution').addEventListener('click', revealSolution);
   document.getElementById('btnResetInputs').addEventListener('click', resetQuizInputs);
+  const btnNextAction = document.getElementById('btnNextTaskAction');
+  if (btnNextAction) {
+    btnNextAction.addEventListener('click', () => {
+      const nextIdx = (currentTaskIndex + 1) % TASKS.length;
+      loadTask(nextIdx);
+    });
+  }
 
   // Copy Buttons
   document.getElementById('btnCopyHex').addEventListener('click', () => {
@@ -4307,6 +4182,7 @@ function setupEventListeners() {
 function setupResizer() {
   const resizer = document.getElementById('dragResizer');
   const main = document.getElementById('mainContainer');
+  if (!resizer || !main) return;
   let isDragging = false;
 
   resizer.addEventListener('mousedown', (e) => {
