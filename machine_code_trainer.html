@@ -1958,11 +1958,12 @@
               <span class="hex-val" id="hexDisplay" title="Click to edit or copy">0xFE2410E3</span>
               <button class="copy-btn" id="btnCopyHex">Copy</button>
             </div>
-            <div style="display:flex; align-items:center; gap:6px;">
+            <div style="display:flex; align-items:center; gap:6px;" id="binDisplayWrap">
               <span class="code-display-title">BIN:</span>
               <span class="bin-val-spaced" id="binDisplay">11111110 00100100 00010000 11100011</span>
               <button class="copy-btn" id="btnCopyBin">Copy</button>
             </div>
+            <button type="button" class="copy-btn" id="btnToggleBin" style="color:#38bdf8;" title="Binär-Zeile &amp; Lineal verbergen (um Hex-Umwandlung selbst auf Papier zu üben)">👁️ Binär ausblenden</button>
           </div>
           <div class="format-indicator-badge field-neutral" id="currentFormatBadge">Format: ?</div>
         </div>
@@ -4153,6 +4154,22 @@ function setupEventListeners() {
     navigator.clipboard.writeText(binDisplay.textContent);
     showNotice('Binärcode in die Zwischenablage kopiert!');
   });
+
+  // Toggle Binary View (allows practicing manual hex-to-bin conversion)
+  let isBinHidden = false;
+  const btnToggleBin = document.getElementById('btnToggleBin');
+  const binDisplayWrap = document.getElementById('binDisplayWrap');
+  const bitsGridContainer = document.querySelector('.bits-grid-container');
+  if (btnToggleBin) {
+    btnToggleBin.addEventListener('click', () => {
+      isBinHidden = !isBinHidden;
+      if (binDisplayWrap) binDisplayWrap.style.display = isBinHidden ? 'none' : 'flex';
+      if (bitsGridContainer) bitsGridContainer.style.display = isBinHidden ? 'none' : 'block';
+      if (fieldsLegendBar) fieldsLegendBar.style.display = isBinHidden ? 'none' : 'flex';
+      btnToggleBin.textContent = isBinHidden ? '👁️ Binär einblenden' : '👁️ Binär ausblenden';
+      btnToggleBin.style.color = isBinHidden ? '#fbbf24' : '#38bdf8';
+    });
+  }
 
   // Resizer bar dragging
   setupResizer();
